@@ -42,6 +42,9 @@
     if (fmt === 'iso_yyyymmdd') {
       return p.y + '-' + pad2(p.m) + '-' + pad2(p.d);
     }
+    if (fmt === 'european_ddmmmyyyy') {
+      return pad2(p.d) + '/' + MONTHS_SHORT[p.m - 1] + '/' + p.y;
+    }
     return pad2(p.d) + '/' + pad2(p.m) + '/' + p.y;
   }
 

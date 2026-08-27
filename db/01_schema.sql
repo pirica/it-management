@@ -6399,7 +6399,7 @@ CREATE TABLE `hotel_booking_settings` (
   `portal_money_symbol_suffix` tinyint(1) NOT NULL DEFAULT '1',
   `portal_money_symbol_prefix` tinyint(1) NOT NULL DEFAULT '0',
   `portal_show_internal_rates` tinyint(1) NOT NULL DEFAULT '0',
-  `portal_date_format` enum('european_ddmmyyyy','us_mmddyyyy','iso_yyyymmdd') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'european_ddmmyyyy',
+  `portal_date_format` enum('european_ddmmyyyy','european_ddmmmyyyy','us_mmddyyyy','iso_yyyymmdd') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'european_ddmmyyyy',
   `portal_time_format` enum('h24','h12') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'h24',
   `portal_datetime_european1_enabled` tinyint(1) NOT NULL DEFAULT '0',
   `portal_datetime_european2_enabled` tinyint(1) NOT NULL DEFAULT '1',

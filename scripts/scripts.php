@@ -2222,6 +2222,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="hotel_bookings">
+                    <td><a href="verify_hotel_booking_portal_date_formats.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_portal_date_formats.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
+                    <td>Portal date format regression: all four <code>portal_date_format</code> values in PHP + JS mirror, <code>hb_portal_format_date_display()</code>, schema enum, admin settings UI, and <code>booking/*</code> wiring.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_hotel_booking_portal_date_formats.php</code></td>
+                </tr>
+                <tr data-tags="hotel_bookings">
                     <td><a href="verify_stripe_checkout.php" target="_blank" rel="nofollow noreferrer">verify_stripe_checkout.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>

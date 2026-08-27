@@ -28,6 +28,18 @@ final class HotelBookingPortalDateFormatTest extends TestCase
             '2026-08-17',
             itm_hotel_booking_portal_format_date_display('2026-08-17', ['portal_date_format' => 'iso_yyyymmdd'])
         );
+        $this->assertSame(
+            '17/Aug/2026',
+            itm_hotel_booking_portal_format_date_display('2026-08-17', ['portal_date_format' => 'european_ddmmmyyyy'])
+        );
+    }
+
+    public function testPortalDateFormatFromSettingsAcceptsDdMmmYyyy(): void
+    {
+        $this->assertSame(
+            'european_ddmmmyyyy',
+            itm_hotel_booking_portal_date_format_from_settings(['portal_date_format' => 'european_ddmmmyyyy'])
+        );
     }
 
     public function testDatetimeDefaultEuropean2WhenUnset(): void
