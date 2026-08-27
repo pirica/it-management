@@ -2407,7 +2407,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_ui_locale_format.php" target="_blank" rel="nofollow noreferrer">verify_ui_locale_format.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ui_configuration</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="module">settings</span></span></td>
-                    <td>Regression for Settings UI Configuration locale prefs: <code>ui_configuration</code> money symbol + suffix/prefix, date/time + combined datetime columns, form POST wiring, and <code>includes/itm_ui_locale_format.php</code> formatters.</td>
+                    <td>Regression for Settings UI Configuration locale prefs: <code>ui_configuration</code> money symbol + suffix/prefix, date/time + combined datetime columns, form POST wiring, <code>includes/itm_ui_locale_format.php</code> formatters, <code>$GLOBALS['ui_config']</code> date-format flip + audit-pass module spot checks, money via <code>itm_format_cell_scalar_display()</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="employees employee_roles">
