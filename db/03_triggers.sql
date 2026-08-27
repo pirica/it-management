@@ -2843,17 +2843,217 @@ DELIMITER $$
 
 CREATE TRIGGER `trg_vlans_audit_insert` AFTER INSERT ON `vlans` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'vlan_number', NEW.`vlan_number`, 'vlan_name', NEW.`vlan_name`, 'vlan_color', NEW.`vlan_color`, 'subnet', NEW.`subnet`, 'ip', NEW.`ip`, 'comments', NEW.`comments`, 'gateway_ip', NEW.`gateway_ip`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'vlan_number', NEW.`vlan_number`, 'vlan_name', NEW.`vlan_name`, 'vlan_color', NEW.`vlan_color`, 'subnet', NEW.`subnet`, 'ip', NEW.`ip`, 'comments', NEW.`comments`, 'gateway_ip', NEW.`gateway_ip`, 'config_id', NEW.`config_id`, 'uplink_id', NEW.`uplink_id`, 'group_policy_id', NEW.`group_policy_id`, 'vpn_mode_id', NEW.`vpn_mode_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_vlans_audit_update` AFTER UPDATE ON `vlans` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'vlan_number', OLD.`vlan_number`, 'vlan_name', OLD.`vlan_name`, 'vlan_color', OLD.`vlan_color`, 'subnet', OLD.`subnet`, 'ip', OLD.`ip`, 'comments', OLD.`comments`, 'gateway_ip', OLD.`gateway_ip`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'vlan_number', NEW.`vlan_number`, 'vlan_name', NEW.`vlan_name`, 'vlan_color', NEW.`vlan_color`, 'subnet', NEW.`subnet`, 'ip', NEW.`ip`, 'comments', NEW.`comments`, 'gateway_ip', NEW.`gateway_ip`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'vlan_number', OLD.`vlan_number`, 'vlan_name', OLD.`vlan_name`, 'vlan_color', OLD.`vlan_color`, 'subnet', OLD.`subnet`, 'ip', OLD.`ip`, 'comments', OLD.`comments`, 'gateway_ip', OLD.`gateway_ip`, 'config_id', OLD.`config_id`, 'uplink_id', OLD.`uplink_id`, 'group_policy_id', OLD.`group_policy_id`, 'vpn_mode_id', OLD.`vpn_mode_id`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'vlan_number', NEW.`vlan_number`, 'vlan_name', NEW.`vlan_name`, 'vlan_color', NEW.`vlan_color`, 'subnet', NEW.`subnet`, 'ip', NEW.`ip`, 'comments', NEW.`comments`, 'gateway_ip', NEW.`gateway_ip`, 'config_id', NEW.`config_id`, 'uplink_id', NEW.`uplink_id`, 'group_policy_id', NEW.`group_policy_id`, 'vpn_mode_id', NEW.`vpn_mode_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_vlans_audit_delete` AFTER DELETE ON `vlans` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'vlan_number', OLD.`vlan_number`, 'vlan_name', OLD.`vlan_name`, 'vlan_color', OLD.`vlan_color`, 'subnet', OLD.`subnet`, 'ip', OLD.`ip`, 'comments', OLD.`comments`, 'gateway_ip', OLD.`gateway_ip`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'vlan_number', OLD.`vlan_number`, 'vlan_name', OLD.`vlan_name`, 'vlan_color', OLD.`vlan_color`, 'subnet', OLD.`subnet`, 'ip', OLD.`ip`, 'comments', OLD.`comments`, 'gateway_ip', OLD.`gateway_ip`, 'config_id', OLD.`config_id`, 'uplink_id', OLD.`uplink_id`, 'group_policy_id', OLD.`group_policy_id`, 'vpn_mode_id', OLD.`vpn_mode_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `trg_vlans_config_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_config_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_config_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_vlans_config_audit_insert` AFTER INSERT ON `vlans_config` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_config', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_config_audit_update` AFTER UPDATE ON `vlans_config` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_config', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_config_audit_delete` AFTER DELETE ON `vlans_config` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_config', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `trg_vlans_uplink_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_uplink_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_uplink_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_vlans_uplink_audit_insert` AFTER INSERT ON `vlans_uplink` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_uplink', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_uplink_audit_update` AFTER UPDATE ON `vlans_uplink` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_uplink', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_uplink_audit_delete` AFTER DELETE ON `vlans_uplink` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_uplink', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `trg_vlans_group_policy_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_group_policy_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_group_policy_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_vlans_group_policy_audit_insert` AFTER INSERT ON `vlans_group_policy` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_group_policy', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_group_policy_audit_update` AFTER UPDATE ON `vlans_group_policy` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_group_policy', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_group_policy_audit_delete` AFTER DELETE ON `vlans_group_policy` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_group_policy', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `trg_vlans_vpn_mode_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_vpn_mode_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_vpn_mode_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_vlans_vpn_mode_audit_insert` AFTER INSERT ON `vlans_vpn_mode` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_vpn_mode', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_vpn_mode_audit_update` AFTER UPDATE ON `vlans_vpn_mode` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_vpn_mode', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_vpn_mode_audit_delete` AFTER DELETE ON `vlans_vpn_mode` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_vpn_mode', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_modules_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_modules_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_modules_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_vlans_per_port_modules_audit_insert` AFTER INSERT ON `vlans_per_port_modules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port_modules', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_per_port_modules_audit_update` AFTER UPDATE ON `vlans_per_port_modules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port_modules', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_per_port_modules_audit_delete` AFTER DELETE ON `vlans_per_port_modules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port_modules', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_types_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_types_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_types_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_vlans_per_port_types_audit_insert` AFTER INSERT ON `vlans_per_port_types` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port_types', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_per_port_types_audit_update` AFTER UPDATE ON `vlans_per_port_types` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port_types', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_per_port_types_audit_delete` AFTER DELETE ON `vlans_per_port_types` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_access_policies_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_access_policies_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_access_policies_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_vlans_per_port_access_policies_audit_insert` AFTER INSERT ON `vlans_per_port_access_policies` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port_access_policies', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_per_port_access_policies_audit_update` AFTER UPDATE ON `vlans_per_port_access_policies` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port_access_policies', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_per_port_access_policies_audit_delete` AFTER DELETE ON `vlans_per_port_access_policies` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port_access_policies', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_vlans_per_port_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_vlans_per_port_audit_insert` AFTER INSERT ON `vlans_per_port` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'module_id', NEW.`module_id`, 'port_number', NEW.`port_number`, 'active', NEW.`active`, 'type_id', NEW.`type_id`, 'vlan_id', NEW.`vlan_id`, 'allowed_vlans', NEW.`allowed_vlans`, 'access_policy_id', NEW.`access_policy_id`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_per_port_audit_update` AFTER UPDATE ON `vlans_per_port` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'module_id', OLD.`module_id`, 'port_number', OLD.`port_number`, 'active', OLD.`active`, 'type_id', OLD.`type_id`, 'vlan_id', OLD.`vlan_id`, 'allowed_vlans', OLD.`allowed_vlans`, 'access_policy_id', OLD.`access_policy_id`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'module_id', NEW.`module_id`, 'port_number', NEW.`port_number`, 'active', NEW.`active`, 'type_id', NEW.`type_id`, 'vlan_id', NEW.`vlan_id`, 'allowed_vlans', NEW.`allowed_vlans`, 'access_policy_id', NEW.`access_policy_id`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_vlans_per_port_audit_delete` AFTER DELETE ON `vlans_per_port` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vlans_per_port', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'module_id', OLD.`module_id`, 'port_number', OLD.`port_number`, 'active', OLD.`active`, 'type_id', OLD.`type_id`, 'vlan_id', OLD.`vlan_id`, 'allowed_vlans', OLD.`allowed_vlans`, 'access_policy_id', OLD.`access_policy_id`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
 DELIMITER ;

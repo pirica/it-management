@@ -104,6 +104,14 @@ ticket_statuses
 tickets
 todo_categories
 ui_configuration
+vlans_config
+vlans_uplink
+vlans_group_policy
+vlans_vpn_mode
+vlans_per_port
+vlans_per_port_modules
+vlans_per_port_types
+vlans_per_port_access_policies
 warranty_types
 workstation_device_types
 workstation_modes

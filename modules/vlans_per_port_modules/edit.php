@@ -1,10 +1,17 @@
 <?php
-$crud_table = 'vlans';
-$crud_title = 'Vlans';
-$crud_action = 'list_all';
+/**
+ * Vlans Per Port Modules - Edit Record
+ *
+ * Provides the interface for updating existing warranty type records.
+ */
+$crud_table = 'vlans_per_port_modules';
+$crud_title = 'Vlans Per Port Modules';
+$crud_action = 'edit';
 ?>
 <?php
 require '../../config/config.php';
+itm_require_crud_role_module_permission($conn, 'edit', 'vlans_per_port_modules');
+
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
@@ -84,8 +91,9 @@ function cr_fk_metadata($conn, $table) {
 }
 
 function cr_manageable_columns($columns) {
+    // Why: Keep audit meta available for view/hidden forms/POST; list hides via itm_crud_is_list_hidden_audit_field.
     return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+        return ($c['Field'] ?? '') !== 'id';
     }));
 }
 
@@ -104,8 +112,6 @@ function cr_humanize_field($field) {
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
-        'cable_color' => 'Vlan Color',
-        'vlan_color' => 'Vlan Color',
     ];
 
     if (isset($map[$label])) {
@@ -131,6 +137,17 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    if (function_exists('itm_crud_render_audit_cell_value')) {
+        $auditHtml = itm_crud_render_audit_cell_value($GLOBALS['conn'] ?? null, (int)($GLOBALS['company_id'] ?? 0), $field, $value);
+        if ($auditHtml !== null) {
+            return $auditHtml;
+        }
+    }
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -237,28 +254,6 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
-
-function cr_vlan_name_exists($conn, $table, $vlanName, $companyId, $excludeId = 0) {
-    $trimmedName = trim((string)$vlanName);
-    if ($trimmedName === '') {
-        return false;
-    }
-
-    $escapedName = mysqli_real_escape_string($conn, $trimmedName);
-    $sql = 'SELECT id FROM ' . cr_escape_identifier($table)
-        . " WHERE vlan_name='" . $escapedName . "'";
-    if ((int)$companyId > 0) {
-        $sql .= ' AND company_id=' . (int)$companyId;
-    }
-    if ((int)$excludeId > 0) {
-        $sql .= ' AND id<>' . (int)$excludeId;
-    }
-    $sql .= ' LIMIT 1';
-
-    $result = mysqli_query($conn, $sql);
-    return ($result && mysqli_num_rows($result) > 0);
-}
-
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -270,20 +265,28 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
-// Why: Create/edit omit audit meta; list hides audit meta per soft-delete contract.
-$uiColumns = array_values(array_filter($fieldColumns, function ($col) {
+
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'vlans_per_port_modules', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
+$uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     $fieldName = (string)($col['Field'] ?? '');
     if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
         return false;
     }
-    if (function_exists('itm_crud_is_form_hidden_audit_field') && itm_crud_is_form_hidden_audit_field($fieldName)) {
-        return false;
+    if ($fieldName !== 'company_id') {
+        return true;
     }
-    if (function_exists('itm_crud_is_delete_form_hidden_field') && itm_crud_is_delete_form_hidden_field($fieldName)) {
-        return false;
-    }
+    return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
+}));
+// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+$displayFieldColumns = $uiColumns;
 
-    return true;
+// Why: View shows create/update/delete audit stamps while list hides them.
+$viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if ($fieldName !== 'company_id') {
+        return true;
+    }
+    return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
@@ -306,7 +309,9 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
@@ -345,18 +350,19 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
+    $sqlValues = [];
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt) {
+        if ($isTinyInt || $name === 'active') {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             $sqlValues[$name] = (string) (int) $data[$name];
             continue;
         }
 
         if ($name === 'company_id' && $company_id > 0) {
-            $data[$name] = (int)$company_id;
+            $data[$name] = (int) $company_id;
             $sqlValues[$name] = (string) (int) $company_id;
             continue;
         }
@@ -364,7 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         if (isset($fkMap[$name])) {
             $value = $_POST[$name] ?? null;
             $newKey = $name . '__new_value';
-            $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
+            $newValueRaw = trim((string) ($_POST[$newKey] ?? ''));
 
             if ($value === '__add_new__') {
                 $errors[] = 'Please wait for the new value to be created before saving.';
@@ -385,7 +391,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $findSql = 'SELECT ' . cr_escape_identifier($fkCol) . ' AS id FROM ' . cr_escape_identifier($fkTable)
                     . ' WHERE ' . cr_escape_identifier($labelCol) . "='" . $newValueEsc . "'";
                 if (in_array('company_id', $available, true) && $company_id > 0) {
-                    $findSql .= ' AND company_id=' . (int)$company_id;
+                    $findSql .= ' AND company_id=' . (int) $company_id;
                 }
                 $findSql .= ' LIMIT 1';
                 $existing = mysqli_query($conn, $findSql);
@@ -398,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     $insertValues = ["'" . $newValueEsc . "'"];
                     if (in_array('company_id', $available, true) && $company_id > 0) {
                         $insertFields[] = '`company_id`';
-                        $insertValues[] = (string)(int)$company_id;
+                        $insertValues[] = (string) (int) $company_id;
                     }
                     $insertSql = 'INSERT INTO ' . cr_escape_identifier($fkTable)
                         . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
@@ -439,16 +445,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
     }
 
-
-    if (isset($data['vlan_name']) && trim((string)($_POST['vlan_name'] ?? '')) !== '') {
-        $checkEditId = ($crud_action === 'edit') ? (int)$editId : 0;
-        if (cr_vlan_name_exists($conn, $crud_table, (string)$_POST['vlan_name'], (int)$company_id, $checkEditId)) {
-            $errors[] = 'Vlan Name must be unique.';
-        }
-    }
-
     if (empty($errors)) {
         if ($crud_action === 'create') {
+            if (function_exists('itm_crud_stamp_create_audit')) {
+                itm_crud_stamp_create_audit($data, $sqlValues);
+            }
             $fields = [];
             $values = [];
             foreach ($fieldColumns as $col) {
@@ -458,6 +459,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
         } else {
+            if (function_exists('itm_crud_stamp_update_audit')) {
+                itm_crud_stamp_update_audit($data, $sqlValues, $data);
+            }
             $sets = [];
             foreach ($fieldColumns as $col) {
                 $name = $col['Field'];
@@ -480,53 +484,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 }
 
-
-$displayFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
-    $fieldName = (string)($col['Field'] ?? '');
-    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
-        return false;
-    }
-    if ($fieldName === 'company_id') {
-        return false;
-    }
-    return true;
-}));
-if ($crud_table === 'vlans' && in_array($crud_action, ['index', 'list_all'], true)) {
-    $desiredOrder = ['vlan_number', 'vlan_name', 'config_id', 'uplink_id', 'group_policy_id', 'vpn_mode_id', 'gateway_ip', 'subnet', 'ip', 'vlan_color', 'comments', 'active'];
-    $byField = [];
-    foreach ($displayFieldColumns as $col) {
-        $byField[$col['Field']] = $col;
-    }
-
-    $ordered = [];
-    foreach ($desiredOrder as $fieldName) {
-        if (isset($byField[$fieldName])) {
-            $ordered[] = $byField[$fieldName];
-            unset($byField[$fieldName]);
-        }
-    }
-
-    foreach ($displayFieldColumns as $col) {
-        $fieldName = (string)$col['Field'];
-        if ($fieldName === 'company_id') {
-            continue;
-        }
-        if (isset($byField[$fieldName])) {
-            $ordered[] = $byField[$fieldName];
-            unset($byField[$fieldName]);
-        }
-    }
-
-    $displayFieldColumns = $ordered;
-}
-
 $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
+if (function_exists('itm_crud_append_not_deleted_predicate')) {
+    $where = itm_crud_append_not_deleted_predicate($where);
+}
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
-}, $fieldColumns);
+}, $uiColumns);
 
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
@@ -550,14 +517,13 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'VLANs';
+    $crud_title = 'Vlans Per Port Modules';
 }
     require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
         $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
     ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
-
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -577,7 +543,7 @@ if (!isset($crud_title)) {
                     <table>
                         <thead>
                         <tr>
-                            <?php foreach ($displayFieldColumns as $col): ?>
+                            <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
@@ -595,7 +561,7 @@ if (!isset($crud_title)) {
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <?php foreach ($displayFieldColumns as $col): $f = $col['Field']; ?>
+                                <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
@@ -604,12 +570,13 @@ if (!isset($crud_title)) {
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($displayFieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($uiColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -619,23 +586,32 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php
+                                        <?php
                     if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
                         itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
                     }
                     ?>
-                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
+<?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
                         $displayVal = cr_form_display_value($data[$name] ?? '');
                     ?>
+                        <?php
+                        // Why: Audit meta is stamped via hidden inputs; never show as editable widgets.
+                        if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($name)) {
+                            continue;
+                        }
+                        ?>
+
+                        <?php if ($name === 'company_id'): ?>
+                            <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
+                            <?php continue; ?>
+                        <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($name === 'company_id' && $company_id > 0): ?>
-                                <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
-                            <?php elseif ($isTinyInt): ?>
+                            <?php if ($isTinyInt || $name === 'active'): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
@@ -665,8 +641,6 @@ if (!isset($crud_title)) {
                                 <?php itm_render_uk_datetime_input((string) $name, itm_crud_dom_input_id($name, 'dt'), (string) $displayVal); ?>
                             <?php elseif ($isDate): ?>
                                 <?php itm_render_uk_date_input((string) $name, itm_crud_dom_input_id($name, 'dt'), (string) $displayVal); ?>
-                            <?php elseif (in_array($name, ['cable_color', 'vlan_color'], true)): ?>
-                                <input type="color" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize((preg_match('/^#[A-Fa-f0-9]{6}$/', $displayVal) ? $displayVal : '#000000')); ?>">
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php else: ?>
@@ -674,7 +648,7 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
-                    <div class="form-actions">
+                    <div class="form-actions itm-form-actions itm-align-left">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
                     </div>
@@ -685,7 +659,7 @@ if (!isset($crud_title)) {
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($viewColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>

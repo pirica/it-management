@@ -5,13 +5,17 @@ Manages Virtual LAN (VLAN) definitions, including names, IDs, and descriptions.
 
 ## 2. Key Tables
 - **vlans** — stores VLAN data.
+- Lookup tables: **vlans_config** (Manual/Auto), **vlans_uplink** (Any), **vlans_group_policy** (None), **vlans_vpn_mode** (Enabled/Disabled).
+- **vlans_per_port** — per-port VLAN settings (see `modules/vlans_per_port/AGENT_NOTES.md`).
 
 ## 3. Required Relationships
 - **vlans** → depends on **companies**.
-- **vlans** → referenced by **ip_subnets** and **switch_ports**.
+- **vlans** → optional FKs: `config_id`, `uplink_id`, `group_policy_id`, `vpn_mode_id` (tenant lookup tables).
+- **vlans** → referenced by **ip_subnets**, **switch_ports**, **vlans_per_port**.
 
 ## 4. Business Rules (Critical for Agents)
 - **Unique ID**: VLAN ID must be unique within a company.
+- **Create defaults** (per company lookup name): Config **Manual**, Uplink **Any**, Group policy **None**, VPN mode **Enabled** — `includes/itm_vlan_lookup_defaults.php`.
 - **Hard delete**: `delete.php` / bulk/clear use hard `DELETE` (detach `switch_ports`, `idf_ports`, `ip_subnets` `vlan_id` first). Reviewed in `scripts/data/fields_missing_reviewed.json` — no scaffold soft-delete or `deleted_at IS NULL` list filter.
 
 ## 5. UI Behavior Requirements

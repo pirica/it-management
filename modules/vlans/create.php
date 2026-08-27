@@ -5,6 +5,7 @@ $crud_action = 'create';
 ?>
 <?php
 require '../../config/config.php';
+require_once '../../includes/itm_vlan_lookup_defaults.php';
 itm_require_crud_role_module_permission($conn, 'create', 'vlans');
 
 
@@ -331,6 +332,10 @@ foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
 }
 
+if ($crud_action === 'create' && $company_id > 0) {
+    itm_vlans_apply_create_form_defaults($conn, (int)$company_id, $data);
+}
+
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
@@ -450,6 +455,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 
     if (empty($errors)) {
+        if ($crud_action === 'create' && $company_id > 0) {
+            itm_vlans_apply_create_sql_defaults($conn, (int)$company_id, $data, $sqlValues);
+        }
+
         if ($crud_action === 'create') {
             $fields = [];
             $values = [];
