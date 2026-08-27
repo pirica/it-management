@@ -48,6 +48,35 @@ if (!function_exists('hb_portal_format_date_display')) {
     }
 }
 
+if (!function_exists('hb_portal_render_date_input')) {
+    /**
+     * Date text field + native picker using tenant portal_date_format for visible value.
+     *
+     * @param array{required?:bool,class?:string,min?:string} $options
+     */
+    function hb_portal_render_date_input($name, $id, $rawValue, array $options = []) {
+        $options['display_value'] = hb_portal_format_date_display($rawValue);
+        itm_render_hotel_date_input($name, $id, $rawValue, $options);
+    }
+}
+
+if (!function_exists('hb_portal_render_date_format_scripts')) {
+    /** Money + portal date-format JS (load before js/hotel-date-input.js on checkout pages). */
+    function hb_portal_render_date_format_scripts(array $settings) {
+        static $rendered = false;
+        if ($rendered) {
+            return;
+        }
+        $rendered = true;
+        $public = itm_hotel_booking_portal_public_settings_for_js($settings);
+        ?>
+<script>window.HB_PORTAL_SETTINGS = <?php echo json_encode($public, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;</script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-money.js"></script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-date-format.js"></script>
+        <?php
+    }
+}
+
 if (!function_exists('hb_portal_format_datetime_display')) {
     function hb_portal_format_datetime_display($isoDatetime) {
         $settings = hb_portal_money_settings_bound();

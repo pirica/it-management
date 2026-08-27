@@ -97,7 +97,7 @@ Per-hotel portal math is **not** hardcoded in `booking/*.php` or `booking/js/*.j
 
 ## 10. Stay date format (31/Aug/2026)
 
-Hospitality stay dates in the portal and admin booking flows use **`itm_format_hotel_date_display()`** / **`itm_parse_date_input()`** (`d/M/Y`, e.g. `31/Aug/2026`, `01/Oct/2026`). Editable fields use **`itm_render_hotel_date_input()`** + **`js/hotel-date-input.js`** (empty placeholder; value shows the formatted date). Loaded on `index.php` (Select Dates modal), `rooms/room-single.php` (step 4), and admin `modules/hotel_bookings/` forms. MySQL storage stays `Y-m-d`.
+**Portal date/time formats:** Tenant `portal_date_format` (`european_ddmmyyyy`, `european_ddmmmyyyy` DD/MMM/YYYY, `us_mmddyyyy`, `iso_yyyymmdd`) drives **all guest-visible stay dates** in `booking/*` via `hb_portal_format_date_display()` / `hb_portal_format_stay_range_label()` (PHP) and `booking/js/hotel-booking-date-format.js` (`HB_SETTINGS`, `HB_PORTAL_SETTINGS`, `HB_SELECT_ROOM`, `HB_CUSTOMIZE_UPGRADE`). Step 4 editable fields use `hb_portal_render_date_input()` + `hb_portal_render_date_format_scripts()` before `js/hotel-date-input.js` (picker sync delegates to `hbPortalFormatDateYmd`). Step 2 rate-plan cancel copy uses `itm_hotel_booking_portal_format_free_cancel_deadline_display()`. Admin `modules/hotel_bookings/` still uses `itm_format_hotel_date_display()` (`d/M/Y`) when no portal settings are bound. Regression: `php scripts/verify_hotel_booking_portal_date_formats.php`.
 
 ## 11. Portal UI copy (`portal_ui_*`)
 

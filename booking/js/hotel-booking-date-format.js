@@ -8,7 +8,7 @@
   var MONTHS_UPPER = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
   function portalCfg() {
-    return w.HB_SETTINGS || w.HB_SELECT_ROOM || w.HB_CUSTOMIZE_UPGRADE || {};
+    return w.HB_SETTINGS || w.HB_PORTAL_SETTINGS || w.HB_SELECT_ROOM || w.HB_CUSTOMIZE_UPGRADE || {};
   }
 
   function parseYmdParts(ymd) {
@@ -27,6 +27,38 @@
 
   function pad2(n) {
     return String(n).padStart(2, '0');
+  }
+
+  function parseDateText(raw, cfg) {
+    cfg = cfg || portalCfg();
+    var text = String(raw || '').trim();
+    if (text === '') {
+      return '';
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+      return text;
+    }
+    var slashMon = /^(\d{1,2})\/([A-Za-z]{3})\/(\d{4})$/.exec(text);
+    if (slashMon) {
+      var monthIdx = MONTHS_SHORT.findIndex(function (m) {
+        return m.toLowerCase() === slashMon[2].toLowerCase();
+      });
+      if (monthIdx >= 0) {
+        return slashMon[3] + '-' + pad2(monthIdx + 1) + '-' + pad2(parseInt(slashMon[1], 10));
+      }
+    }
+    var fmt = String(cfg.date_format || 'european_ddmmyyyy');
+    var slashNum = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
+    if (slashNum) {
+      var a = parseInt(slashNum[1], 10);
+      var b = parseInt(slashNum[2], 10);
+      var y = parseInt(slashNum[3], 10);
+      if (fmt === 'us_mmddyyyy') {
+        return y + '-' + pad2(a) + '-' + pad2(b);
+      }
+      return y + '-' + pad2(b) + '-' + pad2(a);
+    }
+    return '';
   }
 
   function formatDateYmd(ymd, cfg) {
@@ -115,8 +147,12 @@
   }
 
   w.hbPortalFormatDateYmd = formatDateYmd;
+  w.hbPortalParseDateText = parseDateText;
   w.hbPortalFormatDatetimeIso = formatDatetimeIso;
   w.itmHotelDateFormatYmd = function (ymd) {
     return formatDateYmd(ymd, portalCfg());
+  };
+  w.itmHotelDateParseText = function (text) {
+    return parseDateText(text, portalCfg());
   };
 })(window);

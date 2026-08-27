@@ -301,8 +301,8 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 <input type="hidden" name="check_out" value="<?php echo htmlspecialchars($checkOutIso, ENT_QUOTES, 'UTF-8'); ?>">
 <?php else: ?>
 <div class="hb-step4-dates">
-<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_in_label', [], $settings); ?></label><?php itm_render_hotel_date_input('check_in', 'hb-portal-check-in', $checkInIso, ['required' => true, 'class' => 'hb-input']); ?></div>
-<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_out_label', [], $settings); ?></label><?php itm_render_hotel_date_input('check_out', 'hb-portal-check-out', $checkOutIso, ['required' => true, 'class' => 'hb-input']); ?></div>
+<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_in_label', [], $settings); ?></label><?php hb_portal_render_date_input('check_in', 'hb-portal-check-in', $checkInIso, ['required' => true, 'class' => 'hb-input']); ?></div>
+<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_out_label', [], $settings); ?></label><?php hb_portal_render_date_input('check_out', 'hb-portal-check-out', $checkOutIso, ['required' => true, 'class' => 'hb-input']); ?></div>
 </div>
 <?php endif; ?>
 </form>
@@ -333,6 +333,7 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 </div>
 </div>
 </div>
+<?php hb_portal_render_date_format_scripts($settings); ?>
 <script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

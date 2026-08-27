@@ -21,7 +21,11 @@ if (!function_exists('itm_render_hotel_date_input')) {
         }
         $minIso = trim((string) ($options['min'] ?? ''));
         $iso = itm_parse_date_input($rawValue) ?? '';
-        $display = itm_format_hotel_date_display($rawValue);
+        if (array_key_exists('display_value', $options)) {
+            $display = (string) $options['display_value'];
+        } else {
+            $display = itm_format_hotel_date_display($rawValue);
+        }
         $nativeId = $id . '_native';
         ?>
 <div class="hb-hotel-date-field">

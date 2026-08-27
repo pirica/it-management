@@ -153,7 +153,7 @@ foreach ($ratePlans as $plan) {
     $planCancelDays = isset($offer['free_cancellation_days']) && $offer['free_cancellation_days'] !== null
         ? (int) $offer['free_cancellation_days']
         : $settingsFreeCancelDays;
-    $cancelBy = date('F jS, Y', strtotime($checkInIso . ' -' . $planCancelDays . ' days'));
+    $cancelBy = itm_hotel_booking_portal_format_free_cancel_deadline_display($checkInIso, $planCancelDays, $settings);
     $draftSlice = [
         'company_id' => $company_id,
         'hotel_id' => $hotelId,
