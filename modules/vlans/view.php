@@ -295,6 +295,12 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) {
     return true;
 }));
 
+// Why: Detail view must not expose tenant company_id (AGENTS.md company scoping UI rule).
+$viewColumns = array_values(array_filter($fieldColumns, function ($col) {
+    $fieldName = (string)($col['Field'] ?? '');
+    return $fieldName !== 'company_id';
+}));
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
@@ -653,7 +659,7 @@ if (!isset($crud_title)) {
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($viewColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>

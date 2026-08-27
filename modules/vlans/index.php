@@ -749,6 +749,12 @@ $displayFieldColumns = array_values(array_filter($fieldColumns, function ($col) 
     }
     return true;
 }));
+
+// Why: Detail view must not expose tenant company_id (AGENTS.md company scoping UI rule).
+$viewColumns = array_values(array_filter($fieldColumns, function ($col) {
+    $fieldName = (string)($col['Field'] ?? '');
+    return $fieldName !== 'company_id';
+}));
 if ($crud_table === 'vlans' && in_array($crud_action, ['index', 'list_all'], true)) {
     $desiredOrder = ['vlan_number', 'vlan_name', 'config_id', 'uplink_id', 'group_policy_id', 'vpn_mode_id', 'gateway_ip', 'subnet', 'ip', 'vlan_color', 'comments', 'active'];
     $byField = [];
@@ -1058,7 +1064,7 @@ if (!isset($crud_title)) {
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($viewColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
