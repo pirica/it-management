@@ -48,6 +48,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'master_tickets', 'label' => '🎫 Master Tickets', 'href' => 'modules/master_tickets/', 'match_dir' => 'master_tickets'],
                 ['id' => 'ticket_canned_responses', 'label' => '💬 Ticket Canned Responses', 'href' => 'modules/ticket_canned_responses/', 'match_dir' => 'ticket_canned_responses'],
                 ['id' => 'license_management', 'label' => '📄 License Management', 'href' => 'modules/license_management/', 'match_dir' => 'license_management'],
+                ['id' => 'software', 'label' => '💿 Software', 'href' => 'modules/software/', 'match_dir' => 'software'],
             ],
         ],
         [
@@ -339,6 +340,8 @@ function itm_sidebar_module_default_label($moduleName) {
         'it_settings' => '⚙️ IT Settings',
         'request_password' => '🔑 Request Password',
         'license_management' => '📄 License Management',
+        'software' => '💿 Software',
+        'equipment_software' => '💿 Equipment Software',
         'ops_report' => '📋 Ops Report',
         'reports' => '📊 Reports Hub',
         'backup_tape_log' => '📼 Backup Tape Log File',

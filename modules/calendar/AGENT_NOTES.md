@@ -8,7 +8,8 @@ Central calendar grid aggregating time-sensitive records from multiple modules i
 - **event_categories** — colour/label for events.
 - **alerts** — only rows with **`end_datetime`** set.
 - **tickets** — tasks with **`due_date`**.
-- **equipment** — **`certificate_expiry`** and **`warranty_expiry`**.
+- **equipment** — **`certificate_expiry`**, **`warranty_expiry`**, hardware **`eol_date` / `extended_date` / `esu_date`**.
+- **workstation_office**, **workstation_os_versions**, **software** — catalog EOL/Extended/ESU (one calendar event per product, not per asset) via `includes/itm_software_eol.php`.
 - **patches_updates** — open patch rows with **`due_date`** (non-closed status, not soft-deleted) via `includes/itm_patches_updates_integrations.php` → `itm_patches_updates_list_calendar_rows()`.
 
 ## 3. Required Relationships

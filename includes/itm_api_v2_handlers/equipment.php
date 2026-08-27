@@ -58,6 +58,9 @@ if (!function_exists('itm_api_v2_equipment_format_row')) {
             'purchase_date' => (string)($row['purchase_date'] ?? ''),
             'purchase_cost' => $row['purchase_cost'] ?? null,
             'warranty_expiry' => (string)($row['warranty_expiry'] ?? ''),
+            'eol_date' => (string)($row['eol_date'] ?? ''),
+            'extended_date' => (string)($row['extended_date'] ?? ''),
+            'esu_date' => (string)($row['esu_date'] ?? ''),
             'created_at' => (string)($row['created_at'] ?? ''),
             'updated_at' => (string)($row['updated_at'] ?? ''),
         ];
@@ -78,7 +81,7 @@ if (!function_exists('itm_api_v2_equipment_list')) {
 
         $search = trim((string)($query['search'] ?? ''));
         $sql = 'SELECT id, name, hostname, serial_number, model, ip_address, equipment_type_id, status_id,
-                       manufacturer_id, purchase_date, purchase_cost, warranty_expiry, created_at, updated_at
+                       manufacturer_id, purchase_date, purchase_cost, warranty_expiry, eol_date, extended_date, esu_date, created_at, updated_at
                 FROM equipment
                 WHERE company_id = ? AND deleted_at IS NULL';
         $types = 'i';
@@ -133,7 +136,7 @@ if (!function_exists('itm_api_v2_equipment_get')) {
         $companyId = (int)$companyId;
         $equipmentId = (int)$equipmentId;
         $sql = 'SELECT id, name, hostname, serial_number, model, ip_address, equipment_type_id, status_id,
-                       manufacturer_id, purchase_date, purchase_cost, warranty_expiry, created_at, updated_at
+                       manufacturer_id, purchase_date, purchase_cost, warranty_expiry, eol_date, extended_date, esu_date, created_at, updated_at
                 FROM equipment WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {

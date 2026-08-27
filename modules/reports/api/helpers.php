@@ -445,6 +445,7 @@ function get_upcoming_maintenance_forecast() {
 
     $warranty_counts = array_fill_keys(array_keys($months), 0);
     $license_counts = array_fill_keys(array_keys($months), 0);
+    $eol_counts = array_fill_keys(array_keys($months), 0);
 
     // Warranty
     $sql_w = "SELECT MONTH(warranty_expiry) as m, COUNT(*) as count
@@ -486,10 +487,15 @@ function get_upcoming_maintenance_forecast() {
         mysqli_stmt_close($stmt);
     }
 
+    if (function_exists('itm_software_eol_forecast_month_counts')) {
+        $eol_counts = itm_software_eol_forecast_month_counts($conn, $company_id, array_keys($months));
+    }
+
     return [
         'labels' => array_values($months),
         'warranty' => array_values($warranty_counts),
-        'licenses' => array_values($license_counts)
+        'licenses' => array_values($license_counts),
+        'eol' => array_values($eol_counts)
     ];
 }
 

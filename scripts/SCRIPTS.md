@@ -144,7 +144,7 @@ function colorText($text, $type) {
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **241** tables (must match `CREATE TABLE` count in `db/01_schema.sql`; [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php) / [verify_database_schema.php?run=1](http://localhost/it-management/scripts/verify_database_schema.php?run=1)). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
+| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **246** tables (must match `CREATE TABLE` count in `db/01_schema.sql`; [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php) / [verify_database_schema.php?run=1](http://localhost/it-management/scripts/verify_database_schema.php?run=1)). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
 | `php scripts/verify_count_db_tables_recon.php` | Low-impact recon contract: `count_db_tables.php` stays no-auth digits-only output (no table-name enumeration). |
 
 Catalog: `scripts/scripts.php`.
@@ -1174,8 +1174,9 @@ Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/
 | `php scripts/verify_integration_webhooks.php` | Regression: webhook tables, secret round-trip, URL SSRF guard, enqueue |
 | `php scripts/run_asset_depreciation.php` | Monthly cron: depreciation snapshots on `equipment_lifecycle_events`. Optional `--company=ID`. |
 | `php scripts/verify_asset_depreciation.php` | Regression: equipment lifecycle columns, months-elapsed math, book value sample |
+| `php scripts/verify_software_eol.php` | Regression: Office/OS/software catalog and equipment hardware EOL/Extended/ESU columns, calendar collector, inherited 30-day count, email helper. Doc: `docs/SOFTWARE_EOL.md`. Browser: [verify_software_eol.php?run=1](http://localhost/it-management/scripts/verify_software_eol.php?run=1) (Admin session) |
 
-Run the matching `verify_*.php` after changing `includes/itm_scheduled_reports.php`, `includes/itm_saved_reports.php`, `includes/itm_webhook_queue.php`, `includes/itm_asset_depreciation.php`, or related `db/` DDL.
+Run the matching `verify_*.php` after changing `includes/itm_scheduled_reports.php`, `includes/itm_saved_reports.php`, `includes/itm_webhook_queue.php`, `includes/itm_asset_depreciation.php`, `includes/itm_software_eol.php`, or related `db/` DDL.
 
 ### Appointment scripts
 

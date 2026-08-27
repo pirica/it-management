@@ -491,6 +491,7 @@ The calendar module (`modules/calendar/`) provides a centralized view of time-se
     - Tickets with a `due_date` (displayed as tasks).
     - Equipment with a `certificate_expiry`.
     - Equipment with a `warranty_expiry`.
+    - Equipment hardware `eol_date` / `extended_date` / `esu_date`, plus **one calendar event per catalog product** (Office, OS version, Software) — not exploded onto every asset. Helper: `includes/itm_software_eol.php`. Canonical doc: `docs/SOFTWARE_EOL.md`.
 2. **Standard CRUD:** The `events` and `event_categories` modules must follow the standard CRUD structure and multi-tenancy rules.
 3. **UI:** The calendar grid must follow a Monday to Sunday layout.
 
@@ -595,7 +596,7 @@ The email management module (`modules/emails/` and `modules/email_smtp_configura
 1. **Tables:** **`emails`** (send log), **`email_smtp_configurations`** (SMTP profiles), **`email_alert_rules`** (automated alerts per `rule_slug`).
 2. **Default SMTP:** `is_default = 1` on one active `email_smtp_configurations` row per company drives **`itm_send_email()`** in `includes/itm_email.php`.
 3. **Password storage:** SMTP passwords encrypted with `itm_email_encrypt_password()`; never store plain text in the database.
-4. **UI tabs:** Send Logs (XLSX export), SMTP Configurations (toggle **Set as default SMTP**), Alert Rules (warranty, license, certificate, alerts, notes, to-do, events).
+4. **UI tabs:** Send Logs (XLSX export), SMTP Configurations (toggle **Set as default SMTP**), Alert Rules (warranty, license, certificate, EOL, alerts, notes, to-do, events).
 5. **Project integration:** `send-email.php`, `forgot-password.php`, `register.php`, `modules/employee_onboarding_requests/` approval emails, and alert runner must call **`itm_send_email()`** — not MailerLite/Resend directly (Resend remains fallback when no SMTP profile exists).
 6. **Alert runner:** `php scripts/run_email_alert_rules.php` — schedule daily; respects `email_alert_rules.enabled` and `notify_emails`.
 7. **Inbound email → tickets:** `companies.email` is the tenant routing To address. Default SMTP profile fields `imap_host` + `inbound_ticket_enabled` enable polling via `php scripts/run_inbound_email_tickets.php` (cron). Core: `includes/itm_inbound_email_tickets.php`; dedupe `ticket_inbound_email_messages`; keyword routing `ticket_inbound_email_routing_rules` (`urgent`/`critical` → priority, `billing` → category, `support` → assignee on **new** tickets). **Threading:** `TCK-####` / `[#id]` in subject or body; `In-Reply-To` / `References` Message-ID lookup; `Re:` / `Fwd:` subject match against open ticket titles → append `ticket_comments`. **Event log:** every inbound attempt writes `emails` (`status` `received` or `failed`) with JSON `details.inbound_event` and `raw_payload` on parse/handler failures. **Local Mailpit:** `imap_host` = `mailpit` uses HTTP API (no `imap`); production mailboxes use PHP **`imap`** on the CLI binary (`extension=imap` in `php.ini` — see **Setup & Debugging** and `scripts/SCRIPTS.md` → Email Management scripts).

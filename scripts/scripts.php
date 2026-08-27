@@ -2403,6 +2403,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for outbound integration webhooks: tables, secret encrypt/decrypt, SSRF URL guard, enqueue probe (<code>includes/itm_webhook_queue.php</code>).</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_integration_webhooks.php</code></td>
                 </tr>
+                <tr data-tags="equipment software workstation_office workstation_os_versions">
+                    <td><a href="verify_software_eol.php" target="_blank" rel="nofollow noreferrer">verify_software_eol.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">software</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment_software</span></span></td>
+                    <td>Regression for software/Office/OS/hardware EOL columns, <code>includes/itm_software_eol.php</code> calendar/expiring/email helpers, and the <code>eol_date</code> email alert catalog slug. See <code>docs/SOFTWARE_EOL.md</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_software_eol.php</code></td>
+                </tr>
                 <tr data-tags="equipment equipment_lifecycle_events">
                     <td><a href="verify_asset_depreciation.php" target="_blank" rel="nofollow noreferrer">verify_asset_depreciation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

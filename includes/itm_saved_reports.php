@@ -107,8 +107,11 @@ if (!function_exists('itm_saved_reports_module_config')) {
                     'mac_address' => 'MAC Address',
                     'department_label' => 'Department',
                     'status_name' => 'Status',
+                    'eol_date' => 'EOL',
+                    'extended_date' => 'Extended',
+                    'esu_date' => 'ESU',
                 ],
-                'sortable' => ['id', 'name', 'equipment_type_name', 'hostname', 'ip_address', 'idf_name', 'rack_name', 'location_name', 'manufacturer_name', 'mac_address', 'department_label', 'status_name'],
+                'sortable' => ['id', 'name', 'equipment_type_name', 'hostname', 'ip_address', 'idf_name', 'rack_name', 'location_name', 'manufacturer_name', 'mac_address', 'department_label', 'status_name', 'eol_date'],
             ],
             'expenses' => [
                 'label' => 'Expenses',

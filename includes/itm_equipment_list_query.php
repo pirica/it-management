@@ -145,6 +145,7 @@ if (!function_exists('itm_equipment_list_select_sql')) {
     {
         if ($fullList) {
             return "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address, e.mac_address,
+               e.eol_date, e.extended_date, e.esu_date,
                COALESCE(NULLIF(TRIM(d.code), ''), d.name) AS department_label,
                c.company AS company_name,
                et.name AS equipment_type_name,

@@ -516,6 +516,9 @@ if (!function_exists('itm_crud_record_share_create_equipment')) {
             ['label' => 'Serial', 'value' => (string)($row['serial_number'] ?? '')],
             ['label' => 'Warranty Expiry', 'value' => itm_crud_record_share_format_scalar('warranty_expiry', $row['warranty_expiry'] ?? '')],
             ['label' => 'Certificate Expiry', 'value' => itm_crud_record_share_format_scalar('certificate_expiry', $row['certificate_expiry'] ?? '')],
+            ['label' => 'EOL', 'value' => itm_crud_record_share_format_scalar('eol_date', $row['eol_date'] ?? '')],
+            ['label' => 'Extended', 'value' => itm_crud_record_share_format_scalar('extended_date', $row['extended_date'] ?? '')],
+            ['label' => 'ESU', 'value' => itm_crud_record_share_format_scalar('esu_date', $row['esu_date'] ?? '')],
         ];
         $payload = [
             'type' => 'crud_record',

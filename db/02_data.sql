@@ -275,6 +275,10 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("supplier_statuses", "Supplier Statuses", 0, 1);
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("software", "Software", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("equipment_software", "Equipment Software", 0, 1);
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("suppliers", "Suppliers", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("switch_port_numbering_layout", "Switch Port Numbering Layout", 0, 1);
@@ -804,6 +808,8 @@ INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_bef
 
 INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'certificate_expiry', '0', '30', NULL, '1', '2026-06-18 02:00:00');
 
+INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'eol_date', '0', '30', NULL, '1', '2026-06-18 02:00:00');
+
 INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'alerts_expiry', '0', '30', NULL, '1', '2026-06-18 02:00:00');
 
 INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'notes_reminder', '0', '0', NULL, '1', '2026-06-18 02:00:00');
@@ -844,7 +850,7 @@ INSERT INTO `employees` (`id`, `duplicate`, `company_id`, `first_name`, `last_na
 
 -- Data for `equipment`
 -- Why: Relative warranty keeps company-1 email alert runner / verify_emails_module in the default 30-day window after import.
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `created_at`, `updated_at`) VALUES (1, 1, 2, NULL, 1, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 1, NULL, NULL, 1, '2026-06-05', 8500.00, DATE_ADD(CURDATE(), INTERVAL 14 DAY), NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-01 00:00:01', '2026-04-26 22:07:32');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `eol_date`, `extended_date`, `esu_date`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `created_at`, `updated_at`) VALUES (1, 1, 2, NULL, 1, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 1, NULL, NULL, 1, '2026-06-05', 8500.00, DATE_ADD(CURDATE(), INTERVAL 14 DAY), NULL, DATE_ADD(CURDATE(), INTERVAL 21 DAY), DATE_ADD(CURDATE(), INTERVAL 50 DAY), DATE_ADD(CURDATE(), INTERVAL 80 DAY), NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-01 00:00:01', '2026-04-26 22:07:32');
 
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Managed', '2026-01-01 00:00:01');
 
@@ -1275,6 +1281,8 @@ INNER JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'workstation_os_types' AS entry_id, 'reference_data' AS section_id, 59 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'workstation_os_versions' AS entry_id, 'reference_data' AS section_id, 60 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'workstation_ram' AS entry_id, 'reference_data' AS section_id, 61 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'software' AS entry_id, 'reference_data' AS section_id, 61 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_software' AS entry_id, 'reference_data' AS section_id, 61 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'floor_plans' AS entry_id, 'reference_data' AS section_id, 62 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'rj45_speed' AS entry_id, 'reference_data' AS section_id, 63 AS display_order
 ) AS t
@@ -1891,13 +1899,13 @@ INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `
 
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '11', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'None', '2026-01-01 00:00:01');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) VALUES ('1', '1', 'None', NULL, NULL, NULL, NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'Office 2024 Pro', '2026-01-01 00:00:01');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) VALUES ('1', '3', 'Office 2024 Pro', '16.0', '2029-10-09', '2029-10-09', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Office 2024 STD', '2026-01-01 00:00:01');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) VALUES ('1', '2', 'Office 2024 STD', '16.0', '2029-10-09', '2029-10-09', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Office 365', '2026-01-01 00:00:01');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) VALUES ('1', '4', 'Office 365', 'Current Channel', NULL, NULL, NULL, '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Windows', '2026-01-01 00:00:01');
 
@@ -1929,13 +1937,21 @@ INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VA
 
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '15', 'Other', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', '24H2', '2026-01-01 00:00:01');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) VALUES ('1', '1', '24H2', '26100', '2026-10-13', '2027-10-12', '2028-10-10', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', '25H2', '2026-01-01 00:00:01');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) VALUES ('1', '2', '25H2', '26200', '2027-10-12', '2028-10-10', '2029-10-09', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', '26H2', '2026-01-01 00:00:01');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) VALUES ('1', '3', '26H2', '26300', '2028-10-10', '2029-10-09', '2030-10-08', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', '10 LTSC', '2026-01-01 00:00:01');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) VALUES ('1', '4', '10 LTSC', '19044', '2027-01-12', '2032-01-13', NULL, '2026-01-01 00:00:01');
+
+INSERT INTO `software` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `active`, `created_at`) VALUES ('1', '1', 'Adobe Acrobat Reader', '2024.005', '2027-06-30', '2028-06-30', NULL, '1', '2026-01-01 00:00:01');
+
+INSERT INTO `software` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `active`, `created_at`) VALUES ('1', '2', 'Adobe Acrobat Pro', '2024.005', '2027-06-30', '2028-06-30', NULL, '1', '2026-01-01 00:00:01');
+
+INSERT INTO `software` (`company_id`, `id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `active`, `created_at`) VALUES ('1', '3', 'Google Chrome Enterprise', 'stable', DATE_ADD(CURDATE(), INTERVAL 20 DAY), DATE_ADD(CURDATE(), INTERVAL 50 DAY), NULL, '1', '2026-01-01 00:00:01');
+
+INSERT INTO `equipment_software` (`company_id`, `equipment_id`, `software_id`, `active`, `created_at`) VALUES ('1', '1', '1', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', '4 GB', '2026-01-01 00:00:01');
 
@@ -2252,11 +2268,13 @@ INSERT IGNORE INTO `workstation_device_types` (`company_id`, `name`, `created_at
 
 INSERT IGNORE INTO `workstation_modes` (`company_id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) SELECT c.`id`, t.`mode_name`, t.`mode_code`, t.`description`, t.`monitor_count`, t.`has_keyboard_mouse`, t.`pos`, t.`active`, '2026-01-01 00:00:01' FROM `workstation_modes` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
-INSERT IGNORE INTO `workstation_office` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `workstation_office` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `workstation_office` (`company_id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) SELECT c.`id`, t.`name`, t.`build`, t.`eol_date`, t.`extended_date`, t.`esu_date`, '2026-01-01 00:00:01' FROM `workstation_office` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `workstation_os_types` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `workstation_os_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
-INSERT IGNORE INTO `workstation_os_versions` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `workstation_os_versions` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `workstation_os_versions` (`company_id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `created_at`) SELECT c.`id`, t.`name`, t.`build`, t.`eol_date`, t.`extended_date`, t.`esu_date`, '2026-01-01 00:00:01' FROM `workstation_os_versions` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `software` (`company_id`, `name`, `build`, `eol_date`, `extended_date`, `esu_date`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`build`, t.`eol_date`, t.`extended_date`, t.`esu_date`, t.`active`, '2026-01-01 00:00:01' FROM `software` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `workstation_ram` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `workstation_ram` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
@@ -2281,7 +2299,7 @@ WHERE t.`company_id` = @replicate_source_company_id
   );
 
 -- Why: department_id and supplier_id resolve by name on the target company; unmatched or NULL source rows stay NULL (same FK remap pattern as location/rack). assigned_to_employee_id stays NULL (no employee remap).
-INSERT IGNORE INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_office_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `rj45_speed_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `created_at`, `updated_at`)
+INSERT IGNORE INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `eol_date`, `extended_date`, `esu_date`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_office_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `rj45_speed_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `created_at`, `updated_at`)
 SELECT
     c.`id`,
     COALESCE(et_target.`id`, et_fallback.`id`),
@@ -2293,7 +2311,7 @@ SELECT
     supp_target.`id`,
     NULL,
     COALESCE(es_target.`id`, es_fallback.`id`),
-    t.`purchase_date`, t.`purchase_cost`, t.`warranty_expiry`, t.`certificate_expiry`,
+    t.`purchase_date`, t.`purchase_cost`, t.`warranty_expiry`, t.`certificate_expiry`, t.`eol_date`, t.`extended_date`, t.`esu_date`,
     wt_target.`id`,
     pdt_target.`id`,
     t.`printer_color_capable`,
@@ -2374,6 +2392,17 @@ LEFT JOIN `equipment_environment` env_target ON env_target.`company_id` = c.`id`
 WHERE t.`company_id` = @replicate_source_company_id
   AND COALESCE(et_target.`id`, et_fallback.`id`) IS NOT NULL
   AND COALESCE(es_target.`id`, es_fallback.`id`) IS NOT NULL;
+
+INSERT IGNORE INTO `equipment_software` (`company_id`, `equipment_id`, `software_id`, `active`, `created_at`)
+SELECT c.`id`, eq_target.`id`, sw_target.`id`, 1, '2026-01-01 00:00:01'
+FROM `equipment_software` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+JOIN `equipment` eq_source ON eq_source.`id` = t.`equipment_id`
+JOIN `equipment` eq_target ON eq_target.`company_id` = c.`id` AND eq_target.`name` = eq_source.`name`
+JOIN `software` sw_source ON sw_source.`id` = t.`software_id`
+JOIN `software` sw_target ON sw_target.`company_id` = c.`id` AND sw_target.`name` = sw_source.`name`
+WHERE t.`company_id` = @replicate_source_company_id
+  AND t.`deleted_at` IS NULL;
 
 INSERT IGNORE INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status_id`, `connected_to`, `vlan_id`, `speed_id`, `rj45_speed_id`, `poe_id`, `cable_color`, `hex_color`, `notes`, `created_at`, `updated_at`) SELECT c.`id`, t.`position_id`, t.`port_no`, t.`port_type`, t.`label`, t.`status_id`, t.`connected_to`, t.`vlan_id`, t.`speed_id`, t.`rj45_speed_id`, t.`poe_id`, t.`cable_color`, t.`hex_color`, t.`notes`, '2026-01-01 00:00:01', t.`updated_at` FROM `idf_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 

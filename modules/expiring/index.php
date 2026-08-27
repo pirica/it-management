@@ -84,6 +84,76 @@ if (!function_exists('expiring_display_date')) {
     }
 }
 
+if (!function_exists('expiring_hydrate_dated_rows')) {
+    /**
+     * @param array<int,array<string,mixed>> $rawRows
+     * @param array{expired:int,unknown:int,lt30:int,gt60:int} $summary
+     * @return array<int,array<string,mixed>>
+     */
+    function expiring_hydrate_dated_rows(array $rawRows, array &$summary, $titleFallback = 'Item')
+    {
+        $today = new DateTimeImmutable('today');
+        $out = [];
+        foreach ($rawRows as $row) {
+            $expiryRaw = trim((string)($row['expiry_date'] ?? ''));
+            if ($expiryRaw === '') {
+                continue;
+            }
+            $purchaseRaw = trim((string)($row['purchase_date'] ?? ''));
+            $expiryDate = expiring_parse_date($expiryRaw);
+            $purchaseDate = expiring_parse_date($purchaseRaw);
+            $countdownText = 'Date format not recognized';
+            $termText = '—';
+            $daysLeft = 0;
+            if ($expiryDate instanceof DateTimeImmutable) {
+                $todayDuration = expiring_format_duration($today, $expiryDate);
+                $countdownText = $todayDuration['invert'] ? ('Expired ' . $todayDuration['text'] . ' ago') : ('In ' . $todayDuration['text']);
+                $daysLeft = (int)$today->diff($expiryDate)->format('%r%a');
+                if ($purchaseDate instanceof DateTimeImmutable) {
+                    $termDuration = expiring_format_duration($purchaseDate, $expiryDate);
+                    $termText = $termDuration['text'];
+                }
+            }
+            $equipmentTitle = trim((string)($row['name'] ?? ''));
+            if ($equipmentTitle === '') {
+                $equipmentTitle = trim((string)($row['hostname'] ?? ''));
+            }
+            if ($equipmentTitle === '') {
+                $equipmentTitle = $titleFallback . ' #' . (int)($row['id'] ?? 0);
+            }
+            $out[] = [
+                'id' => (int)($row['id'] ?? 0),
+                'assigned_to_employee_id' => $row['assigned_to_employee_id'] ?? null,
+                'created_by' => $row['created_by'] ?? null,
+                'equipment_title' => $equipmentTitle,
+                'hostname' => (string)($row['hostname'] ?? ''),
+                'equipment_type' => (string)($row['equipment_type'] ?? ($row['catalog_kind'] ?? '')),
+                'warranty_type' => (string)($row['warranty_type'] ?? ''),
+                'serial_number' => (string)($row['serial_number'] ?? ''),
+                'purchase_date' => expiring_display_date($purchaseRaw),
+                'expiry_date' => expiring_display_date($expiryRaw),
+                'days_left' => $daysLeft,
+                'has_valid_expiry' => ($expiryDate instanceof DateTimeImmutable),
+                'countdown_text' => $countdownText,
+                'term_text' => $termText,
+                'affected_count' => (int)($row['affected_count'] ?? 0),
+                'build' => (string)($row['build'] ?? ''),
+                'view_href' => (string)($row['view_href'] ?? ''),
+            ];
+            if ($expiryDate instanceof DateTimeImmutable) {
+                if ($daysLeft < 0) {
+                    $summary['expired']++;
+                } elseif ($daysLeft < 30) {
+                    $summary['lt30']++;
+                } elseif ($daysLeft > 60) {
+                    $summary['gt60']++;
+                }
+            }
+        }
+        return $out;
+    }
+}
+
 $company_id = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
 $uiConfig = function_exists('itm_get_ui_configuration') ? itm_get_ui_configuration($conn, $company_id, isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : null) : [];
 
@@ -131,6 +201,12 @@ $expirySummaries = [
     'certificate_expiry' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
     'warranty_expiry' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
     'alerts_expiry' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
+    'hardware_eol' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
+    'hardware_extended' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
+    'hardware_esu' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
+    'catalog_eol' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
+    'catalog_extended' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
+    'catalog_esu' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
 ];
 
 if ($company_id > 0) {
@@ -337,6 +413,42 @@ if ($company_id > 0) {
     unset($targetRows);
 }
 
+$hardwareEolRows = [];
+$hardwareExtendedRows = [];
+$hardwareEsuRows = [];
+$catalogEolRows = [];
+$catalogExtendedRows = [];
+$catalogEsuRows = [];
+if ($company_id > 0 && function_exists('itm_software_eol_tables_ready') && itm_software_eol_tables_ready($conn)) {
+    $hardwareEolRows = expiring_hydrate_dated_rows(
+        itm_software_eol_expiring_hardware_rows($conn, $company_id, 'eol_date'),
+        $expirySummaries['hardware_eol']
+    );
+    $hardwareExtendedRows = expiring_hydrate_dated_rows(
+        itm_software_eol_expiring_hardware_rows($conn, $company_id, 'extended_date'),
+        $expirySummaries['hardware_extended']
+    );
+    $hardwareEsuRows = expiring_hydrate_dated_rows(
+        itm_software_eol_expiring_hardware_rows($conn, $company_id, 'esu_date'),
+        $expirySummaries['hardware_esu']
+    );
+    $catalogEolRows = expiring_hydrate_dated_rows(
+        itm_software_eol_expiring_catalog_rows($conn, $company_id, 'eol_date'),
+        $expirySummaries['catalog_eol'],
+        'Catalog'
+    );
+    $catalogExtendedRows = expiring_hydrate_dated_rows(
+        itm_software_eol_expiring_catalog_rows($conn, $company_id, 'extended_date'),
+        $expirySummaries['catalog_extended'],
+        'Catalog'
+    );
+    $catalogEsuRows = expiring_hydrate_dated_rows(
+        itm_software_eol_expiring_catalog_rows($conn, $company_id, 'esu_date'),
+        $expirySummaries['catalog_esu'],
+        'Catalog'
+    );
+}
+
 $moduleTitle = itm_sidebar_label_for_module('expiring');
 if ($moduleTitle === '') {
     $moduleTitle = '⏳ Expiring Equipment';
@@ -415,33 +527,81 @@ if (!isset($crud_title)) {
                 [
                     'emoji' => '📜',
                     'title' => 'Certificate Expiry',
+                    'kind' => 'equipment',
+                    'summary' => 'certificate_expiry',
                     'rows' => $certificateRows,
                     'empty' => 'No certificate expiration dates were found for this company.',
                 ],
                 [
                     'emoji' => '🛡️',
                     'title' => 'Warranty Expiry',
+                    'kind' => 'equipment',
+                    'summary' => 'warranty_expiry',
                     'rows' => $warrantyRows,
                     'empty' => 'No warranty expiration dates were found for this company.',
                 ],
                 [
                     'emoji' => '📢',
                     'title' => 'Alerts Expiry',
+                    'kind' => 'alert',
+                    'summary' => 'alerts_expiry',
                     'rows' => $alertRows,
                     'empty' => 'No expiring alerts were found for this company.',
+                ],
+                [
+                    'emoji' => '🖥️',
+                    'title' => 'Hardware EOL',
+                    'kind' => 'equipment',
+                    'summary' => 'hardware_eol',
+                    'rows' => $hardwareEolRows,
+                    'empty' => 'No hardware EOL dates were found for this company.',
+                ],
+                [
+                    'emoji' => '🖥️',
+                    'title' => 'Hardware Extended',
+                    'kind' => 'equipment',
+                    'summary' => 'hardware_extended',
+                    'rows' => $hardwareExtendedRows,
+                    'empty' => 'No hardware Extended dates were found for this company.',
+                ],
+                [
+                    'emoji' => '🖥️',
+                    'title' => 'Hardware ESU',
+                    'kind' => 'equipment',
+                    'summary' => 'hardware_esu',
+                    'rows' => $hardwareEsuRows,
+                    'empty' => 'No hardware ESU dates were found for this company.',
+                ],
+                [
+                    'emoji' => '💿',
+                    'title' => 'Catalog EOL',
+                    'kind' => 'catalog',
+                    'summary' => 'catalog_eol',
+                    'rows' => $catalogEolRows,
+                    'empty' => 'No catalog EOL dates were found for this company.',
+                ],
+                [
+                    'emoji' => '💿',
+                    'title' => 'Catalog Extended',
+                    'kind' => 'catalog',
+                    'summary' => 'catalog_extended',
+                    'rows' => $catalogExtendedRows,
+                    'empty' => 'No catalog Extended dates were found for this company.',
+                ],
+                [
+                    'emoji' => '💿',
+                    'title' => 'Catalog ESU',
+                    'kind' => 'catalog',
+                    'summary' => 'catalog_esu',
+                    'rows' => $catalogEsuRows,
+                    'empty' => 'No catalog ESU dates were found for this company.',
                 ],
             ];
             ?>
 
             <?php foreach ($sections as $section): ?>
                 <?php
-                if ($section['title'] === 'Certificate Expiry') {
-                    $summaryField = 'certificate_expiry';
-                } elseif ($section['title'] === 'Warranty Expiry') {
-                    $summaryField = 'warranty_expiry';
-                } else {
-                    $summaryField = 'alerts_expiry';
-                }
+                $summaryField = (string)($section['summary'] ?? 'alerts_expiry');
                 $summary = $expirySummaries[$summaryField] ?? ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0];
                 ?>
                 <div class="card" style="margin-top: 16px;">
@@ -477,6 +637,46 @@ if (!isset($crud_title)) {
                         <p style="margin-top: 14px;"><?php echo sanitize($section['empty']); ?></p>
                     <?php else: ?>
                         <div class="table-responsive" style="margin-top: 12px;">
+                            <?php if (($section['kind'] ?? '') === 'catalog'): ?>
+                            <table class="table" data-itm-db-import-endpoint="index.php">
+                                <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Kind</th>
+                                    <th>Build</th>
+                                    <th>Date</th>
+                                    <th>Affected equipment</th>
+                                    <th>Time Left<br><small>(today ➜ date)</small></th>
+                                    <th>Status</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($section['rows'] as $row): ?>
+                                    <tr>
+                                        <td>
+                                            <?php if (trim((string)($row['view_href'] ?? '')) !== ''): ?>
+                                                <a class="btn-link" style="text-decoration: none;" href="<?php echo sanitize((string)$row['view_href']); ?>"><?php echo sanitize($row['equipment_title']); ?></a>
+                                            <?php else: ?>
+                                                <?php echo sanitize($row['equipment_title']); ?>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo sanitize($row['equipment_type'] !== '' ? $row['equipment_type'] : '—'); ?></td>
+                                        <td><?php echo sanitize($row['build'] !== '' ? $row['build'] : '—'); ?></td>
+                                        <td><strong><?php echo sanitize(itm_format_date_display($row['expiry_date'])); ?></strong></td>
+                                        <td><?php echo (int)$row['affected_count']; ?></td>
+                                        <td><?php echo sanitize($row['countdown_text']); ?></td>
+                                        <td>
+                                            <?php if (!empty($row['has_valid_expiry'])): ?>
+                                                <?php echo expiring_days_left_badge((int)$row['days_left']); ?>
+                                            <?php else: ?>
+                                                <span class="badge badge-warning">Check date</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <?php else: ?>
                             <table class="table" data-itm-db-import-endpoint="index.php">
                                 <thead>
                                 <tr>
@@ -534,6 +734,7 @@ if (!isset($crud_title)) {
                                 <?php endforeach; ?>
                                 </tbody>
                             </table>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>
