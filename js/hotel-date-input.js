@@ -127,6 +127,10 @@
     document.querySelectorAll('.hb-hotel-date-field').forEach(bindField);
 
     document.querySelectorAll('.hb-hotel-date-open').forEach(function (btn) {
+        if (btn.getAttribute('data-hb-hotel-date-open-bound') === '1') {
+            return;
+        }
+        btn.setAttribute('data-hb-hotel-date-open-bound', '1');
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             event.stopPropagation();
