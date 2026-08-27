@@ -44,4 +44,11 @@ final class UiLocaleFormatTest extends TestCase
         $this->assertSame('european1', $values['ui_datetime_format_default']);
         $this->assertSame('17/08/2026 22:58', itm_ui_locale_format_datetime_display('2026-08-17 22:58:00', $values));
     }
+
+    public function testMoneyFieldNameHeuristic(): void
+    {
+        $this->assertTrue(itm_is_money_field_name('price'));
+        $this->assertTrue(itm_is_money_field_name('purchase_cost'));
+        $this->assertFalse(itm_is_money_field_name('quantity'));
+    }
 }

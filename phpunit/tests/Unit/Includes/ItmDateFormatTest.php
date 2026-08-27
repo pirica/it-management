@@ -46,6 +46,48 @@ final class ItmDateFormatTest extends TestCase
         $this->assertSame('18/Jun/2026', itm_format_cell_scalar_display('termination_date', '2026-06-18'));
     }
 
+    public function testCellScalarDisplayFormatsMoneyFieldsWhenLocaleHelperLoaded(): void
+    {
+        if (!function_exists('itm_ui_locale_format_money_display')) {
+            require_once __DIR__ . '/../../../../includes/itm_ui_locale_format.php';
+        }
+        $saved = $GLOBALS['ui_config'] ?? null;
+        $GLOBALS['ui_config'] = [
+            'ui_money_symbol' => 'EUR',
+            'ui_money_symbol_suffix' => 1,
+            'ui_money_symbol_prefix' => 0,
+        ];
+        $this->assertSame('69.50€', itm_format_cell_scalar_display('price', '69.5'));
+        $GLOBALS['ui_config'] = [
+            'ui_money_symbol' => 'EUR',
+            'ui_money_symbol_suffix' => 0,
+            'ui_money_symbol_prefix' => 1,
+        ];
+        $this->assertSame('€69.50', itm_format_cell_scalar_display('purchase_cost', '69.5'));
+        if ($saved !== null) {
+            $GLOBALS['ui_config'] = $saved;
+        } else {
+            unset($GLOBALS['ui_config']);
+        }
+    }
+
+    public function testFormatDateDisplayRespectsUiConfigDateFormat(): void
+    {
+        if (!function_exists('itm_ui_locale_format_date_display')) {
+            require_once __DIR__ . '/../../../../includes/itm_ui_locale_format.php';
+        }
+        $saved = $GLOBALS['ui_config'] ?? null;
+        $GLOBALS['ui_config'] = ['ui_date_format' => 'us_mmddyyyy'];
+        $this->assertSame('08/17/2026', itm_format_date_display('2026-08-17'));
+        $GLOBALS['ui_config'] = ['ui_date_format' => 'european_ddmmmyyyy'];
+        $this->assertSame('17/Aug/2026', itm_format_date_display('2026-08-17'));
+        if ($saved !== null) {
+            $GLOBALS['ui_config'] = $saved;
+        } else {
+            unset($GLOBALS['ui_config']);
+        }
+    }
+
     public function testIsoWeekBoundsMatchPhpWeekForMidYearDate(): void
     {
         $bounds = itm_iso_week_bounds(2026, 25);

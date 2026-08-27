@@ -372,6 +372,13 @@ if (!function_exists('itm_format_cell_scalar_display')) {
             return itm_format_date_display($text);
         }
 
+        if (function_exists('itm_is_money_field_name')
+            && itm_is_money_field_name($fieldName)
+            && is_numeric($text)
+            && function_exists('itm_ui_locale_format_money_display')) {
+            return itm_ui_locale_format_money_display((float) $text);
+        }
+
         return $text;
     }
 }

@@ -255,6 +255,39 @@ if (!function_exists('itm_ui_locale_format_datetime_display')) {
     }
 }
 
+if (!function_exists('itm_is_money_field_name')) {
+    /**
+     * Heuristic: list/view decimal columns that represent currency amounts (not counts).
+     */
+    function itm_is_money_field_name($fieldName)
+    {
+        $field = strtolower(trim((string) $fieldName));
+        if ($field === '') {
+            return false;
+        }
+        if (in_array($field, [
+            'price',
+            'purchase_cost',
+            'amount',
+            'subtotal',
+            'total',
+            'cost',
+            'salvage_value',
+            'unit_cost',
+            'line_total',
+            'total_amount',
+            'unit_price',
+        ], true)) {
+            return true;
+        }
+        if (substr($field, -6) === '_price' || substr($field, -5) === '_cost' || substr($field, -7) === '_amount') {
+            return true;
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('itm_ui_locale_format_money_with_options')) {
     function itm_ui_locale_format_money_with_options($amount, array $moneyOptions, $style = 'decimal')
     {
