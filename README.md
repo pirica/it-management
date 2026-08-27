@@ -25,6 +25,7 @@
 - ✅ In-app Notification Center — header 🔔 with unread count, dropdown inbox, and digest email for assignments and workflow events
 - ✅ Appointments — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
 - ✅ Saved report views — Save Tickets/Equipment/Expenses list filters and columns; **My reports** on Reports Hub with export, share, and optional email schedule (`docs/SAVED_REPORT_VIEWS.md`)
+- ✅ Settings UI locale — Per-employee money symbol (suffix/prefix) and portal date/time/datetime display formats on `ui_configuration` ([Settings](http://localhost/it-management/modules/settings/index.php)); list/view rendering via `itm_format_cell_scalar_display()` and `includes/itm_ui_locale_format.php` (separate from hotel guest portal formats)
 - ✅ Ticket surveys — Configurable post-ticket questionnaires, public `ticket-survey.php`, survey dashboard, list filters, automation/webhooks (`docs/TICKET_SURVEYS.md`)
 - ✅ Hotel Booking — Public guest portal at `booking/` and Admin **🏨 Hospitality** modules (`docs/BOOKING.md`)
 - ✅ Hotel Booking Distribution — Partner channel API (JSON/OpenTravel XML, availability, book/modify/cancel, ARI push/pull) with per-channel keys (`docs/HOTEL_BOOKING_DISTRIBUTION.md`)
@@ -343,6 +344,18 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 
 <p align="center">Run the suite via <code>scripts/run_tests.php</code> (browser menu or CLI). PHPUnit <strong>requires</strong> these PHP extensions on the <strong>CLI</strong> <code>php.exe</code>: <code>dom</code>, <code>json</code>, <code>libxml</code>, <code>mbstring</code>, <code>tokenizer</code>, <code>xml</code>, <code>xmlwriter</code>. <strong>HTML coverage</strong> additionally needs <strong>Xdebug</strong> or <strong>PCOV</strong>. On Dunebox (<code>D:\dunebox-v1.0.6</code>), run once: <code>powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1</code> (copies Xdebug from Laragon portable). Details: <code>scripts/SCRIPTS.md</code> → PHPUnit test runner.</p>
 
+<h4 align="center">Settings UI locale regression</h4>
+
+<p align="center">After changing <code>ui_configuration</code> locale columns, <code>includes/itm_ui_locale_format.php</code>, Settings form save wiring, or list/view date/money rendering:</p>
+
+| Step | Command / link |
+| --- | --- |
+| Locale regression | <code>php scripts/verify_ui_locale_format.php</code> or [verify_ui_locale_format.php?run=1](http://localhost/it-management/scripts/verify_ui_locale_format.php?run=1) (Admin) |
+| PHPUnit (locale) | <code>ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php --filter 'UiLocaleFormat\|ItmDateFormat'</code> |
+| Manual check | [modules/settings/index.php](http://localhost/it-management/modules/settings/index.php) — change money symbol / date format, save, confirm list modules (e.g. License Management price, Equipment purchase cost) reflect the new format |
+
+<p align="center">Employee portal formats are stored on <code>ui_configuration</code> per user. Hotel guest portal date/time uses <code>hotel_booking_settings.portal_*</code> — not these keys.</p>
+
 For an existing database, apply the Floor Plans tables from `db/01_schema.sql` (`floor_plan_folders`, `floor_plan_tags`, `floor_plans`, `floor_plan_item_tags`) if they are not already present.
 
 <h2 align="center">Modules</h2>
@@ -363,7 +376,7 @@ For an existing database, apply the Floor Plans tables from `db/01_schema.sql` (
 | System Access | `modules/system_access/` | System-level access records |
 | Company Module Access | `modules/company_module_access/` | Per-company module enable/disable matrix ([architectural map](#company-module-access-management)) |
 | Roles & Permissions | `modules/roles_permissions/` | Role sidebar and six-column RBAC permission matrix |
-| Settings | `modules/settings/` | UI configuration, API tier, and global toggles |
+| Settings | `modules/settings/` | UI configuration (layout toggles, **locale money/date/time display**, API tier, chatbot, audit/error reporting) — [open Settings](http://localhost/it-management/modules/settings/index.php) (Admin session) |
 | UI Configuration | `modules/ui_configuration/` | Per-user layout and integration settings |
 | Access Levels | `modules/access_levels/` | Access-level reference data |
 | Modules Registry | `modules/modules_registry/` | Global module catalogue |
