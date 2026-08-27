@@ -5,6 +5,7 @@ $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_patches_updates_integrations.php';
 require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 itm_crud_record_share_handle_ajax_request($conn, 'patches_updates');
 
@@ -1233,6 +1234,13 @@ if (!isset($crud_title)) {
                         <span></span>
                     <?php endif; ?>
                 </div>
+            <?php
+            itm_patches_updates_render_product_gaps_panel(
+                $conn,
+                (int)($company_id ?? 0),
+                (int)($_SESSION['employee_id'] ?? 0)
+            );
+            ?>
             <?php if ($showBulkActions): ?>
             <div class="card" style="margin-bottom:16px;">
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">

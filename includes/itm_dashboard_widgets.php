@@ -25,6 +25,14 @@ if (!function_exists('itm_dashboard_widget_registry')) {
                 'sort_order' => 20,
                 'requires_it' => false,
             ],
+            'patches_due_30d' => [
+                'slug' => 'patches_due_30d',
+                'title' => 'Patches due in 30 days',
+                'icon' => '🛠️',
+                'module_slug' => 'patches_updates',
+                'sort_order' => 25,
+                'requires_it' => false,
+            ],
             'visitors_today' => [
                 'slug' => 'visitors_today',
                 'title' => "Today's visitors",
@@ -228,6 +236,8 @@ if (!function_exists('itm_dashboard_widget_build_deep_link')) {
                 return $base . 'modules/tickets/index.php?assigned_to_employee_id=' . $employeeId . '&open_only=1';
             case 'expiring_30d':
                 return $base . 'modules/expiring/index.php';
+            case 'patches_due_30d':
+                return $base . 'modules/patches_updates/index.php?sort=due_date&dir=ASC';
             case 'visitors_today':
                 return $base . 'modules/visitors_access_log/index.php';
             case 'backup_tape_gaps':
@@ -264,6 +274,15 @@ if (!function_exists('itm_dashboard_widget_fetch_data')) {
                 return [
                     'metric' => $metric,
                     'subtitle' => 'Certificate or warranty within 30 days',
+                    'sparkline' => $sparkline,
+                ];
+            case 'patches_due_30d':
+                require_once __DIR__ . '/itm_patches_updates_integrations.php';
+                $metric = itm_patches_updates_due_within_days_count($conn, $companyId, 30);
+                $sparkline = itm_patches_updates_due_trend($conn, $companyId);
+                return [
+                    'metric' => $metric,
+                    'subtitle' => 'Open patch rows with due date within 30 days',
                     'sparkline' => $sparkline,
                 ];
             case 'visitors_today':

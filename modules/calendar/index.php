@@ -349,27 +349,22 @@ if ($stmt) {
 
 }
 
-// Patches Updates
+// Patches Updates — open rows with due_date only (shared integration helper)
 if (has_module_access($conn, (int)$company_id, 'patches_updates')) {
-$sql_patches = "SELECT id, hostname, due_date FROM patches_updates WHERE company_id = ? AND due_date BETWEEN ? AND ?";
-$stmt = mysqli_prepare($conn, $sql_patches);
-if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_range, $end_range);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    while ($row = mysqli_fetch_assoc($res)) {
-        $d = $row['due_date'];
+    require_once ROOT_PATH . 'includes/itm_patches_updates_integrations.php';
+    foreach (itm_patches_updates_list_calendar_rows($conn, (int)$company_id, $start_range, $end_range) as $row) {
+        $d = (string)($row['due_date'] ?? '');
+        if ($d === '') {
+            continue;
+        }
         $events_data[$d][] = [
             'type' => 'patch',
-            'title' => "Patch: " . ($row['hostname'] ?: 'Unspecified Host'),
+            'title' => 'Patch: ' . ((string)($row['hostname'] ?? '') !== '' ? (string)$row['hostname'] : 'Unspecified Host'),
             'color' => '#8b5cf6',
             'icon' => '🛠️',
-            'id' => $row['id']
+            'id' => (int)($row['id'] ?? 0),
         ];
     }
-    mysqli_stmt_close($stmt);
-}
-
 }
 
 // Change requests (scheduled IT changes)

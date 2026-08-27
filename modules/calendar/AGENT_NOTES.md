@@ -9,7 +9,7 @@ Central calendar grid aggregating time-sensitive records from multiple modules i
 - **alerts** — only rows with **`end_datetime`** set.
 - **tickets** — tasks with **`due_date`**.
 - **equipment** — **`certificate_expiry`** and **`warranty_expiry`**.
-- **patches_updates** — patch/update schedule dates (when configured in calendar sync).
+- **patches_updates** — open patch rows with **`due_date`** (non-closed status, not soft-deleted) via `includes/itm_patches_updates_integrations.php` → `itm_patches_updates_list_calendar_rows()`.
 
 ## 3. Required Relationships
 - All sources → **companies** (tenant filter on every query).
