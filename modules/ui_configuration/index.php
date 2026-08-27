@@ -229,6 +229,12 @@ function cr_render_cell_value($table, $field, $value) {
         'enable_auto_scaffolding',
         'api_key_is_active',
         'rate_limit_enabled',
+        'ui_money_symbol_suffix',
+        'ui_money_symbol_prefix',
+        'ui_datetime_european1_enabled',
+        'ui_datetime_european2_enabled',
+        'ui_datetime_iso_enabled',
+        'ui_datetime_readable_enabled',
     ], true)) {
         return ((int)$value === 1) ? '✅' : '❌';
     }

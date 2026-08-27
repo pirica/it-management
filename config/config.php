@@ -331,6 +331,7 @@ itm_ensure_upload_directory(itm_files_storage_root(), 'deny_http');
 
 // Load secondary configuration and library files
 require_once ROOT_PATH . 'includes/ui_config.php';
+require_once ROOT_PATH . 'includes/itm_ui_locale_format.php';
 require_once ROOT_PATH . 'includes/itm_api_rate_limit.php';
 require_once ROOT_PATH . 'includes/itm_login_attempt_identifier.php';
 require_once ROOT_PATH . 'includes/itm_ldap_auth.php';

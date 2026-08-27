@@ -1051,6 +1051,9 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/verify_dashboard_widgets.php` | Regression: role-aware smart dashboard widgets (`includes/itm_dashboard_widgets.php`, queries, RBAC gates, `open_only` tickets filter, `dashboard_widget_prefs` save/resolve, live metric SQL); optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_admin_page_gate.php` | Regression: **admin.php** `itm_is_admin()` gate and redirect to `dashboard.php` |
 | `php scripts/verify_settings_admin_buttons.php` | Regression: Settings **ADMIN** / **SCRIPTS** toolbar (admin-only), **All roles** chatbot block, **System (Admin Role only)** flags, and non-admin save preservation |
+| `php scripts/verify_ui_locale_format.php` | Regression: `ui_configuration` locale columns (money + date/time), Settings UI Configuration form wiring, `includes/itm_ui_locale_format.php` display helpers |
+
+Run `verify_ui_locale_format.php` when changing Settings locale UI, `includes/itm_ui_locale_format.php`, `includes/ui_config.php` locale save/load, `ui_configuration` locale columns in `db/01_schema.sql`, or `itm_format_date_display()` / `itm_format_datetime_display()` delegation.
 
 Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `js/roles-permissions-matrix.js`, `includes/itm_role_module_permissions.php`, or `employee_roles` / `role_module_permissions` / `role_hierarchy` schema in `db/03_triggers.sql`.
 

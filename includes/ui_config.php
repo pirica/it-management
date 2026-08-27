@@ -1540,6 +1540,16 @@ function itm_ui_config_defaults() {
         'equipment_type_sidebar_visibility' => [],
         'module_icon_overrides' => [],
         'dashboard_widget_prefs' => [],
+        'ui_money_symbol' => 'EUR',
+        'ui_money_symbol_suffix' => 1,
+        'ui_money_symbol_prefix' => 0,
+        'ui_date_format' => 'european_ddmmmyyyy',
+        'ui_time_format' => 'h24',
+        'ui_datetime_european1_enabled' => 0,
+        'ui_datetime_european2_enabled' => 1,
+        'ui_datetime_iso_enabled' => 0,
+        'ui_datetime_readable_enabled' => 0,
+        'ui_datetime_format_default' => 'european2',
         'sidebar_visibility' => itm_default_sidebar_visibility(),
         'sidebar_main_order' => itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
@@ -1666,6 +1676,16 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `equipment_type_sidebar_visibility` LONGTEXT NULL,
         `module_icon_overrides` LONGTEXT NULL,
         `dashboard_widget_prefs` LONGTEXT NULL,
+        `ui_money_symbol` VARCHAR(3) NOT NULL DEFAULT 'EUR',
+        `ui_money_symbol_suffix` TINYINT(1) NOT NULL DEFAULT 1,
+        `ui_money_symbol_prefix` TINYINT(1) NOT NULL DEFAULT 0,
+        `ui_date_format` VARCHAR(32) NOT NULL DEFAULT 'european_ddmmmyyyy',
+        `ui_time_format` VARCHAR(8) NOT NULL DEFAULT 'h24',
+        `ui_datetime_european1_enabled` TINYINT(1) NOT NULL DEFAULT 0,
+        `ui_datetime_european2_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+        `ui_datetime_iso_enabled` TINYINT(1) NOT NULL DEFAULT 0,
+        `ui_datetime_readable_enabled` TINYINT(1) NOT NULL DEFAULT 0,
+        `ui_datetime_format_default` VARCHAR(16) NOT NULL DEFAULT 'european2',
         `api_key` VARCHAR(191) NOT NULL DEFAULT '',
         `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1,
         `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL,
@@ -1716,7 +1736,17 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `favicon_path`",
         'module_icon_overrides' => "ALTER TABLE `ui_configuration` ADD COLUMN `module_icon_overrides` LONGTEXT NULL AFTER `equipment_type_sidebar_visibility`",
         'dashboard_widget_prefs' => "ALTER TABLE `ui_configuration` ADD COLUMN `dashboard_widget_prefs` LONGTEXT NULL AFTER `module_icon_overrides`",
-        'api_key' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key` VARCHAR(191) NOT NULL DEFAULT '' AFTER `dashboard_widget_prefs`",
+        'ui_money_symbol' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_money_symbol` VARCHAR(3) NOT NULL DEFAULT 'EUR' AFTER `dashboard_widget_prefs`",
+        'ui_money_symbol_suffix' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_money_symbol_suffix` TINYINT(1) NOT NULL DEFAULT 1 AFTER `ui_money_symbol`",
+        'ui_money_symbol_prefix' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_money_symbol_prefix` TINYINT(1) NOT NULL DEFAULT 0 AFTER `ui_money_symbol_suffix`",
+        'ui_date_format' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_date_format` VARCHAR(32) NOT NULL DEFAULT 'european_ddmmmyyyy' AFTER `ui_money_symbol_prefix`",
+        'ui_time_format' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_time_format` VARCHAR(8) NOT NULL DEFAULT 'h24' AFTER `ui_date_format`",
+        'ui_datetime_european1_enabled' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_datetime_european1_enabled` TINYINT(1) NOT NULL DEFAULT 0 AFTER `ui_time_format`",
+        'ui_datetime_european2_enabled' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_datetime_european2_enabled` TINYINT(1) NOT NULL DEFAULT 1 AFTER `ui_datetime_european1_enabled`",
+        'ui_datetime_iso_enabled' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_datetime_iso_enabled` TINYINT(1) NOT NULL DEFAULT 0 AFTER `ui_datetime_european2_enabled`",
+        'ui_datetime_readable_enabled' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_datetime_readable_enabled` TINYINT(1) NOT NULL DEFAULT 0 AFTER `ui_datetime_iso_enabled`",
+        'ui_datetime_format_default' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_datetime_format_default` VARCHAR(16) NOT NULL DEFAULT 'european2' AFTER `ui_datetime_readable_enabled`",
+        'api_key' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key` VARCHAR(191) NOT NULL DEFAULT '' AFTER `ui_datetime_format_default`",
         'api_key_is_active' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `api_key`",
         'api_key_last_used_at' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL AFTER `api_key_is_active`",
         'rate_limit_window_start' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_window_start` INT NOT NULL DEFAULT 0 AFTER `api_key_last_used_at`",
@@ -1874,7 +1904,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null, $clearCac
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_sidebar_section_collapse, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, dashboard_widget_prefs, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_sidebar_section_collapse, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, dashboard_widget_prefs, ui_money_symbol, ui_money_symbol_suffix, ui_money_symbol_prefix, ui_date_format, ui_time_format, ui_datetime_european1_enabled, ui_datetime_european2_enabled, ui_datetime_iso_enabled, ui_datetime_readable_enabled, ui_datetime_format_default, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -1977,6 +2007,14 @@ function itm_normalize_ui_configuration($values) {
     $values['tier'] = function_exists('itm_api_normalize_tier')
         ? itm_api_normalize_tier($values['tier'] ?? 'Free')
         : 'Free';
+
+    if (!function_exists('itm_ui_locale_normalize_post_values')) {
+        require_once __DIR__ . '/itm_ui_locale_format.php';
+    }
+    $localeNormalized = itm_ui_locale_normalize_post_values($values);
+    foreach ($localeNormalized['values'] as $localeKey => $localeValue) {
+        $values[$localeKey] = $localeValue;
+    }
 
     return $values;
 }
@@ -2612,8 +2650,8 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
 
     $config = itm_normalize_ui_configuration($input);
 
-    $sql = 'INSERT INTO ui_configuration (company_id, employee_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    $sql = 'INSERT INTO ui_configuration (company_id, employee_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, ui_money_symbol, ui_money_symbol_suffix, ui_money_symbol_prefix, ui_date_format, ui_time_format, ui_datetime_european1_enabled, ui_datetime_european2_enabled, ui_datetime_iso_enabled, ui_datetime_readable_enabled, ui_datetime_format_default)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 table_actions_position = VALUES(table_actions_position),
                 new_button_position = VALUES(new_button_position),
@@ -2627,7 +2665,17 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
                 app_name = VALUES(app_name),
                 favicon_path = VALUES(favicon_path),
                 equipment_type_sidebar_visibility = VALUES(equipment_type_sidebar_visibility),
-                module_icon_overrides = VALUES(module_icon_overrides)';
+                module_icon_overrides = VALUES(module_icon_overrides),
+                ui_money_symbol = VALUES(ui_money_symbol),
+                ui_money_symbol_suffix = VALUES(ui_money_symbol_suffix),
+                ui_money_symbol_prefix = VALUES(ui_money_symbol_prefix),
+                ui_date_format = VALUES(ui_date_format),
+                ui_time_format = VALUES(ui_time_format),
+                ui_datetime_european1_enabled = VALUES(ui_datetime_european1_enabled),
+                ui_datetime_european2_enabled = VALUES(ui_datetime_european2_enabled),
+                ui_datetime_iso_enabled = VALUES(ui_datetime_iso_enabled),
+                ui_datetime_readable_enabled = VALUES(ui_datetime_readable_enabled),
+                ui_datetime_format_default = VALUES(ui_datetime_format_default)';
 
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -2639,7 +2687,7 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
 
     mysqli_stmt_bind_param(
         $stmt,
-        'iissssiiiisssss',
+        'iissssiiiisssssiissiiiis',
         $company_id,
         $user_id,
         $config['table_actions_position'],
@@ -2654,7 +2702,17 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
         $config['app_name'],
         $config['favicon_path'],
         $equipmentTypeSidebarVisibility,
-        $moduleIconOverrides
+        $moduleIconOverrides,
+        $config['ui_money_symbol'],
+        $config['ui_money_symbol_suffix'],
+        $config['ui_money_symbol_prefix'],
+        $config['ui_date_format'],
+        $config['ui_time_format'],
+        $config['ui_datetime_european1_enabled'],
+        $config['ui_datetime_european2_enabled'],
+        $config['ui_datetime_iso_enabled'],
+        $config['ui_datetime_readable_enabled'],
+        $config['ui_datetime_format_default']
     );
 
     $ok = mysqli_stmt_execute($stmt);

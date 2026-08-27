@@ -12,6 +12,7 @@
 $crud_title = 'Settings';
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_ui_locale_format.php';
 require_once dirname(__DIR__, 2) . '/includes/itm_api_v2_scopes.php';
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
@@ -150,6 +151,11 @@ if ($settingsUserId > 0 && function_exists('itm_api_resolve_configuration_employ
     }
 }
 $settingsChatSameTenant = itm_it_settings_chat_same_tenant_enabled($conn, (int)$company_id) ? 1 : 0;
+$settingsMoneyFormatOptions = itm_ui_locale_money_format_options_from_config($currentUiConfig);
+$settingsUiDateFormat = itm_ui_locale_date_format_from_config($currentUiConfig);
+$settingsUiTimeFormat = itm_ui_locale_time_format_from_config($currentUiConfig);
+$settingsUiDatetimeEnabled = itm_ui_locale_datetime_format_enabled_map($currentUiConfig);
+$settingsUiDatetimeDefault = itm_ui_locale_datetime_format_default_from_config($currentUiConfig);
 
 // Why: Backup import/export can alter or exfiltrate the full database, so we enforce
 // an explicit per-request admin check here instead of relying only on menu visibility.
@@ -465,6 +471,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newConfig['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
         $newConfig['app_name'] = trim((string)($_POST['app_name'] ?? ''));
         $newConfig['favicon_path'] = itm_normalize_ui_config_favicon_path($currentUiConfig['favicon_path'] ?? '');
+        $localePost = itm_ui_locale_normalize_post_values($_POST);
+        $newConfig = array_merge($newConfig, $localePost['values']);
 
         $faviconUpload = $_FILES['favicon_file'] ?? null;
         $faviconUploadError = (int)($faviconUpload['error'] ?? UPLOAD_ERR_NO_FILE);
@@ -943,6 +951,58 @@ if (!isset($crud_title)) {
                                 <?php endforeach; ?>
                                 <option value="__add_new__">➕</option>
                             </select>
+                        </div>
+                        <div class="card" style="margin-top:16px;">
+                            <h3 style="margin-top:0;">Money symbol</h3>
+                            <div class="form-group">
+                                <label for="ui_money_symbol">Money symbol</label>
+                                <select id="ui_money_symbol" name="ui_money_symbol" class="form-control">
+                                    <option value="EUR" <?php echo itm_ui_locale_money_symbol_code_from_config($currentUiConfig) === 'EUR' ? 'selected' : ''; ?>>€ Euro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="itm-checkbox-control">
+                                    <input type="checkbox" name="ui_money_symbol_suffix" id="itm-settings-money-suffix" value="1" <?php echo !empty($settingsMoneyFormatOptions['suffix']) ? 'checked' : ''; ?>>
+                                    <span>Suffix style (e.g. 69.50<?php echo htmlspecialchars($settingsMoneyFormatOptions['symbol'], ENT_QUOTES, 'UTF-8'); ?>)</span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="itm-checkbox-control">
+                                    <input type="checkbox" name="ui_money_symbol_prefix" id="itm-settings-money-prefix" value="1" <?php echo empty($settingsMoneyFormatOptions['suffix']) ? 'checked' : ''; ?>>
+                                    <span>Prefix style (e.g. <?php echo htmlspecialchars($settingsMoneyFormatOptions['symbol'], ENT_QUOTES, 'UTF-8'); ?>69.50)</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="card" style="margin-top:16px;">
+                            <h3 style="margin-top:0;">Portal date and time</h3>
+                            <div class="form-group">
+                                <label>Date positioning</label>
+                                <label class="itm-checkbox-control"><input type="radio" name="ui_date_format" value="european_ddmmyyyy" <?php echo $settingsUiDateFormat === 'european_ddmmyyyy' ? 'checked' : ''; ?>> European — DD/MM/YYYY</label>
+                                <label class="itm-checkbox-control"><input type="radio" name="ui_date_format" value="european_ddmmmyyyy" <?php echo $settingsUiDateFormat === 'european_ddmmmyyyy' ? 'checked' : ''; ?>> European — DD/MMM/YYYY</label>
+                                <label class="itm-checkbox-control"><input type="radio" name="ui_date_format" value="us_mmddyyyy" <?php echo $settingsUiDateFormat === 'us_mmddyyyy' ? 'checked' : ''; ?>> US — MM/DD/YYYY</label>
+                                <label class="itm-checkbox-control"><input type="radio" name="ui_date_format" value="iso_yyyymmdd" <?php echo $settingsUiDateFormat === 'iso_yyyymmdd' ? 'checked' : ''; ?>> ISO — YYYY-MM-DD</label>
+                            </div>
+                            <div class="form-group">
+                                <label>Time format</label>
+                                <label class="itm-checkbox-control"><input type="radio" name="ui_time_format" value="h24" <?php echo $settingsUiTimeFormat === 'h24' ? 'checked' : ''; ?>> 24-hour format</label>
+                                <label class="itm-checkbox-control"><input type="radio" name="ui_time_format" value="h12" <?php echo $settingsUiTimeFormat === 'h12' ? 'checked' : ''; ?>> 12-hour format</label>
+                            </div>
+                            <div class="form-group">
+                                <label>Combined date-time formats</label>
+                                <label class="itm-checkbox-control"><input type="checkbox" name="ui_datetime_european1_enabled" value="1" <?php echo !empty($settingsUiDatetimeEnabled['european1']) ? 'checked' : ''; ?>> European datetime1 — 17/08/2026 22:58</label>
+                                <label class="itm-checkbox-control"><input type="checkbox" name="ui_datetime_european2_enabled" value="1" <?php echo !empty($settingsUiDatetimeEnabled['european2']) ? 'checked' : ''; ?>> European datetime2 — 17/Aug/2026 22:58</label>
+                                <label class="itm-checkbox-control"><input type="checkbox" name="ui_datetime_iso_enabled" value="1" <?php echo !empty($settingsUiDatetimeEnabled['iso']) ? 'checked' : ''; ?>> ISO datetime — 2026-08-17T22:58:00Z</label>
+                                <label class="itm-checkbox-control"><input type="checkbox" name="ui_datetime_readable_enabled" value="1" <?php echo !empty($settingsUiDatetimeEnabled['readable']) ? 'checked' : ''; ?>> Readable datetime — 17 Aug 2026, 22:58</label>
+                            </div>
+                            <div class="form-group">
+                                <label for="ui_datetime_format_default">Default datetime display</label>
+                                <select id="ui_datetime_format_default" name="ui_datetime_format_default" class="form-control">
+                                    <option value="european1" <?php echo $settingsUiDatetimeDefault === 'european1' ? 'selected' : ''; ?>>European datetime1</option>
+                                    <option value="european2" <?php echo $settingsUiDatetimeDefault === 'european2' ? 'selected' : ''; ?>>European datetime2 (default)</option>
+                                    <option value="iso" <?php echo $settingsUiDatetimeDefault === 'iso' ? 'selected' : ''; ?>>ISO datetime</option>
+                                    <option value="readable" <?php echo $settingsUiDatetimeDefault === 'readable' ? 'selected' : ''; ?>>Readable datetime</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="itm-form-actions itm-align-left">
                             <button class="btn btn-primary" type="submit">💾</button>
@@ -1596,6 +1656,28 @@ if (!isset($crud_title)) {
             itmUploadHelper.setupById("faviconUploadTarget", "favicon_file");
             itmUploadHelper.setupById("sqlUploadTarget", "sql_file");
         }
+    })();
+
+    (function () {
+        var suffix = document.getElementById('itm-settings-money-suffix');
+        var prefix = document.getElementById('itm-settings-money-prefix');
+        if (!suffix || !prefix) {
+            return;
+        }
+        suffix.addEventListener('change', function () {
+            if (suffix.checked) {
+                prefix.checked = false;
+            } else if (!prefix.checked) {
+                suffix.checked = true;
+            }
+        });
+        prefix.addEventListener('change', function () {
+            if (prefix.checked) {
+                suffix.checked = false;
+            } else if (!suffix.checked) {
+                suffix.checked = true;
+            }
+        });
     })();
 })();
 </script>
