@@ -2480,6 +2480,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for patch calendar feed, <strong>Patches due in 30 days</strong> dashboard widget, and list <strong>Product gaps &amp; opportunities</strong> panel (<code>includes/itm_patches_updates_integrations.php</code>). Optional <code>ITM_TEST_COMPANY_ID</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="equipment patches_updates tickets">
+                    <td><a href="verify_equipment_view_related.php" target="_blank" rel="nofollow noreferrer">verify_equipment_view_related.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">patches_updates</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">tickets</span></span></td>
+                    <td>Regression for equipment view <strong>Patches &amp; Updates</strong> and <strong>Related tickets</strong> summary cards (<code>modules/equipment/view.php</code>, <code>includes/itm_equipment_view_related.php</code>). Optional <code>ITM_TEST_COMPANY_ID</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Codebase">
                     <td><a href="verify_admin_page_gate.php" target="_blank" rel="nofollow noreferrer">verify_admin_page_gate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

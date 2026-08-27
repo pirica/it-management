@@ -1050,6 +1050,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/verify_employee_dashboard.php` | Regression: employee **dashboard.php** hero + grouped stat cards, smart widget wiring + Chart.js, `includes/itm_employee_dashboard.php` loader, no company switcher |
 | `php scripts/verify_dashboard_widgets.php` | Regression: role-aware smart dashboard widgets (`includes/itm_dashboard_widgets.php`, queries, RBAC gates, `open_only` tickets filter, `dashboard_widget_prefs` save/resolve, live metric SQL, `patches_due_30d` registry); optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_patches_updates_integrations.php` | Regression: patch calendar feed + dashboard widget + list **Product gaps & opportunities** panel (`includes/itm_patches_updates_integrations.php`, `modules/calendar/index.php`, `modules/patches_updates/index.php`); optional `ITM_TEST_COMPANY_ID` |
+| `php scripts/verify_equipment_view_related.php` | Regression: equipment view **Patches & Updates** + **Related tickets** cards (`modules/equipment/view.php`, `includes/itm_patches_updates_integrations.php`, `includes/itm_equipment_view_related.php`); optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_admin_page_gate.php` | Regression: **admin.php** `itm_is_admin()` gate and redirect to `dashboard.php` |
 | `php scripts/verify_settings_admin_buttons.php` | Regression: Settings **ADMIN** / **SCRIPTS** toolbar (admin-only), **All roles** chatbot block, **System (Admin Role only)** flags, and non-admin save preservation |
 | `php scripts/verify_ui_locale_format.php` | Regression: `ui_configuration` locale columns (money + date/time), Settings UI Configuration form wiring, `includes/itm_ui_locale_format.php` display helpers, `$GLOBALS['ui_config']` date-format flip via `itm_format_date_display()` / `itm_format_cell_scalar_display()`, audit-pass module spot checks (`list_date_display_formats.php` OK set), money columns in cell scalar display |
@@ -1093,6 +1094,8 @@ Run `verify_employee_dashboard.php` when changing employee `dashboard.php`, `inc
 Run `verify_dashboard_widgets.php` when changing `includes/itm_dashboard_widgets.php`, `includes/itm_dashboard_queries.php`, `includes/itm_dashboard_widgets_cards.php`, or smart widget metrics / RBAC gates on `dashboard.php`.
 
 Run `verify_patches_updates_integrations.php` when changing `includes/itm_patches_updates_integrations.php`, patch rows on `modules/calendar/index.php`, or the patches list integration panel.
+
+Run `verify_equipment_view_related.php` when changing equipment view patch/ticket summary cards or `includes/itm_equipment_view_related.php`.
 
 Run `verify_admin_page_gate.php` when changing `admin.php` access control.
 

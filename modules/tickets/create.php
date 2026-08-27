@@ -349,6 +349,13 @@ $data = [
     'tickets_photos' => '', 'active' => 1, 'created_at' => date('Y-m-d\TH:i')
 ];
 
+if (!$is_edit && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $prefillEquipmentId = (int)($_GET['equipment_id'] ?? 0);
+    if ($prefillEquipmentId > 0) {
+        $data['equipment_id'] = (string)$prefillEquipmentId;
+    }
+}
+
 // Load existing ticket for editing
 if ($is_edit) {
     $stmt = mysqli_prepare($conn, 'SELECT * FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
