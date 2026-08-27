@@ -3260,6 +3260,7 @@ CREATE TABLE `ticket_comments` (
   `ticket_id` int NOT NULL,
   `employee_id` int NOT NULL,
   `body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `photos_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_internal` tinyint(1) NOT NULL DEFAULT '0',
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,

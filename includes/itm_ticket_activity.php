@@ -284,3 +284,49 @@ if (!function_exists('itm_ticket_log_edit_field_changes')) {
         }
     }
 }
+
+if (!function_exists('itm_ticket_activity_render_feed_item_html')) {
+    function itm_ticket_activity_render_feed_item_html(array $feedItem)
+    {
+        $kind = (string)($feedItem['kind'] ?? '');
+        if ($kind === 'comment') {
+            $tc = is_array($feedItem['comment'] ?? null) ? $feedItem['comment'] : [];
+            $author = trim((string)($tc['first_name'] ?? '') . ' ' . (string)($tc['last_name'] ?? ''));
+            if ($author === '') {
+                $author = (string)($tc['username'] ?? '');
+            }
+            $bodyHtml = nl2br(sanitize((string)($tc['body'] ?? '')));
+            $photosHtml = '';
+            if (function_exists('itm_ticket_comment_render_photos_html')) {
+                $photosHtml = itm_ticket_comment_render_photos_html($tc);
+            }
+            $internalBadge = (int)($tc['is_internal'] ?? 0) === 1
+                ? '<span class="badge">Internal</span>'
+                : '';
+            $timestamp = sanitize(itm_format_audit_timestamp_display($tc['created_at'] ?? ''));
+            return '<li class="itm-ticket-activity-feed-item itm-ticket-activity-feed-comment" style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border,#e5e7eb);">'
+                . '<strong>' . sanitize($author) . '</strong> ' . $internalBadge
+                . '<div>' . $bodyHtml . '</div>'
+                . $photosHtml
+                . '<small>' . $timestamp . '</small>'
+                . '</li>';
+        }
+        if ($kind === 'event') {
+            $ev = is_array($feedItem['event'] ?? null) ? $feedItem['event'] : [];
+            $payload = json_decode((string)($ev['payload_json'] ?? ''), true);
+            if (!is_array($payload)) {
+                $payload = [];
+            }
+            $summary = itm_ticket_activity_format_event_summary((string)($ev['event_type'] ?? ''), $payload);
+            $actor = sanitize(itm_ticket_activity_actor_display_name($ev));
+            $timestamp = sanitize(itm_format_audit_timestamp_display($ev['created_at'] ?? ''));
+            return '<li class="itm-ticket-activity-feed-item itm-ticket-activity-feed-event" style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed var(--border,#e5e7eb);">'
+                . '<span class="badge badge-secondary" style="margin-right:6px;">System</span> '
+                . '<strong>' . $actor . '</strong> '
+                . '<span>' . sanitize($summary) . '</span>'
+                . '<div><small>' . $timestamp . '</small></div>'
+                . '</li>';
+        }
+        return '';
+    }
+}
