@@ -16,6 +16,7 @@ Aggregates metrics from:
 
 ## 5. UI Behavior Requirements
 - Pure PHP data functions called by the main dashboard router (`modules/reports/index.php`) to produce JSON datasets parsed by Chart.js.
+- **Locale chart labels:** month/day/year-month axis labels follow per-employee `ui_configuration` via helpers in `includes/itm_ui_locale_format.php`. Canonical Y-m keys are kept internally (`reports_build_year_month_series()`) and mapped to display labels at return time.
 
 ## 6. API Actions (If Applicable)
 - Exposes modular functions like `reports_get_budget_vs_actual()`, `reports_get_equipment_status_counts()`, and `reports_get_ticket_category_distribution()`.
