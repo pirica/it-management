@@ -111,10 +111,17 @@ if ($item && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ticket_c
     itm_require_post_csrf();
     $commentBody = trim((string)($_POST['comment_body'] ?? ''));
     $isInternal = !empty($_POST['is_internal']) && $isSupportAgent ? 1 : 0;
-    if ($commentBody !== '') {
-        $cid = itm_ticket_comment_create($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id'], $commentBody, $isInternal);
-        $ticketCommentFlash = $cid ? 'Comment added.' : 'Failed to add comment.';
-    }
+    $photoFiles = isset($_FILES['comment_photo']) && is_array($_FILES['comment_photo']) ? $_FILES['comment_photo'] : null;
+    $cid = itm_ticket_comment_create_with_photos(
+        $conn,
+        (int)$company_id,
+        (int)$item['id'],
+        (int)$_SESSION['employee_id'],
+        $commentBody,
+        $isInternal,
+        $photoFiles
+    );
+    $ticketCommentFlash = $cid > 0 ? 'Comment added.' : 'Failed to add comment.';
 }
 if ($item && !empty($item['id'])) {
     itm_ticket_sla_check_breaches($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id']);
@@ -353,47 +360,32 @@ if (!isset($crud_title)) {
                             <a href="../problems/create.php?ticket_id=<?php echo (int)$item['id']; ?>" class="btn" title="Create problem from ticket">➕</a>
                         </form>
                     </div>
-                    <?php if ($ticketCommentFlash !== ''): ?>
-                        <div class="alert alert-info"><?php echo sanitize($ticketCommentFlash); ?></div>
-                    <?php endif; ?>
                     <div class="card" style="margin-top:16px;">
                         <h3 title="Activity">📋</h3>
-                        <?php if (empty($ticketActivityFeed)): ?>
-                            <p>No activity yet.</p>
-                        <?php else: ?>
-                            <ul class="itm-ticket-activity-feed" style="list-style:none;padding:0;margin:0;">
-                                <?php foreach ($ticketActivityFeed as $feedItem): ?>
-                                    <?php if (($feedItem['kind'] ?? '') === 'comment'): ?>
-                                        <?php $tc = $feedItem['comment'] ?? []; ?>
-                                        <li style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border,#e5e7eb);">
-                                            <strong><?php echo sanitize(trim(($tc['first_name'] ?? '') . ' ' . ($tc['last_name'] ?? '')) ?: ($tc['username'] ?? '')); ?></strong>
-                                            <?php if ((int)($tc['is_internal'] ?? 0) === 1): ?><span class="badge">Internal</span><?php endif; ?>
-                                            <div><?php echo nl2br(sanitize((string)($tc['body'] ?? ''))); ?></div>
-                                            <small><?php echo sanitize(itm_format_audit_timestamp_display($tc['created_at'] ?? '')); ?></small>
-                                        </li>
-                                    <?php elseif (($feedItem['kind'] ?? '') === 'event'): ?>
-                                        <?php
-                                        $ev = $feedItem['event'] ?? [];
-                                        $payload = json_decode((string)($ev['payload_json'] ?? ''), true);
-                                        if (!is_array($payload)) {
-                                            $payload = [];
-                                        }
-                                        $summary = itm_ticket_activity_format_event_summary((string)($ev['event_type'] ?? ''), $payload);
-                                        ?>
-                                        <li style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed var(--border,#e5e7eb);">
-                                            <span class="badge badge-secondary" style="margin-right:6px;">System</span>
-                                            <strong><?php echo sanitize(itm_ticket_activity_actor_display_name($ev)); ?></strong>
-                                            <span><?php echo sanitize($summary); ?></span>
-                                            <div><small><?php echo sanitize(itm_format_audit_timestamp_display($ev['created_at'] ?? '')); ?></small></div>
-                                        </li>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </ul>
+                        <div id="ticket-activity-comment-error" class="alert alert-danger" style="display:none;margin-bottom:12px;"></div>
+                        <?php if ($ticketCommentFlash !== ''): ?>
+                            <div class="alert alert-info"><?php echo sanitize($ticketCommentFlash); ?></div>
                         <?php endif; ?>
-                        <form method="POST" style="margin-top:12px;">
+                        <?php if (empty($ticketActivityFeed)): ?>
+                            <p id="ticket-activity-empty">No activity yet.</p>
+                        <?php else: ?>
+                            <p id="ticket-activity-empty" style="display:none;">No activity yet.</p>
+                        <?php endif; ?>
+                        <ul id="ticket-activity-feed" class="itm-ticket-activity-feed" style="list-style:none;padding:0;margin:0;">
+                            <?php foreach ($ticketActivityFeed as $feedItem): ?>
+                                <?php echo itm_ticket_activity_render_feed_item_html($feedItem); ?>
+                            <?php endforeach; ?>
+                        </ul>
+                        <form id="ticket-activity-comment-form" method="POST" enctype="multipart/form-data" style="margin-top:12px;"
+                              data-api-url="api.php?action=add_comment"
+                              data-ticket-id="<?php echo (int)$item['id']; ?>">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
                             <label for="ticket-comment-body">Add comment</label>
-                            <textarea id="ticket-comment-body" name="comment_body" class="form-control" rows="3" required></textarea>
+                            <textarea id="ticket-comment-body" name="comment_body" class="form-control" rows="3"></textarea>
+                            <div class="form-group" style="margin-top:8px;">
+                                <label for="ticket-comment-photos">Photos</label>
+                                <input type="file" id="ticket-comment-photos" name="comment_photo[]" class="form-control" accept="image/*" multiple>
+                            </div>
                             <?php if ($isSupportAgent): ?>
                                 <label class="itm-checkbox-control" style="margin-top:8px;">
                                     <input type="checkbox" name="is_internal" value="1">
@@ -452,6 +444,7 @@ if (!isset($crud_title)) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/ticket-activity-comments.js"></script>
 <?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

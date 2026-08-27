@@ -219,6 +219,46 @@ if (strpos($summary, 'Open') === false || strpos($summary, 'Closed') === false) 
     ta_verify_pass('Activity event summary renders status labels');
 }
 
+$photosColRes = mysqli_query($conn, "SHOW COLUMNS FROM ticket_comments LIKE 'photos_json'");
+if (!$photosColRes || mysqli_num_rows($photosColRes) === 0) {
+    ta_verify_fail('ticket_comments.photos_json missing — apply db/migrations/ticket_comment_photos.sql or re-import db/');
+} else {
+    ta_verify_pass('ticket_comments.photos_json column present');
+}
+
+$photoJson = json_encode(['verify_comment_photo.jpg'], JSON_UNESCAPED_SLASHES);
+$photoCommentId = itm_ticket_comment_create($conn, $companyId, $ticketId, $employeeId, '', 0, $photoJson);
+if ($photoCommentId <= 0) {
+    ta_verify_fail('Photo-only comment create failed');
+} else {
+    ta_verify_pass('Photo-only comment create stores photos_json');
+    $photoRow = itm_ticket_comment_fetch_row($conn, $companyId, $ticketId, $photoCommentId, $employeeId, true);
+    $rendered = $photoRow ? itm_ticket_comment_render_photos_html($photoRow) : '';
+    if ($rendered === '' || strpos($rendered, 'verify_comment_photo.jpg') === false) {
+        ta_verify_fail('Comment photo render HTML missing filename');
+    } else {
+        ta_verify_pass('Comment photo render HTML includes attachment');
+    }
+}
+
+$renderedComment = itm_ticket_activity_render_feed_item_html([
+    'kind' => 'comment',
+    'comment' => [
+        'first_name' => 'Verify',
+        'last_name' => 'Agent',
+        'username' => 'Admin',
+        'body' => 'Rendered',
+        'is_internal' => 0,
+        'created_at' => date('Y-m-d H:i:s'),
+        'photos_json' => null,
+    ],
+]);
+if ($renderedComment === '' || strpos($renderedComment, 'Rendered') === false) {
+    ta_verify_fail('Activity feed item HTML render failed');
+} else {
+    ta_verify_pass('Activity feed item HTML render works');
+}
+
 mysqli_query($conn, 'DELETE FROM ticket_comments WHERE ticket_id = ' . (int)$ticketId);
 mysqli_query($conn, 'DELETE FROM ticket_activity WHERE ticket_id = ' . (int)$ticketId);
 mysqli_query($conn, 'DELETE FROM tickets WHERE id = ' . (int)$ticketId . ' AND company_id = ' . (int)$companyId);

@@ -373,7 +373,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Extraction and sanitization
     $ticket_external_code = escape_sql($_POST['ticket_external_code'] ?? '', $conn);
     $title = escape_sql($_POST['title'] ?? '', $conn);
-    $description = escape_sql($_POST['description'] ?? '', $conn);
+    // Why: Initial description is set on create only; follow-up belongs in Activity comments.
+    if ($is_edit && $id > 0) {
+        $description = escape_sql((string)($data['description'] ?? ''), $conn);
+    } else {
+        $description = escape_sql($_POST['description'] ?? '', $conn);
+    }
 
     // Normalization of FK fields
     $category_id = (int)($_POST['category_id'] ?? 0) ?: 'NULL';
@@ -695,7 +700,14 @@ if (!isset($crud_title)) {
                         <div class="form-group"><label>External Code</label><input name="ticket_external_code" value="<?php echo sanitize($data['ticket_external_code']); ?>"></div>
                     </div>
 
-                    <div class="form-group"><label>Description</label><textarea name="description" id="ticket-description-field"><?php echo sanitize($data['description']); ?></textarea></div>
+                    <div class="form-group"><label>Description</label>
+                        <?php if ($is_edit): ?>
+                            <textarea name="description" id="ticket-description-field" readonly title="Initial ticket description"><?php echo sanitize($data['description']); ?></textarea>
+                            <p class="text-muted" style="margin-top:8px;">Initial description cannot be changed here. Add updates on the <a class="itm-plain-link" href="view.php?id=<?php echo (int)$id; ?>">ticket Activity feed</a>.</p>
+                        <?php else: ?>
+                            <textarea name="description" id="ticket-description-field"><?php echo sanitize($data['description']); ?></textarea>
+                        <?php endif; ?>
+                    </div>
 
                     <?php if (!$is_edit): ?>
                     <div class="card" id="ticket-known-error-suggest" style="margin-bottom:16px;display:none;">
