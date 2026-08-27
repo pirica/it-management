@@ -4,12 +4,26 @@
  * Hotel booking portal keeps separate portal_* columns on hotel_booking_settings.
  */
 
+if (!function_exists('itm_ui_locale_money_symbol_allowed_codes')) {
+    function itm_ui_locale_money_symbol_allowed_codes()
+    {
+        return ['EUR', 'GBP', 'USD'];
+    }
+}
+
+if (!function_exists('itm_ui_locale_money_symbol_glyph_map')) {
+    function itm_ui_locale_money_symbol_glyph_map()
+    {
+        return ['EUR' => '€', 'GBP' => '£', 'USD' => '$'];
+    }
+}
+
 if (!function_exists('itm_ui_locale_money_symbol_code_from_config')) {
     function itm_ui_locale_money_symbol_code_from_config($config)
     {
         $config = is_array($config) ? $config : [];
         $code = strtoupper(trim((string) ($config['ui_money_symbol'] ?? 'EUR')));
-        if (!in_array($code, ['EUR'], true)) {
+        if (!in_array($code, itm_ui_locale_money_symbol_allowed_codes(), true)) {
             return 'EUR';
         }
         return $code;
@@ -24,7 +38,7 @@ if (!function_exists('itm_ui_locale_money_format_options_from_config')) {
     {
         $config = is_array($config) ? $config : [];
         $code = itm_ui_locale_money_symbol_code_from_config($config);
-        $symbolMap = ['EUR' => '€'];
+        $symbolMap = itm_ui_locale_money_symbol_glyph_map();
         $suffix = true;
         if (array_key_exists('ui_money_symbol_prefix', $config) && !empty($config['ui_money_symbol_prefix'])) {
             $suffix = false;
@@ -120,7 +134,7 @@ if (!function_exists('itm_ui_locale_normalize_post_values')) {
     {
         $errors = [];
         $moneySymbol = strtoupper(trim((string) ($post['ui_money_symbol'] ?? 'EUR')));
-        if (!in_array($moneySymbol, ['EUR'], true)) {
+        if (!in_array($moneySymbol, itm_ui_locale_money_symbol_allowed_codes(), true)) {
             $moneySymbol = 'EUR';
         }
         $moneySuffix = !empty($post['ui_money_symbol_suffix']) ? 1 : 0;

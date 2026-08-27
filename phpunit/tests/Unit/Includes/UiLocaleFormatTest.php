@@ -34,6 +34,26 @@ final class UiLocaleFormatTest extends TestCase
         $this->assertSame(1, $prefix['ui_money_symbol_prefix']);
     }
 
+    public function testMoneySymbolCodesEurGbpUsd(): void
+    {
+        $gbp = itm_ui_locale_normalize_post_values(['ui_money_symbol' => 'GBP'])['values'];
+        $this->assertSame('GBP', $gbp['ui_money_symbol']);
+        $this->assertSame('69.50£', itm_ui_locale_format_money_display(69.5, array_merge($gbp, [
+            'ui_money_symbol_suffix' => 1,
+            'ui_money_symbol_prefix' => 0,
+        ])));
+
+        $usd = itm_ui_locale_normalize_post_values(['ui_money_symbol' => 'USD'])['values'];
+        $this->assertSame('USD', $usd['ui_money_symbol']);
+        $this->assertSame('$69.50', itm_ui_locale_format_money_display(69.5, array_merge($usd, [
+            'ui_money_symbol_suffix' => 0,
+            'ui_money_symbol_prefix' => 1,
+        ])));
+
+        $invalid = itm_ui_locale_normalize_post_values(['ui_money_symbol' => 'JPY'])['values'];
+        $this->assertSame('EUR', $invalid['ui_money_symbol']);
+    }
+
     public function testDatetimeDefaultFallsBackWhenDisabled(): void
     {
         $values = itm_ui_locale_normalize_post_values([
