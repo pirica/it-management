@@ -150,7 +150,7 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>244 tables</strong> and approximately <strong>9,000+ seed rows</strong> (literal <code>INSERT</code>/<code>SELECT</code> data in <code>db/02_data.sql</code> plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). Table count matches <code>grep -c '^CREATE TABLE' db/01_schema.sql</code> (or <code>php scripts/verify_database_schema.php</code> after import — output includes <code>Actual tables (MySQL): 244</code> when aligned). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>246 tables</strong> and approximately <strong>9,000+ seed rows</strong> (literal <code>INSERT</code>/<code>SELECT</code> data in <code>db/02_data.sql</code> plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). Table count matches <code>grep -c '^CREATE TABLE' db/01_schema.sql</code> (or <code>php scripts/verify_database_schema.php</code> after import — output includes <code>Actual tables (MySQL): 246</code> when aligned). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
@@ -202,11 +202,11 @@
 
 #### Inventory, assets, and procurement
 
-`equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `license_management`, `license_types`, `patches_updates`, `patches_updates_level`, `patches_updates_status`
+`equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `license_management`, `license_types`, `software`, `equipment_software`, `patches_updates`, `patches_updates_level`, `patches_updates_status`
 
-**Purpose:** Asset management, procurement catalogues, software license tracking, warranty and patch tracking, and consumable inventory.
+**Purpose:** Asset management, procurement catalogues, software license tracking, software/OS/Office EOL dates, warranty and patch tracking, and consumable inventory.
 
-**Modules:** `equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `license_management`, `expiring` (read-only dashboard for warranty/certificate/alert end dates), `patches_updates`, `patches_updates_level`, `patches_updates_status` — **`license_types`** is a seed-only lookup (no separate CRUD module)
+**Modules:** `equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `license_management`, `software`, `equipment_software`, `expiring` (read-only dashboard for warranty/certificate/EOL/alert end dates), `patches_updates`, `patches_updates_level`, `patches_updates_status` — **`license_types`** is a seed-only lookup (no separate CRUD module)
 
 **Equipment-type facades** (filter views delegating to `equipment`): `is_printer`, `is_workstation`, `is_server`, `is_switch`, `is_router`, `is_firewall`, `is_access_point`, `is_cctv`, `is_phone`, `is_pos`, `is_port_patch_panel`, `is_other`
 
@@ -276,7 +276,7 @@
 | Tickets and workflows | 11 | ~100 |
 | HR and employees | 8 | ~70 |
 | Finance and approvals | 29 | ~120 |
-| Inventory and assets | 14 | ~300 |
+| Inventory and assets | 16 | ~300 |
 | Networking and IPAM | 23 | ~400 |
 | Floor plans and locations | 8 | ~60 |
 | Password vault | 3 | 0 |
@@ -286,7 +286,7 @@
 | Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
 | Live chat and notifications | 6+ | ~50+ |
-| **Total** | **241** | **~9,000+** |
+| **Total** | **246** | **~9,000+** |
 
 <h3 align="center">What this means</h3>
 

@@ -853,7 +853,7 @@ if (!isset($crud_title)) {
                             <div class="chart-container" style="height: 350px;">
                                 <canvas id="maintenanceForecastChart"></canvas>
                             </div>
-                            <p class="report-desc">Upcoming warranty and license expiries requiring action.</p>
+                            <p class="report-desc">Upcoming warranty, license, and EOL dates requiring action.</p>
                         </article>
                     </div>
                 </section>
@@ -1415,6 +1415,11 @@ if (!isset($crud_title)) {
                         label: 'License Expiries',
                         data: <?php echo json_encode($maintenance_forecast['licenses']); ?>,
                         backgroundColor: '#ec4899'
+                    },
+                    {
+                        label: 'EOL dates',
+                        data: <?php echo json_encode($maintenance_forecast['eol'] ?? []); ?>,
+                        backgroundColor: '#db2777'
                     }
                 ]
             },

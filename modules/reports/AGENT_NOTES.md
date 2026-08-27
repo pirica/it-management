@@ -36,6 +36,7 @@ This module is read-only and aggregates data from:
 - **Survey question averages** — `get_ticket_survey_question_averages()` (default questionnaire rating averages, last 90 days; HTML table on index)
 - **Ticket survey KPIs** — dedicated dashboard [modules/ticket_survey_dashboard/](http://localhost/it-management/modules/ticket_survey_dashboard/index.php) (`itm_ticket_survey_stats_aggregate()`; `docs/TICKET_SURVEYS.md`)
 - **Asset lifecycle stages** — `get_asset_lifecycle_stage_summary()` (equipment `lifecycle_stage` counts; see `docs/ASSET_LIFECYCLE.md`)
+- **Upcoming maintenance forecast** — `get_upcoming_maintenance_forecast()` includes warranty, certificate, license, and **EOL** (`includes/itm_software_eol.php`; see `docs/SOFTWARE_EOL.md`)
 - **Problem Management** — `get_problem_management_summary()` (`problems` status doughnut + linked incident / closed-this-month counts; see `docs/PROBLEM_MANAGEMENT.md`)
 
 ---

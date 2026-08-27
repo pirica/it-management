@@ -777,6 +777,11 @@ if (!function_exists('itm_email_alert_rule_catalog')) {
                 'description' => 'Equipment certificate expiry reminders.',
                 'supports_days_before' => true,
             ],
+            'eol_date' => [
+                'label' => 'EOL Date Alerts',
+                'description' => 'Equipment hardware or inherited catalog EOL reminders (not Extended/ESU).',
+                'supports_days_before' => true,
+            ],
             'alerts_expiry' => [
                 'label' => 'Alerts Expiry',
                 'description' => 'System alert end-datetime reminders.',

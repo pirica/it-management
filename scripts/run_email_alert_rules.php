@@ -238,6 +238,34 @@ foreach ($companies as $companyId) {
         $totalSent += $batch['sent'];
     }
 
+    if (!empty($rules['eol_date'])) {
+        $rule = $rules['eol_date'];
+        $days = max(0, (int)($rule['days_before'] ?? 30));
+        $cutoff = date('Y-m-d', strtotime('+' . $days . ' days'));
+        $rows = function_exists('itm_software_eol_email_rows')
+            ? itm_software_eol_email_rows($conn, $companyId, $today, $cutoff)
+            : [];
+        $batch = itm_email_alert_runner_dispatch_batch(
+            $conn,
+            $companyId,
+            'eol_date',
+            $rule,
+            $rows,
+            'EOL reminder: ',
+            function (array $row, string $prefix) {
+                $label = trim((string)($row['hostname'] ?? '')) ?: trim((string)($row['name'] ?? 'Equipment'));
+                return $prefix . $label;
+            },
+            function (array $row) {
+                $label = trim((string)($row['hostname'] ?? '')) ?: trim((string)($row['name'] ?? 'Equipment'));
+                return '<p>EOL for <strong>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</strong> is on '
+                    . htmlspecialchars((string)($row['eol_date'] ?? ''), ENT_QUOTES, 'UTF-8') . '.</p>';
+            }
+        );
+        $companyStats['eol_date'] = $batch;
+        $totalSent += $batch['sent'];
+    }
+
     if (!empty($rules['alerts_expiry'])) {
         $rule = $rules['alerts_expiry'];
         $days = max(0, (int)($rule['days_before'] ?? 30));

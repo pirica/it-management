@@ -61,7 +61,9 @@ $hasWorkstationOfficeIdColumn = equipment_view_table_has_column($conn, 'equipmen
 $hasEquipmentRj45SpeedColumn = equipment_view_table_has_column($conn, 'equipment', 'rj45_speed_id');
 $hasWorkstationOsVersionIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_os_version_id');
 $hasWorkstationRamIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_ram_id');
-$workstationOfficeSelect = $hasWorkstationOfficeIdColumn ? ', wo.name workstation_office_name' : '';
+$workstationOfficeSelect = $hasWorkstationOfficeIdColumn
+    ? ', wo.name workstation_office_name, wo.build office_build, wo.eol_date office_eol_date, wo.extended_date office_extended_date, wo.esu_date office_esu_date'
+    : '';
 $workstationOfficeJoin = $hasWorkstationOfficeIdColumn
     ? ' LEFT JOIN workstation_office wo ON wo.id = e.workstation_office_id AND wo.company_id = e.company_id'
     : '';
@@ -69,7 +71,9 @@ $equipmentRj45SpeedSelect = $hasEquipmentRj45SpeedColumn ? ', rs.cable_type rj45
 $equipmentRj45SpeedJoin = $hasEquipmentRj45SpeedColumn
     ? ' LEFT JOIN rj45_speed rs ON rs.id = e.rj45_speed_id AND rs.company_id = e.company_id'
     : '';
-$workstationOsVersionSelect = $hasWorkstationOsVersionIdColumn ? ', wov.name workstation_os_version_name' : '';
+$workstationOsVersionSelect = $hasWorkstationOsVersionIdColumn
+    ? ', wov.name workstation_os_version_name, wov.build os_build, wov.eol_date os_eol_date, wov.extended_date os_extended_date, wov.esu_date os_esu_date'
+    : '';
 $workstationOsVersionJoin = $hasWorkstationOsVersionIdColumn
     ? ' LEFT JOIN workstation_os_versions wov ON wov.id = e.workstation_os_version_id AND wov.company_id = e.company_id'
     : '';
@@ -173,6 +177,9 @@ function equipment_field_label($key) {
         'workstation_os_installed_on' => 'Workstation OS Installed On',
         'switch_fiber_port_label' => 'Fiber Port Label',
         'notes' => 'Notes',
+        'eol_date' => 'EOL',
+        'extended_date' => 'Extended',
+        'esu_date' => 'ESU',
     ];
 
     return $labels[$key] ?? ucwords(str_replace('_', ' ', (string)$key));
@@ -217,7 +224,11 @@ function equipment_field_should_display($key) {
     if ($key === 'active') {
         return false;
     }
-    if (in_array($key, ['is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
+    if (in_array($key, [
+        'is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch',
+        'office_build', 'office_eol_date', 'office_extended_date', 'office_esu_date',
+        'os_build', 'os_eol_date', 'os_extended_date', 'os_esu_date',
+    ], true)) {
         return false;
     }
 
@@ -297,6 +308,65 @@ if (!isset($crud_title)) {
     </td>
 </tr>
 </tbody></table>
+<?php
+$equipmentLinkedSoftware = function_exists('itm_software_eol_list_for_equipment')
+    ? itm_software_eol_list_for_equipment($conn, (int)$company_id, (int)$id)
+    : [];
+$hasInheritedCatalogDates = trim((string)($item['office_eol_date'] ?? '')) !== ''
+    || trim((string)($item['office_extended_date'] ?? '')) !== ''
+    || trim((string)($item['office_esu_date'] ?? '')) !== ''
+    || trim((string)($item['os_eol_date'] ?? '')) !== ''
+    || trim((string)($item['os_extended_date'] ?? '')) !== ''
+    || trim((string)($item['os_esu_date'] ?? '')) !== ''
+    || $equipmentLinkedSoftware !== [];
+?>
+<?php if ($hasInheritedCatalogDates): ?>
+<table style="margin-top:16px;"><tbody>
+    <tr><th colspan="2">Inherited catalog dates (read-only)</th></tr>
+    <?php if (trim((string)($item['workstation_office_name'] ?? '')) !== ''): ?>
+    <tr>
+        <th style="width:240px;">Office</th>
+        <td>
+            <?php echo sanitize((string)$item['workstation_office_name']); ?>
+            <?php if (trim((string)($item['office_build'] ?? '')) !== ''): ?>
+                (<?php echo sanitize((string)$item['office_build']); ?>)
+            <?php endif; ?>
+            — EOL <?php echo sanitize(itm_format_date_display((string)($item['office_eol_date'] ?? '')) ?: '—'); ?>
+            · Extended <?php echo sanitize(itm_format_date_display((string)($item['office_extended_date'] ?? '')) ?: '—'); ?>
+            · ESU <?php echo sanitize(itm_format_date_display((string)($item['office_esu_date'] ?? '')) ?: '—'); ?>
+        </td>
+    </tr>
+    <?php endif; ?>
+    <?php if (trim((string)($item['workstation_os_version_name'] ?? '')) !== ''): ?>
+    <tr>
+        <th style="width:240px;">OS version</th>
+        <td>
+            <?php echo sanitize((string)$item['workstation_os_version_name']); ?>
+            <?php if (trim((string)($item['os_build'] ?? '')) !== ''): ?>
+                (<?php echo sanitize((string)$item['os_build']); ?>)
+            <?php endif; ?>
+            — EOL <?php echo sanitize(itm_format_date_display((string)($item['os_eol_date'] ?? '')) ?: '—'); ?>
+            · Extended <?php echo sanitize(itm_format_date_display((string)($item['os_extended_date'] ?? '')) ?: '—'); ?>
+            · ESU <?php echo sanitize(itm_format_date_display((string)($item['os_esu_date'] ?? '')) ?: '—'); ?>
+        </td>
+    </tr>
+    <?php endif; ?>
+    <?php foreach ($equipmentLinkedSoftware as $softwareRow): ?>
+    <tr>
+        <th style="width:240px;">Software</th>
+        <td>
+            <?php echo sanitize((string)($softwareRow['name'] ?? '')); ?>
+            <?php if (trim((string)($softwareRow['build'] ?? '')) !== ''): ?>
+                (<?php echo sanitize((string)$softwareRow['build']); ?>)
+            <?php endif; ?>
+            — EOL <?php echo sanitize(itm_format_date_display((string)($softwareRow['eol_date'] ?? '')) ?: '—'); ?>
+            · Extended <?php echo sanitize(itm_format_date_display((string)($softwareRow['extended_date'] ?? '')) ?: '—'); ?>
+            · ESU <?php echo sanitize(itm_format_date_display((string)($softwareRow['esu_date'] ?? '')) ?: '—'); ?>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+</tbody></table>
+<?php endif; ?>
 <p style="margin-top:16px;">
 <?php echo itm_crud_record_share_render_action_buttons('equipment', (int)($item['id'] ?? $id ?? 0), 'equipment'); ?>
 <a class="btn" href="<?php echo sanitize($equipmentViewBackPath); ?>" title="Back">🔙</a> <a class="btn btn-primary" href="<?php echo sanitize($equipmentViewEditPath); ?>?id=<?php echo (int)$item['id']; ?>" title="Edit">✏️</a></p>

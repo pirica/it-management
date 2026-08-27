@@ -1816,6 +1816,11 @@ $hasWorkstationRamIdColumn = equipment_table_has_column($conn, 'equipment', 'wor
 $hasWorkstationStorageColumn = equipment_table_has_column($conn, 'equipment', 'workstation_storage');
 $hasWorkstationOsInstalledOnColumn = equipment_table_has_column($conn, 'equipment', 'workstation_os_installed_on');
 $hasSwitchFiberPortLabelColumn = equipment_table_has_column($conn, 'equipment', 'switch_fiber_port_label');
+$hasEquipmentEolDateColumn = equipment_table_has_column($conn, 'equipment', 'eol_date');
+$softwareCatalogOptions = function_exists('itm_software_eol_catalog_options')
+    ? itm_software_eol_catalog_options($conn, (int)$company_id)
+    : [];
+$selectedSoftwareIds = [];
 
 $switchTypeId = 0;
 $serverTypeId = 0;
@@ -1835,7 +1840,7 @@ foreach ($types as $typeItem) {
 $data = [
     'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'idf_id' => '', 'name' => '',
     'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '', 'department_id' => '', 'supplier_id' => '', 'assigned_to_employee_id' => '', 'equipment_id' => '', 'assigned_date' => '',
-    'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'lifecycle_stage' => 'in_service', 'depreciation_start_date' => '', 'useful_life_months' => '', 'salvage_value' => '', 'disposal_date' => '', 'disposal_reason' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
+    'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'lifecycle_stage' => 'in_service', 'depreciation_start_date' => '', 'useful_life_months' => '', 'salvage_value' => '', 'disposal_date' => '', 'disposal_reason' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'eol_date' => '', 'extended_date' => '', 'esu_date' => '', 'warranty_type_id' => '',
     'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_scan' => 0,
     'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
     'workstation_office_id' => '', 'rj45_speed_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
@@ -1858,6 +1863,9 @@ if ($isEdit) {
                 $data['switch_port_numbering_layout_id'] = $defaultSwitchPortLayoutId;
             }
             $originalData = $data;
+            if (function_exists('itm_software_eol_ids_for_equipment')) {
+                $selectedSoftwareIds = itm_software_eol_ids_for_equipment($conn, (int)$company_id, $id);
+            }
         } else {
             $error = 'Equipment record not found.';
         }
@@ -1880,6 +1888,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data[$k] = trim($_POST[$k] ?? '');
         }
     }
+    $selectedSoftwareIds = function_exists('itm_software_eol_normalize_id_list')
+        ? itm_software_eol_normalize_id_list($_POST['software_ids'] ?? [])
+        : [];
     if ($isEdit && is_array($originalData)) {
         $data['created_by'] = $originalData['created_by'] ?? null;
         $data['created_at'] = $originalData['created_at'] ?? null;
@@ -2111,6 +2122,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $certificate_expiry = ($isServerEquipment && $data['certificate_expiry'] !== '')
             ? "'" . escape_sql($data['certificate_expiry'], $conn) . "'"
             : 'NULL';
+        $eol_date = ($hasEquipmentEolDateColumn && $data['eol_date'] !== '')
+            ? "'" . escape_sql($data['eol_date'], $conn) . "'"
+            : 'NULL';
+        $extended_date = ($hasEquipmentEolDateColumn && $data['extended_date'] !== '')
+            ? "'" . escape_sql($data['extended_date'], $conn) . "'"
+            : 'NULL';
+        $esu_date = ($hasEquipmentEolDateColumn && $data['esu_date'] !== '')
+            ? "'" . escape_sql($data['esu_date'], $conn) . "'"
+            : 'NULL';
+        $eolUpdateSql = $hasEquipmentEolDateColumn ? "eol_date=$eol_date, extended_date=$extended_date, esu_date=$esu_date,\n                    " : '';
+        $eolInsertColumns = $hasEquipmentEolDateColumn ? ', eol_date, extended_date, esu_date' : '';
+        $eolInsertValues = $hasEquipmentEolDateColumn ? ", $eol_date, $extended_date, $esu_date" : '';
         $warranty_type_id = (int)$data['warranty_type_id'] ?: 'NULL';
         $printer_device_type_id = (int)$data['printer_device_type_id'] ?: 'NULL';
         $printer_color_capable = (int)$data['printer_color_capable'];
@@ -2208,6 +2231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost,
                     lifecycle_stage=$lifecycle_stage, depreciation_start_date=$depreciation_start_date, useful_life_months=$useful_life_months, salvage_value=$salvage_value, disposal_date=$disposal_date, disposal_reason=$disposal_reason,
                     warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
+                    $eolUpdateSql
                     warranty_type_id=$warranty_type_id, printer_device_type_id=$printer_device_type_id,
                     printer_color_capable=$printer_color_capable, printer_scan=$printer_scan,
                     workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
@@ -2221,12 +2245,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, idf_id, department_id, supplier_id, name, serial_number, model, hostname,
-                    ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, lifecycle_stage, depreciation_start_date, useful_life_months, salvage_value, disposal_date, disposal_reason, warranty_expiry, certificate_expiry, warranty_type_id,
+                    ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, lifecycle_stage, depreciation_start_date, useful_life_months, salvage_value, disposal_date, disposal_reason, warranty_expiry, certificate_expiry$eolInsertColumns, warranty_type_id,
                     printer_device_type_id, printer_color_capable, printer_scan, workstation_device_type_id,
                     workstation_os_type_id$workstationOfficeInsertColumns$rj45SpeedInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename,
                     active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $idf_id, $department_id, $supplier_id, $name, $serial_number, $model, $hostname,
-                    $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $lifecycle_stage, $depreciation_start_date, $useful_life_months, $salvage_value, $disposal_date, $disposal_reason, $warranty_expiry, $certificate_expiry, $warranty_type_id,
+                    $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $lifecycle_stage, $depreciation_start_date, $useful_life_months, $salvage_value, $disposal_date, $disposal_reason, $warranty_expiry, $certificate_expiry$eolInsertValues, $warranty_type_id,
                     $printer_device_type_id, $printer_color_capable, $printer_scan, $workstation_device_type_id,
                     $workstation_os_type_id$workstationOfficeInsertValues$rj45SpeedInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo,
                     $active, $created_by, $created_at, $updated_by, $updated_at, $deleted_by, $deleted_at)";
@@ -2353,6 +2377,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($assignmentSyncError !== null) {
                     $error = $assignmentSyncError;
+                }
+            }
+
+            if ($error === '' && function_exists('itm_equipment_software_sync')) {
+                $softwareSyncError = itm_equipment_software_sync(
+                    $conn,
+                    (int)$company_id,
+                    (int)$id,
+                    $selectedSoftwareIds,
+                    (int)($_SESSION['employee_id'] ?? 0)
+                );
+                if ($softwareSyncError !== '') {
+                    $error = $softwareSyncError;
                 }
             }
 
@@ -2681,6 +2718,25 @@ if (!isset($crud_title)) {
             <div class="form-row">
                 <div class="form-group"><label>Warranty Type</label><select name="warranty_type_id" data-addable-select="1" data-add-table="warranty_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="warranty type"><option value="">-- Select --</option><?php render_options($warrantyTypes, $data['warranty_type_id']); ?><option value="__add_new__">➕</option></select></div>
                 <div class="form-group"><label>Warranty Expiry</label><?php itm_render_uk_date_input('warranty_expiry', 'equipment-warranty-expiry', (string) ($data['warranty_expiry'] ?? '')); ?></div>
+                <div class="form-group"></div>
+            </div>
+            <?php if (!empty($hasEquipmentEolDateColumn)): ?>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>EOL</label><?php itm_render_uk_date_input('eol_date', 'equipment-eol-date', (string) ($data['eol_date'] ?? '')); ?></div>
+                <div class="form-group"><label>Extended</label><?php itm_render_uk_date_input('extended_date', 'equipment-extended-date', (string) ($data['extended_date'] ?? '')); ?></div>
+                <div class="form-group"><label>ESU</label><?php itm_render_uk_date_input('esu_date', 'equipment-esu-date', (string) ($data['esu_date'] ?? '')); ?></div>
+            </div>
+            <?php endif; ?>
+            <div class="form-row">
+                <div class="form-group"><label>Software catalog</label>
+                    <select name="software_ids[]" multiple size="6">
+                        <?php foreach ($softwareCatalogOptions as $softwareOption): ?>
+                            <?php $softwareOptionId = (int)($softwareOption['id'] ?? 0); ?>
+                            <option value="<?php echo $softwareOptionId; ?>" <?php echo in_array($softwareOptionId, $selectedSoftwareIds, true) ? 'selected' : ''; ?>><?php echo sanitize((string)($softwareOption['label'] ?? '')); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small>Dates come from the software catalog. Hold Ctrl to select multiple.</small>
+                </div>
                 <div class="form-group"></div>
             </div>
             <div id="server-fields" style="display:none;">

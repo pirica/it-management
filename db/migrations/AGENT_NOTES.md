@@ -32,6 +32,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 | `employee_sidebar_preferences_is_collapsed.sql` | `employee_sidebar_preferences.is_collapsed` — per-section fold for double-click sidebar collapse (destructive DROP+CREATE) |
 | `hotel_booking_portal_date_ddmmmyyyy.sql` | `hotel_booking_settings.portal_date_format` adds `european_ddmmmyyyy` (DD/MMM/YYYY) |
 | `ui_configuration_locale_format.sql` | `ui_configuration` locale display columns (money symbol + suffix/prefix, date/time, combined datetime toggles + default) — destructive DROP+CREATE; Settings UI Configuration; helpers in `includes/itm_ui_locale_format.php` |
+| `software_eol.sql` | `software`, `equipment_software`, plus `workstation_office` / `workstation_os_versions` / `equipment` date columns — destructive DROP+CREATE (backs up required). Helper `includes/itm_software_eol.php`. Doc: `docs/SOFTWARE_EOL.md`. |
 
 ## 12. Module Owner Notes
 

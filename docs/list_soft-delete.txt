@@ -40,6 +40,7 @@ equipment_fiber_patch
 equipment_fiber_rack
 equipment_poe
 equipment_rj45
+equipment_software
 equipment_statuses
 equipment_types
 event_categories
@@ -93,6 +94,7 @@ rj45_speed
 role_assignment_rights
 role_hierarchy
 role_module_permissions
+software
 supplier_statuses
 suppliers
 switch_port_numbering_layout

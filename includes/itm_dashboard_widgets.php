@@ -273,7 +273,7 @@ if (!function_exists('itm_dashboard_widget_fetch_data')) {
                 $sparkline = itm_dashboard_query_expiring_trend($conn, $companyId);
                 return [
                     'metric' => $metric,
-                    'subtitle' => 'Certificate or warranty within 30 days',
+                    'subtitle' => 'Certificate, warranty, or EOL within 30 days',
                     'sparkline' => $sparkline,
                 ];
             case 'patches_due_30d':

@@ -349,6 +349,10 @@ if ($stmt) {
 
 }
 
+if (function_exists('itm_software_eol_append_calendar_events')) {
+    itm_software_eol_append_calendar_events($conn, (int)$company_id, $start_range, $end_range, $events_data);
+}
+
 // Patches Updates — open rows with due_date only (shared integration helper)
 if (has_module_access($conn, (int)$company_id, 'patches_updates')) {
     require_once ROOT_PATH . 'includes/itm_patches_updates_integrations.php';
@@ -570,6 +574,8 @@ if (!isset($crud_title)) {
                                             <a href="../patches_updates/view.php?id=<?php echo $ev['id']; ?>" class="btn btn-sm">Patch</a>
                                         <?php elseif ($ev['type'] === 'change_request'): ?>
                                             <a href="../change_requests/view.php?id=<?php echo $ev['id']; ?>" class="btn btn-sm">Change</a>
+                                        <?php elseif (!empty($ev['href'])): ?>
+                                            <a href="<?php echo sanitize((string)$ev['href']); ?>" class="btn btn-sm" title="View">🔎</a>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -672,6 +678,7 @@ if (!isset($crud_title)) {
                                                 elseif ($ev['type'] === 'equipment') { $link = '../equipment/view.php?id=' . $ev['id']; }
                                                 elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
                                                 elseif ($ev['type'] === 'change_request') { $link = '../change_requests/view.php?id=' . $ev['id']; }
+                                                if (!empty($ev['href'])) { $link = $ev['href']; }
                                         ?>
                                             <div class="all-day-item" style="background:<?php echo $color; ?>;" onclick="location.href='<?php echo $link; ?>'">
                                                 <?php
@@ -765,6 +772,7 @@ if (!isset($crud_title)) {
                                                     elseif ($ev['type'] === 'equipment') { $link = '../equipment/view.php?id=' . $ev['id']; }
                                                     elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
                                                 elseif ($ev['type'] === 'change_request') { $link = '../change_requests/view.php?id=' . $ev['id']; }
+                                                if (!empty($ev['href'])) { $link = $ev['href']; }
                                             ?>
                                                 <div class="all-day-item" style="background:<?php echo $color; ?>; width: 100%; overflow: hidden; text-overflow: ellipsis;" onclick="location.href='<?php echo $link; ?>'" title="<?php echo sanitize($ev['title']); ?>">
                                                     <?php

@@ -54,6 +54,7 @@ if (!isset($crud_title)) {
                         require __DIR__ . '/network_discovery_staging.php';
                         require __DIR__ . '/network_discovery_assets.php';
                     }
+                    ?>
                 <?php else: ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>

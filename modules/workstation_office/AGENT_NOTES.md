@@ -4,7 +4,7 @@
 Lookup table for workstation Office (e.g., specific to workstation configurations and asset management).
 
 ## 2. Key Tables
-- **workstation_office** — stores office names and status.
+- **workstation_office** — stores office/suite names plus optional `build`, `eol_date`, `extended_date`, `esu_date` (labels Build, EOL, Extended, ESU). Calendar/expiring inherit these onto equipment. See `docs/SOFTWARE_EOL.md`.
 
 ## 3. Required Relationships
 - **workstation_office** → depends on **companies**.

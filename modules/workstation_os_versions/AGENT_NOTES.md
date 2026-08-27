@@ -4,7 +4,7 @@
 Lookup table for workstation Os Versions (e.g., specific to workstation configurations and asset management).
 
 ## 2. Key Tables
-- **workstation_os_versions** — stores os_versions names and status.
+- **workstation_os_versions** — stores OS version names plus optional `build`, `eol_date`, `extended_date`, `esu_date` (labels Build, EOL, Extended, ESU). Calendar/expiring inherit these onto equipment. See `docs/SOFTWARE_EOL.md`.
 
 ## 3. Required Relationships
 - **workstation_os_versions** → depends on **companies**.

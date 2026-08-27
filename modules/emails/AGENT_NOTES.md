@@ -79,4 +79,4 @@ $config = itm_email_get_default_smtp_config($conn, $company_id);
 ```
 
 ## 12. Module Owner Notes (Optional)
-Integrates with **💰 Budgeting** and **Planning** modules via alert rules (license/warranty expiry) and shared `itm_send_email()` for workflow notifications (e.g. employee onboarding approvals).
+Integrates with **💰 Budgeting** and **Planning** modules via alert rules (license/warranty/certificate/EOL expiry) and shared `itm_send_email()` for workflow notifications (e.g. employee onboarding approvals). Catalog slug `eol_date` is seeded **disabled**; runner uses `itm_software_eol_email_rows()`. See `docs/SOFTWARE_EOL.md`.

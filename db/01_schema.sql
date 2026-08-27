@@ -1819,6 +1819,9 @@ CREATE TABLE `equipment` (
   `disposal_pending_by` int DEFAULT NULL,
   `warranty_expiry` date DEFAULT NULL,
   `certificate_expiry` date DEFAULT NULL,
+  `eol_date` date DEFAULT NULL,
+  `extended_date` date DEFAULT NULL,
+  `esu_date` date DEFAULT NULL,
   `warranty_type_id` int DEFAULT NULL,
   `printer_device_type_id` int DEFAULT NULL,
   `printer_color_capable` tinyint DEFAULT '0',
@@ -2754,6 +2757,54 @@ CREATE TABLE `license_management` (
   CONSTRAINT `license_management_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `license_management_ibfk_license_type` FOREIGN KEY (`license_type_id`) REFERENCES `license_types` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `license_management_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `software`
+DROP TABLE IF EXISTS `software`;
+
+CREATE TABLE `software` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `build` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `eol_date` date DEFAULT NULL,
+  `extended_date` date DEFAULT NULL,
+  `esu_date` date DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `software_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `equipment_software`
+DROP TABLE IF EXISTS `equipment_software`;
+
+CREATE TABLE `equipment_software` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `equipment_id` int NOT NULL,
+  `software_id` int NOT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_equipment_software_scope` (`company_id`,`equipment_id`,`software_id`),
+  KEY `equipment_id` (`equipment_id`),
+  KEY `software_id` (`software_id`),
+  CONSTRAINT `equipment_software_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `equipment_software_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `equipment_software_ibfk_software` FOREIGN KEY (`software_id`) REFERENCES `software` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `cable_colors`
 DROP TABLE IF EXISTS `cable_colors`;
@@ -4357,6 +4408,10 @@ CREATE TABLE `workstation_office` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `build` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `eol_date` date DEFAULT NULL,
+  `extended_date` date DEFAULT NULL,
+  `esu_date` date DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -4395,6 +4450,10 @@ CREATE TABLE `workstation_os_versions` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `build` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `eol_date` date DEFAULT NULL,
+  `extended_date` date DEFAULT NULL,
+  `esu_date` date DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,

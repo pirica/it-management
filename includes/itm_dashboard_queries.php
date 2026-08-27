@@ -210,8 +210,11 @@ if (!function_exists('itm_dashboard_query_expiring_within_days_count')) {
             return 0;
         }
 
-        $sql = 'SELECT COUNT(*) AS cnt
+        $sql = 'SELECT COUNT(DISTINCT e.id) AS cnt
                 FROM equipment e
+                ' . (function_exists('itm_software_eol_tables_ready') && itm_software_eol_tables_ready($conn)
+                    ? itm_software_eol_equipment_join_sql()
+                    : '') . '
                 WHERE e.company_id = ?
                   AND e.deleted_at IS NULL
                   AND (
@@ -222,12 +225,19 @@ if (!function_exists('itm_dashboard_query_expiring_within_days_count')) {
                     (e.warranty_expiry IS NOT NULL
                      AND e.warranty_expiry >= CURDATE()
                      AND e.warranty_expiry <= DATE_ADD(CURDATE(), INTERVAL ? DAY))
+                    ' . (function_exists('itm_software_eol_tables_ready') && itm_software_eol_tables_ready($conn)
+                        ? ' OR ' . itm_software_eol_inherited_eol_predicate_sql('CURDATE()', 'DATE_ADD(CURDATE(), INTERVAL ? DAY)')
+                        : '') . '
                   )';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             return 0;
         }
-        mysqli_stmt_bind_param($stmt, 'iii', $companyId, $days, $days);
+        if (function_exists('itm_software_eol_tables_ready') && itm_software_eol_tables_ready($conn)) {
+            mysqli_stmt_bind_param($stmt, 'iiiiiii', $companyId, $days, $days, $days, $days, $days, $days);
+        } else {
+            mysqli_stmt_bind_param($stmt, 'iii', $companyId, $days, $days);
+        }
         mysqli_stmt_execute($stmt);
         $count = 0;
         if (function_exists('itm_mysqli_stmt_fetch_assoc')) {
@@ -262,19 +272,29 @@ if (!function_exists('itm_dashboard_query_expiring_trend')) {
         }
 
         foreach ($meta['dates'] as $idx => $date) {
-            $sql = 'SELECT COUNT(*) AS cnt
+            $sql = 'SELECT COUNT(DISTINCT e.id) AS cnt
                     FROM equipment e
+                    ' . (function_exists('itm_software_eol_tables_ready') && itm_software_eol_tables_ready($conn)
+                        ? itm_software_eol_equipment_join_sql()
+                        : '') . '
                     WHERE e.company_id = ?
                       AND e.deleted_at IS NULL
                       AND (
                         e.certificate_expiry = ?
                         OR e.warranty_expiry = ?
+                        ' . (function_exists('itm_software_eol_tables_ready') && itm_software_eol_tables_ready($conn)
+                            ? ' OR e.eol_date = ? OR wo.eol_date = ? OR wov.eol_date = ? OR s.eol_date = ?'
+                            : '') . '
                       )';
             $stmt = mysqli_prepare($conn, $sql);
             if (!$stmt) {
                 continue;
             }
-            mysqli_stmt_bind_param($stmt, 'iss', $companyId, $date, $date);
+            if (function_exists('itm_software_eol_tables_ready') && itm_software_eol_tables_ready($conn)) {
+                mysqli_stmt_bind_param($stmt, 'issssss', $companyId, $date, $date, $date, $date, $date, $date);
+            } else {
+                mysqli_stmt_bind_param($stmt, 'iss', $companyId, $date, $date);
+            }
             mysqli_stmt_execute($stmt);
             if (function_exists('itm_mysqli_stmt_fetch_assoc')) {
                 $row = itm_mysqli_stmt_fetch_assoc($stmt);

@@ -4,7 +4,8 @@
 Read-only dashboard for upcoming and past expirations. Aggregates dates from **equipment** (warranty, certificate) and **alerts** (end dates) — there is **no** `expiring` table.
 
 ## 2. Key Tables (read-only sources)
-- **equipment** — `warranty_expiry`, `certificate_expiry` (joined to **warranty_types** for labels).
+- **equipment** — `warranty_expiry`, `certificate_expiry`, hardware `eol_date` / `extended_date` / `esu_date`.
+- **workstation_office**, **workstation_os_versions**, **software** — catalog dates with affected equipment counts (`includes/itm_software_eol.php`).
 - **alerts** — `end_datetime` (only alerts with a valid end date are listed; null/empty end dates count as "unknown").
 
 ## 3. Required Relationships
