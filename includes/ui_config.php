@@ -56,6 +56,7 @@ function itm_sidebar_base_structure() {
             'items' => [
                 ['id' => 'vlans', 'label' => '🏷️ VLANs', 'href' => 'modules/vlans/', 'match_dir' => 'vlans'],
                 ['id' => 'ip_subnets', 'label' => '🧭 IP Subnets', 'href' => 'modules/ip_subnets/', 'match_dir' => 'ip_subnets'],
+                ['id' => 'network_discovery', 'label' => '🔍 Network Discovery', 'href' => 'modules/network_discovery/', 'match_dir' => 'network_discovery'],
                 ['id' => 'ip_addresses', 'label' => '📍 IP Addresses', 'href' => 'modules/ip_addresses/', 'match_dir' => 'ip_addresses'],
             ],
         ],
