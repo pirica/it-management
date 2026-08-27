@@ -77,6 +77,17 @@ if ($updateStmt) {
     mysqli_stmt_bind_param($updateStmt, 'ii', $ticketId, $company_id);
     if (mysqli_stmt_execute($updateStmt)) {
         $_SESSION['crud_success'] = $successMsg;
+        if (function_exists('itm_ticket_activity_log')) {
+            $actorId = (int)($_SESSION['employee_id'] ?? 0);
+            itm_ticket_activity_log(
+                $conn,
+                (int)$company_id,
+                $ticketId,
+                $actorId > 0 ? $actorId : null,
+                $action === 'archive' ? 'archived' : 'unarchived',
+                []
+            );
+        }
     } else {
         $_SESSION['crud_error'] = 'Failed to update ticket status.';
     }

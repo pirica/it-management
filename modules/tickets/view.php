@@ -119,7 +119,7 @@ if ($item && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ticket_c
 if ($item && !empty($item['id'])) {
     itm_ticket_sla_check_breaches($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id']);
 }
-$ticketComments = $item ? itm_ticket_comments_for_ticket($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id'], $isSupportAgent) : [];
+$ticketActivityFeed = $item ? itm_ticket_unified_activity_feed($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id'], $isSupportAgent) : [];
 $ticketLinkedProblems = $item ? itm_problem_list_for_ticket($conn, (int)$company_id, (int)$item['id']) : [];
 $ticketMasterTicketId = $item ? itm_ticket_resolve_master_ticket_id($conn, (int)$company_id, (int)$item['id']) : 0;
 $ticketKnownErrorSuggestions = [];
@@ -357,31 +357,50 @@ if (!isset($crud_title)) {
                         <div class="alert alert-info"><?php echo sanitize($ticketCommentFlash); ?></div>
                     <?php endif; ?>
                     <div class="card" style="margin-top:16px;">
-                        <h3 title="Comments">💬</h3>
-                        <?php if (empty($ticketComments)): ?>
-                            <p>No comments yet.</p>
+                        <h3 title="Activity">📋</h3>
+                        <?php if (empty($ticketActivityFeed)): ?>
+                            <p>No activity yet.</p>
                         <?php else: ?>
-                            <ul>
-                                <?php foreach ($ticketComments as $tc): ?>
-                                    <li style="margin-bottom:12px;">
-                                        <strong><?php echo sanitize(trim(($tc['first_name'] ?? '') . ' ' . ($tc['last_name'] ?? '')) ?: ($tc['username'] ?? '')); ?></strong>
-                                        <?php if ((int)$tc['is_internal'] === 1): ?><span class="badge">Internal</span><?php endif; ?>
-                                        <div><?php echo nl2br(sanitize($tc['body'])); ?></div>
-                                        <small><?php echo sanitize(itm_format_audit_timestamp_display($tc['created_at'] ?? '')); ?></small>
-                                    </li>
+                            <ul class="itm-ticket-activity-feed" style="list-style:none;padding:0;margin:0;">
+                                <?php foreach ($ticketActivityFeed as $feedItem): ?>
+                                    <?php if (($feedItem['kind'] ?? '') === 'comment'): ?>
+                                        <?php $tc = $feedItem['comment'] ?? []; ?>
+                                        <li style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border,#e5e7eb);">
+                                            <strong><?php echo sanitize(trim(($tc['first_name'] ?? '') . ' ' . ($tc['last_name'] ?? '')) ?: ($tc['username'] ?? '')); ?></strong>
+                                            <?php if ((int)($tc['is_internal'] ?? 0) === 1): ?><span class="badge">Internal</span><?php endif; ?>
+                                            <div><?php echo nl2br(sanitize((string)($tc['body'] ?? ''))); ?></div>
+                                            <small><?php echo sanitize(itm_format_audit_timestamp_display($tc['created_at'] ?? '')); ?></small>
+                                        </li>
+                                    <?php elseif (($feedItem['kind'] ?? '') === 'event'): ?>
+                                        <?php
+                                        $ev = $feedItem['event'] ?? [];
+                                        $payload = json_decode((string)($ev['payload_json'] ?? ''), true);
+                                        if (!is_array($payload)) {
+                                            $payload = [];
+                                        }
+                                        $summary = itm_ticket_activity_format_event_summary((string)($ev['event_type'] ?? ''), $payload);
+                                        ?>
+                                        <li style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed var(--border,#e5e7eb);">
+                                            <span class="badge badge-secondary" style="margin-right:6px;">System</span>
+                                            <strong><?php echo sanitize(itm_ticket_activity_actor_display_name($ev)); ?></strong>
+                                            <span><?php echo sanitize($summary); ?></span>
+                                            <div><small><?php echo sanitize(itm_format_audit_timestamp_display($ev['created_at'] ?? '')); ?></small></div>
+                                        </li>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                             </ul>
                         <?php endif; ?>
                         <form method="POST" style="margin-top:12px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
-                            <textarea name="comment_body" class="form-control" rows="3" required></textarea>
+                            <label for="ticket-comment-body">Add comment</label>
+                            <textarea id="ticket-comment-body" name="comment_body" class="form-control" rows="3" required></textarea>
                             <?php if ($isSupportAgent): ?>
                                 <label class="itm-checkbox-control" style="margin-top:8px;">
                                     <input type="checkbox" name="is_internal" value="1">
                                     <span>Internal note</span>
                                 </label>
                             <?php endif; ?>
-                            <button type="submit" name="add_ticket_comment" value="1" class="btn btn-primary" title="Save" style="margin-top:8px;">💾</button>
+                            <button type="submit" name="add_ticket_comment" value="1" class="btn btn-primary" title="Add comment" style="margin-top:8px;">💾</button>
                         </form>
                     </div>
                     <?php $surveyPublicUrl = ''; ?>

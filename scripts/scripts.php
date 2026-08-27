@@ -3050,6 +3050,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for Live Chat: schema tables, SLA on ticket create, chat_with ACL, employee notifications, ticket activity/comments helpers.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="tickets ticket_activity ticket_comments Mixed">
+                    <td><a href="verify_ticket_activity.php" target="_blank" rel="nofollow noreferrer">verify_ticket_activity.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">tickets</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ticket_activity</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ticket_comments</span></span></td>
+                    <td>Ticket Activity feed: comment create hooks, edit/archive activity logging, unified feed merge, SLA first-response stamp.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_ticket_activity.php</code></td>
+                </tr>
                 <tr data-tags="automation_rules automation_rule_runs tickets">
                     <td><a href="verify_automation_rules.php" target="_blank" rel="nofollow noreferrer">verify_automation_rules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
