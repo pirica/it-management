@@ -2687,7 +2687,7 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
 
     mysqli_stmt_bind_param(
         $stmt,
-        'iissssiiiisssssiissiiiis',
+        'iissssiiiiisssssiissiiiis',
         $company_id,
         $user_id,
         $config['table_actions_position'],
