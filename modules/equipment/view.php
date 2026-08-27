@@ -2,6 +2,8 @@
 require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 require_once ROOT_PATH . 'includes/itm_asset_depreciation.php';
+require_once ROOT_PATH . 'includes/itm_patches_updates_integrations.php';
+require_once ROOT_PATH . 'includes/itm_equipment_view_related.php';
 require_once __DIR__ . '/../../includes/ipam_helpers.php';
 
 $equipmentDisposalFlash = '';
@@ -436,6 +438,13 @@ if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1
         </table>
     </div>
 </div>
+<?php endif; ?>
+
+<?php if ($item): ?>
+<?php
+itm_patches_updates_render_equipment_view_card($conn, (int)$company_id, (int)$item['id'], (int)($_SESSION['employee_id'] ?? 0));
+itm_equipment_render_tickets_view_card($conn, (int)$company_id, (int)$item['id'], (int)($_SESSION['employee_id'] ?? 0));
+?>
 <?php endif; ?>
 
 <?php

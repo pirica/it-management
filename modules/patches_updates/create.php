@@ -634,6 +634,13 @@ foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
 }
 
+if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $prefillEquipmentId = (int)($_GET['equipment_id'] ?? 0);
+    if ($prefillEquipmentId > 0) {
+        $data['equipment_id'] = (string)$prefillEquipmentId;
+    }
+}
+
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $patchPhotoFilenamesToDeleteAfterSave = [];
 

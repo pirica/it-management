@@ -97,6 +97,12 @@ if (strpos($helperSource, 'Product gaps') === false) {
     pu_verify_pass('Product gaps heading present in integration helper');
 }
 
+if (strpos($helperSource, '$dashboardAllowed = !empty($summary[\'dashboard_allowed\']);') === false) {
+    pu_verify_fail('Product gaps panel must assign dashboardAllowed from integration summary');
+} else {
+    pu_verify_pass('Product gaps panel assigns dashboardAllowed');
+}
+
 $calendarSource = is_file($calendarPath) ? (string)file_get_contents($calendarPath) : '';
 if (strpos($calendarSource, 'itm_patches_updates_list_calendar_rows') === false) {
     pu_verify_fail('calendar/index.php must use itm_patches_updates_list_calendar_rows()');

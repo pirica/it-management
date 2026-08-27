@@ -226,6 +226,7 @@ if (!function_exists('itm_patches_updates_render_product_gaps_panel')) {
         $dashboardUrl = (string)($summary['dashboard_url'] ?? '');
         $userConfigUrl = (string)($summary['user_config_url'] ?? '');
         $calendarAllowed = !empty($summary['calendar_allowed']);
+        $dashboardAllowed = !empty($summary['dashboard_allowed']);
         $widgetAllowed = !empty($summary['widget_allowed']);
         ?>
         <section class="card itm-patches-product-gaps" style="margin-bottom:16px;" aria-labelledby="itm-patches-product-gaps-title">
@@ -256,6 +257,124 @@ if (!function_exists('itm_patches_updates_render_product_gaps_panel')) {
                 </div>
             </div>
         </section>
+        <?php
+    }
+}
+
+if (!function_exists('itm_patches_updates_module_access_allowed')) {
+    function itm_patches_updates_module_access_allowed($conn, $companyId)
+    {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return false;
+        }
+
+        return !function_exists('has_module_access') || has_module_access($conn, $companyId, 'patches_updates');
+    }
+}
+
+if (!function_exists('itm_patches_updates_fetch_for_equipment')) {
+    /**
+     * @return array<string,mixed>|null
+     */
+    function itm_patches_updates_fetch_for_equipment($conn, $companyId, $equipmentId)
+    {
+        $companyId = (int)$companyId;
+        $equipmentId = (int)$equipmentId;
+        if (!($conn instanceof mysqli) || $companyId <= 0 || $equipmentId <= 0) {
+            return null;
+        }
+
+        $sql = 'SELECT pu.*,
+                       pus.name AS status_name,
+                       pus.color AS status_color,
+                       pus.is_closed AS status_is_closed,
+                       pul.level AS level_name
+                FROM patches_updates pu
+                LEFT JOIN patches_updates_status pus
+                    ON pus.id = pu.status_id AND pus.company_id = pu.company_id
+                LEFT JOIN patches_updates_level pul
+                    ON pul.id = pu.level_id AND pul.company_id = pu.company_id
+                WHERE pu.company_id = ? AND pu.equipment_id = ? AND pu.deleted_at IS NULL
+                LIMIT 1';
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $equipmentId);
+        mysqli_stmt_execute($stmt);
+        $row = null;
+        if (function_exists('itm_mysqli_stmt_fetch_assoc')) {
+            $row = itm_mysqli_stmt_fetch_assoc($stmt);
+        } else {
+            $res = mysqli_stmt_get_result($stmt);
+            $row = $res ? mysqli_fetch_assoc($res) : null;
+        }
+        mysqli_stmt_close($stmt);
+
+        return is_array($row) ? $row : null;
+    }
+}
+
+if (!function_exists('itm_patches_updates_render_equipment_view_card')) {
+    function itm_patches_updates_render_equipment_view_card($conn, $companyId, $equipmentId, $employeeId = 0)
+    {
+        $companyId = (int)$companyId;
+        $equipmentId = (int)$equipmentId;
+        if (!($conn instanceof mysqli) || $companyId <= 0 || $equipmentId <= 0) {
+            return;
+        }
+        if (!itm_patches_updates_module_access_allowed($conn, $companyId)) {
+            return;
+        }
+
+        $patchRow = itm_patches_updates_fetch_for_equipment($conn, $companyId, $equipmentId);
+        $base = defined('BASE_URL') ? BASE_URL : '';
+        $createUrl = $base . 'modules/patches_updates/create.php?equipment_id=' . $equipmentId;
+        ?>
+        <div class="card" style="margin-top:20px;">
+            <h2 style="margin-top:0;">Patches &amp; Updates</h2>
+            <p style="margin:0 0 12px;color:#57606a;">Vulnerability and patch tracking linked to this equipment (one patch row per asset).</p>
+            <?php if (!$patchRow): ?>
+                <p style="margin:0;">No patch record is linked to this equipment yet.</p>
+                <p style="margin:12px 0 0;">
+                    <a class="btn btn-sm btn-primary" href="<?php echo sanitize($createUrl); ?>" title="Create patch record">➕</a>
+                </p>
+            <?php else: ?>
+                <?php
+                $patchId = (int)($patchRow['id'] ?? 0);
+                $viewUrl = $base . 'modules/patches_updates/view.php?id=' . $patchId;
+                $editUrl = $base . 'modules/patches_updates/edit.php?id=' . $patchId;
+                $statusLabel = trim((string)($patchRow['status_name'] ?? ''));
+                $statusColor = trim((string)($patchRow['status_color'] ?? ''));
+                $summaryRows = [
+                    'Status' => $statusLabel !== '' && function_exists('itm_crud_render_status_label_badge')
+                        ? itm_crud_render_status_label_badge($statusLabel, $statusColor)
+                        : sanitize($statusLabel !== '' ? $statusLabel : '—'),
+                    'Level' => sanitize((string)($patchRow['level_name'] ?? '—')),
+                    'Due date' => sanitize(itm_format_cell_scalar_display('due_date', $patchRow['due_date'] ?? '', 'patches_updates')),
+                    'CVE' => sanitize((string)($patchRow['cve'] ?? '—')),
+                    'Severity' => sanitize((string)($patchRow['severity'] ?? '—')),
+                    'Operating system' => sanitize((string)($patchRow['operating_system'] ?? '—')),
+                    'Scan date' => sanitize(itm_format_cell_scalar_display('date', $patchRow['date'] ?? '', 'patches_updates')),
+                ];
+                ?>
+                <table><tbody>
+                <?php foreach ($summaryRows as $label => $valueHtml): ?>
+                    <?php if ($label !== 'Status' && trim(strip_tags((string)$valueHtml)) === '—') { continue; } ?>
+                    <tr>
+                        <th style="width:240px;"><?php echo sanitize($label); ?></th>
+                        <td><?php echo $valueHtml; ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody></table>
+                <p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <a class="btn btn-sm" href="<?php echo sanitize($viewUrl); ?>" title="View patch record">🔎</a>
+                    <a class="btn btn-sm btn-primary" href="<?php echo sanitize($editUrl); ?>" title="Edit patch record">✏️</a>
+                </p>
+            <?php endif; ?>
+        </div>
         <?php
     }
 }
