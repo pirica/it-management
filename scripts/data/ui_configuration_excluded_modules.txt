@@ -57,6 +57,7 @@ schema_migrations
 system_status
 todo
 ticket_sla_dashboard
+network_discovery
 vault_org_recovery
 visitors_access_log
 vlans

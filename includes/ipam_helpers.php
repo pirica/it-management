@@ -681,6 +681,140 @@ function itm_ipam_quick_host_alive(string $ip, float $timeout = 0.35): array
 }
 
 /**
+ * Why: Scheduled discovery enriches alive hosts with HTTP Server/title hints (no shell).
+ *
+ * @return array{server: string, title: string, port: int|null}
+ */
+function itm_ipam_http_fingerprint(string $ip, array $openPorts = [], float $timeout = 0.45): array
+{
+    $ports = $openPorts !== [] ? $openPorts : [80, 443];
+    $server = '';
+    $title = '';
+    $usedPort = null;
+
+    foreach ($ports as $port) {
+        $port = (int)$port;
+        if ($port <= 0) {
+            continue;
+        }
+        $probe = itm_ipam_socket_ping($ip, $port, $timeout);
+        if (empty($probe['reachable'])) {
+            continue;
+        }
+
+        $scheme = $port === 443 ? 'https' : 'http';
+        $targetPort = $port === 443 ? 443 : ($port === 80 ? 80 : $port);
+        $host = $ip;
+        $errno = 0;
+        $errstr = '';
+        $socket = @stream_socket_client(
+            'tcp://' . $host . ':' . $targetPort,
+            $errno,
+            $errstr,
+            $timeout,
+            STREAM_CLIENT_CONNECT
+        );
+        if (!$socket) {
+            continue;
+        }
+        stream_set_timeout($socket, (int)ceil($timeout));
+        $path = '/';
+        $request = 'GET ' . $path . ' HTTP/1.0\r\nHost: ' . $host . "\r\nConnection: close\r\n\r\n";
+        @fwrite($socket, $request);
+        $response = '';
+        while (!feof($socket)) {
+            $chunk = @fread($socket, 8192);
+            if ($chunk === false || $chunk === '') {
+                break;
+            }
+            $response .= $chunk;
+            if (strlen($response) > 16384) {
+                break;
+            }
+        }
+        fclose($socket);
+
+        if ($response === '') {
+            $usedPort = $targetPort;
+            break;
+        }
+
+        if (preg_match('/^HTTP\/[\d.]+[^\r\n]*/i', $response, $statusMatch)) {
+            $headerBody = preg_split("/\r?\n\r?\n/", $response, 2);
+            $headerBlock = (string)($headerBody[0] ?? '');
+            foreach (preg_split("/\r?\n/", $headerBlock) as $line) {
+                if (stripos($line, 'Server:') === 0) {
+                    $server = trim(substr($line, 7));
+                }
+            }
+            $body = (string)($headerBody[1] ?? '');
+            if (preg_match('/<title[^>]*>(.*?)<\/title>/is', $body, $titleMatch)) {
+                $title = trim(html_entity_decode(strip_tags($titleMatch[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                if (strlen($title) > 120) {
+                    $title = substr($title, 0, 117) . '…';
+                }
+            }
+        }
+        $usedPort = $targetPort;
+        if ($server !== '' || $title !== '') {
+            break;
+        }
+    }
+
+    return ['server' => $server, 'title' => $title, 'port' => $usedPort];
+}
+
+/**
+ * Why: Batch runner can scan a slice of IPs without re-parsing the full profile queue.
+ *
+ * @param array<int, string> $ips
+ * @return array{ok: bool, error?: string, scanned?: int, found?: int, hosts?: array<int, array<string, mixed>>}
+ */
+function itm_ipam_network_discovery_scan_ips_batch(
+    mysqli $conn,
+    int $company_id,
+    array $ips,
+    int $offset,
+    int $batchSize = 10,
+    float $probeTimeout = 0.35
+): array {
+    if ($company_id <= 0) {
+        return ['ok' => false, 'error' => 'Active company is required.'];
+    }
+    $offset = max(0, $offset);
+    $batchSize = max(1, min(25, $batchSize));
+    $total = count($ips);
+    $batchIps = array_slice($ips, $offset, $batchSize);
+    if ($batchIps === []) {
+        return [
+            'ok' => true,
+            'total' => $total,
+            'offset' => $offset,
+            'next_offset' => $offset,
+            'complete' => true,
+            'scanned' => 0,
+            'found' => 0,
+            'hosts' => [],
+        ];
+    }
+
+    $scanResult = itm_ipam_network_discovery_scan_ips($conn, $company_id, $batchIps, $probeTimeout);
+    $hosts = $scanResult['hosts'] ?? [];
+    $nextOffset = $offset + count($batchIps);
+
+    return [
+        'ok' => true,
+        'total' => $total,
+        'offset' => $offset,
+        'next_offset' => $nextOffset,
+        'complete' => $nextOffset >= $total,
+        'scanned' => count($batchIps),
+        'found' => count($hosts),
+        'hosts' => $hosts,
+    ];
+}
+
+/**
  * @param array<int, string> $ips
  * @return array{hosts: array<int, array<string, mixed>>, activities: array<int, array{level: string, message: string}>}
  */

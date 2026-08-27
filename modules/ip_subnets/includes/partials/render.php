@@ -33,6 +33,11 @@ if (!isset($crud_title)) {
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <?php $itmSubnetListBulkGenerateColumn = (($crud_table ?? '') === 'ip_subnets'); ?>
+                <div class="card" style="margin-bottom:16px;padding:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <a class="btn btn-sm btn-primary" href="index.php">Subnets</a>
+                    <a class="btn btn-sm" href="../network_discovery/index.php?tab=profiles">Discovery profiles</a>
+                    <a class="btn btn-sm" href="../network_discovery/index.php?tab=staging">Staging queue</a>
+                </div>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                         <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
