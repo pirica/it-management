@@ -34,6 +34,15 @@ final class HotelBookingPortalDateFormatTest extends TestCase
         );
     }
 
+    public function testFreeCancelDeadlineUsesPortalDateFormat(): void
+    {
+        $settings = ['portal_date_format' => 'european_ddmmmyyyy'];
+        $this->assertSame(
+            '22/Aug/2026',
+            itm_hotel_booking_portal_format_free_cancel_deadline_display('2026-08-27', 5, $settings)
+        );
+    }
+
     public function testPortalDateFormatFromSettingsAcceptsDdMmmYyyy(): void
     {
         $this->assertSame(

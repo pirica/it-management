@@ -15,6 +15,7 @@ if ($company_id <= 0) {
     $company_id = hb_public_company_id($conn);
 }
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
+hb_portal_bind_money_settings($settings);
 $booking = $bid > 0 ? hb_portal_load_booking_confirmation($conn, $company_id, $bid) : null;
 
 if (!$booking) {

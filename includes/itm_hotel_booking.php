@@ -7791,6 +7791,18 @@ if (!function_exists('itm_hotel_booking_portal_datetime_format_default_from_sett
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_format_free_cancel_deadline_display')) {
+  function itm_hotel_booking_portal_format_free_cancel_deadline_display($checkInIso, $daysBefore, $settings = null) {
+    $checkInIso = itm_parse_date_input($checkInIso);
+    if ($checkInIso === null) {
+      return '';
+    }
+    $daysBefore = max(0, (int) $daysBefore);
+    $deadlineIso = date('Y-m-d', strtotime($checkInIso . ' -' . $daysBefore . ' days'));
+    return itm_hotel_booking_portal_format_date_display($deadlineIso, is_array($settings) ? $settings : []);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_format_date_display')) {
   function itm_hotel_booking_portal_format_date_display($rawValue, $settings = null) {
     $canonical = itm_parse_date_input($rawValue);

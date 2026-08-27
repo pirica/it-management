@@ -127,6 +127,8 @@ $bookingFiles = [
     'rooms/customize.php',
     'rooms/room-single.php',
     'rooms/payment.php',
+    'rooms/confirmation-pdf.php',
+    'users/bookings.php',
     'includes/portal_chrome.php',
     'includes/portal_checkout.php',
 ];
@@ -140,8 +142,10 @@ foreach ($bookingFiles as $rel) {
     $src = (string) @file_get_contents($path);
     $usesPhpFormat = strpos($src, 'hb_portal_format_date_display') !== false
         || strpos($src, 'hb_portal_format_stay_range_label') !== false
+        || strpos($src, 'hb_portal_render_date_input') !== false
         || strpos($src, 'portal_chrome.php') !== false;
     $usesJsFormat = strpos($src, 'hotel-booking-date-format.js') !== false
+        || strpos($src, 'hb_portal_render_date_format_scripts') !== false
         || strpos($src, 'hbPortalFormatDateYmd') !== false
         || strpos($src, 'itmHotelDateFormatYmd') !== false;
     if ($usesPhpFormat || $usesJsFormat) {
@@ -149,6 +153,34 @@ foreach ($bookingFiles as $rel) {
     } else {
         hb_date_fmt_fail("booking/{$rel} has no portal date format wiring");
     }
+}
+
+$selectRateSrc = (string) @file_get_contents($bookingRoot . 'rooms/select-rate.php');
+if (strpos($selectRateSrc, "date('F jS, Y'") !== false) {
+    hb_date_fmt_fail('select-rate.php still uses hardcoded English cancel deadline date()');
+} else {
+    hb_date_fmt_pass('select-rate.php cancel deadline uses portal formatter');
+}
+
+$roomSingleSrc = (string) @file_get_contents($bookingRoot . 'rooms/room-single.php');
+if (strpos($roomSingleSrc, 'hb_portal_render_date_input') === false) {
+    hb_date_fmt_fail('room-single.php must use hb_portal_render_date_input for editable dates');
+} else {
+    hb_date_fmt_pass('room-single.php editable dates use hb_portal_render_date_input');
+}
+
+$hotelDateInputJs = (string) @file_get_contents(dirname(__DIR__) . '/js/hotel-date-input.js');
+if (strpos($hotelDateInputJs, 'hbPortalFormatDateYmd') === false) {
+    hb_date_fmt_fail('js/hotel-date-input.js must delegate display to hbPortalFormatDateYmd');
+} else {
+    hb_date_fmt_pass('js/hotel-date-input.js delegates to portal date formatter');
+}
+
+$cancelDeadline = itm_hotel_booking_portal_format_free_cancel_deadline_display('2026-08-27', 5, ['portal_date_format' => 'european_ddmmmyyyy']);
+if ($cancelDeadline !== '22/Aug/2026') {
+    hb_date_fmt_fail("free cancel deadline expected 22/Aug/2026 got {$cancelDeadline}");
+} else {
+    hb_date_fmt_pass('free cancel deadline respects european_ddmmmyyyy');
 }
 
 if ($fail > 0) {

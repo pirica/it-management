@@ -25,6 +25,9 @@
     }
 
     function formatHotelDate(ymd) {
+        if (typeof window.hbPortalFormatDateYmd === 'function') {
+            return window.hbPortalFormatDateYmd(ymd);
+        }
         var dt = parseYmd(ymd);
         if (!dt) {
             return '';
@@ -33,6 +36,12 @@
     }
 
     function parseHotelDateText(text) {
+        if (typeof window.hbPortalParseDateText === 'function') {
+            var portalIso = window.hbPortalParseDateText(text);
+            if (portalIso !== '') {
+                return portalIso;
+            }
+        }
         var raw = String(text || '').trim();
         var match = /^(\d{1,2})\/([A-Za-z]{3})\/(\d{4})$/.exec(raw);
         if (!match) {
@@ -118,7 +127,6 @@
     document.querySelectorAll('.hb-hotel-date-field').forEach(bindField);
 
     document.querySelectorAll('.hb-hotel-date-open').forEach(function (btn) {
-        // bulkDeleteForm - guard to satisfy event listener loop test
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             event.stopPropagation();
@@ -137,6 +145,10 @@
         });
     });
 
-    window.itmHotelDateFormatYmd = formatHotelDate;
-    window.itmHotelDateParseText = parseHotelDateText;
+    if (typeof window.itmHotelDateFormatYmd !== 'function') {
+        window.itmHotelDateFormatYmd = formatHotelDate;
+    }
+    if (typeof window.itmHotelDateParseText !== 'function') {
+        window.itmHotelDateParseText = parseHotelDateText;
+    }
 })();
