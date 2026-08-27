@@ -958,6 +958,8 @@ if (!isset($crud_title)) {
                                 <label for="ui_money_symbol">Money symbol</label>
                                 <select id="ui_money_symbol" name="ui_money_symbol" class="form-control">
                                     <option value="EUR" <?php echo itm_ui_locale_money_symbol_code_from_config($currentUiConfig) === 'EUR' ? 'selected' : ''; ?>>€ Euro</option>
+                                    <option value="GBP" <?php echo itm_ui_locale_money_symbol_code_from_config($currentUiConfig) === 'GBP' ? 'selected' : ''; ?>>£ Pound</option>
+                                    <option value="USD" <?php echo itm_ui_locale_money_symbol_code_from_config($currentUiConfig) === 'USD' ? 'selected' : ''; ?>>$ Dollar</option>
                                 </select>
                             </div>
                             <div class="form-group">

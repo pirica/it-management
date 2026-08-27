@@ -83,6 +83,13 @@ if ($settingsSource === false) {
             ui_locale_pass('Settings index references ' . $needle);
         }
     }
+    foreach (['value="GBP"', 'value="USD"', '£ Pound', '$ Dollar'] as $moneyOptionNeedle) {
+        if (strpos($settingsSource, $moneyOptionNeedle) === false) {
+            ui_locale_fail('modules/settings/index.php missing money symbol option ' . $moneyOptionNeedle);
+        } else {
+            ui_locale_pass('Settings index includes money symbol option ' . $moneyOptionNeedle);
+        }
+    }
 }
 
 $sampleConfig = [
@@ -138,6 +145,22 @@ if (!empty($normalized['errors'])) {
     ui_locale_fail('Prefix selection should clear suffix flag and set prefix');
 } else {
     ui_locale_pass('POST normalize enforces prefix/suffix and date format');
+}
+
+foreach (['GBP', 'USD'] as $moneyCode) {
+    $glyphMap = itm_ui_locale_money_symbol_glyph_map();
+    $glyph = $glyphMap[$moneyCode] ?? '';
+    $moneyConfig = [
+        'ui_money_symbol' => $moneyCode,
+        'ui_money_symbol_suffix' => 1,
+        'ui_money_symbol_prefix' => 0,
+    ];
+    $expectedMoney = '69.50' . $glyph;
+    if (itm_ui_locale_format_money_display(69.5, $moneyConfig) !== $expectedMoney) {
+        ui_locale_fail('Suffix money format failed for ' . $moneyCode);
+    } else {
+        ui_locale_pass('Suffix money format for ' . $moneyCode);
+    }
 }
 
 $expectedSaveBindTypes = 'iissssiiiiisssssiissiiiis';
