@@ -23,6 +23,7 @@ $dashEventsCreated = (int)($dash['total_events_created'] ?? 0);
 $dashEventsForMe = (int)($dash['total_events_forme'] ?? 0);
 $dashAlertsCreated = (int)($dash['total_alerts_created'] ?? 0);
 $dashAlertsForMe = (int)($dash['total_alerts_forme'] ?? 0);
+$dashPatchesSummary = is_array($dash['patches_summary'] ?? null) ? $dash['patches_summary'] : ['all' => 0, 'for_me' => 0];
 $dashVaultCount = (int)($dash['vault_entries_count'] ?? 0);
 $dashLastLogin = $dash['last_login_row']['created_at'] ?? null;
 $dashJoinedAt = (string)($current_user['created_at'] ?? '');
@@ -92,6 +93,7 @@ $renderDashSection('My work', 'Assets, tickets, and assignments', static functio
     $dashEventsForMe,
     $dashAlertsCreated,
     $dashAlertsForMe,
+    $dashPatchesSummary,
     $dashWorkstation,
     $dashSystemAccessCount
 ) {
@@ -120,6 +122,14 @@ $renderDashSection('My work', 'Assets, tickets, and assignments', static functio
             $dashAlertsCreated . '/' . $dashAlertsForMe,
             'My Alerts (My/For Me)',
             '📢'
+        );
+    }
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'patches_updates')) {
+        $renderDashCard(
+            'modules/patches_updates/index.php',
+            (int)$dashPatchesSummary['all'] . '/' . (int)$dashPatchesSummary['for_me'],
+            'My Patches (All/For Me)',
+            '🛠️'
         );
     }
     if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'equipment')) {

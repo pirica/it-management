@@ -22,6 +22,7 @@ $adminEventsCreated = (int)($dash['total_events_created'] ?? 0);
 $adminEventsForMe = (int)($dash['total_events_forme'] ?? 0);
 $adminAlertsCreated = (int)($dash['total_alerts_created'] ?? 0);
 $adminAlertsForMe = (int)($dash['total_alerts_forme'] ?? 0);
+$adminPatchesSummary = is_array($dash['patches_summary'] ?? null) ? $dash['patches_summary'] : ['all' => 0, 'for_me' => 0];
 $adminFileCount = (int)($dash['file_count'] ?? 0);
 $adminVaultCount = (int)($dash['vault_entries_count'] ?? 0);
 $adminSystemAccessCount = (int)($dash['system_access_count_1'] ?? 0);
@@ -100,6 +101,7 @@ $renderAdminSection('My work', 'Assets, tickets, and assignments', static functi
     $adminEventsForMe,
     $adminAlertsCreated,
     $adminAlertsForMe,
+    $adminPatchesSummary,
     $adminWorkstation,
     $adminSystemAccessCount
 ) {
@@ -125,6 +127,13 @@ $renderAdminSection('My work', 'Assets, tickets, and assignments', static functi
             'modules/alerts/index.php',
             'My Alerts (My/For Me)',
             $adminAlertsCreated . '/' . $adminAlertsForMe
+        );
+    }
+    if (itm_employee_dashboard_module_slug_allowed($conn, $adminCompanyId, 'patches_updates')) {
+        $renderAdminStatCard(
+            'modules/patches_updates/index.php',
+            'My Patches (All/For Me)',
+            (int)$adminPatchesSummary['all'] . '/' . (int)$adminPatchesSummary['for_me']
         );
     }
     if (itm_employee_dashboard_module_slug_allowed($conn, $adminCompanyId, 'equipment')) {

@@ -97,7 +97,7 @@ if (strpos($dashboardSource, 'Switch Company') !== false) {
 }
 
 $cardsSource = is_file($cardsPath) ? (string)file_get_contents($cardsPath) : '';
-$requiredLabels = ['My Assets', 'My Tickets', 'Vault Entries'];
+$requiredLabels = ['My Assets', 'My Tickets', 'Vault Entries', 'My Patches (All/For Me)'];
 foreach ($requiredLabels as $label) {
     if (strpos($cardsSource, $label) === false) {
         ed_verify_fail('Employee dashboard cards must include label: ' . $label);
@@ -110,6 +110,18 @@ if (strpos($helperSource = (string)@file_get_contents($helperPath), 'itm_user_co
     ed_verify_fail('itm_employee_dashboard.php must call itm_user_config_fetch_stats_batch()');
 } else {
     ed_verify_pass('Employee dashboard helper uses consolidated stats batch');
+}
+
+if (strpos($helperSource, 'patches_summary') === false || strpos($helperSource, 'itm_patches_updates_my_work_summary_counts') === false) {
+    ed_verify_fail('itm_employee_dashboard.php must load patches_summary via itm_patches_updates_my_work_summary_counts()');
+} else {
+    ed_verify_pass('Employee dashboard helper loads patches All/For Me summary');
+}
+
+if (strpos($cardsSource, 'patches_updates') === false || strpos($cardsSource, 'My Patches (All/For Me)') === false) {
+    ed_verify_fail('Employee dashboard My work section must include My Patches (All/For Me) card');
+} else {
+    ed_verify_pass('Employee dashboard My work includes patches All/For Me card');
 }
 
 if (strpos($dashboardSource, 'itm-emp-dash-hero') === false) {
