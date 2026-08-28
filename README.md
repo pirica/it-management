@@ -39,7 +39,7 @@
 
 <p align="center"><img src="docs/readme/demo_login.png" alt="Login page" /></p>
 
-<p align="center"><strong>Seed companies and login accounts</strong> — a fresh <code>db/</code> import creates five tenants and the logins below. Password for <code>Admin</code> / <code>Admin2</code>–<code>Admin5</code> is <code>Admin</code>. Demo passwords match the username (<code>demo1</code> / <code>demo1</code>, …). After sign-in, change tenant from the dashboard <strong>Switch Company</strong> control (open <a href="http://localhost/it-management/dashboard.php">dashboard.php</a> in a new browser tab). Admin is detected as role name <code>Admin</code>, or username exactly <code>admin</code> (case-insensitive) — that is why <code>Admin2</code>–<code>Admin5</code> can open every tenant even though their grant table only has the home company.</p>
+<p align="center"><strong>Seed companies and login accounts</strong> — a fresh <code>db/</code> import creates five tenants and the logins below. Password for <code>Admin</code> / <code>Admin2</code>–<code>Admin5</code> is <code>Admin</code>. Demo passwords match the username (<code>demo1</code> / <code>demo1</code>, …). After sign-in, <strong>Admin</strong> users change tenant from the dashboard <strong>Switch Company</strong> card (open <a href="http://localhost/it-management/dashboard.php">dashboard.php</a> in a new browser tab); that card is hidden for other roles. Admin is detected as role name <code>Admin</code>, or username exactly <code>admin</code> (case-insensitive) — that is why <code>Admin2</code>–<code>Admin5</code> can open every tenant even though their grant table only has the home company.</p>
 
 | ID | Company |
 | --- | --- |
