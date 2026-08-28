@@ -1580,6 +1580,31 @@ END$$
 
 DELIMITER ;
 
+DROP TRIGGER IF EXISTS `trg_software_license_links_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_software_license_links_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_software_license_links_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_software_license_links_audit_insert` AFTER INSERT ON `software_license_links` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'software_license_links', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'software_id', NEW.`software_id`, 'license_management_id', NEW.`license_management_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_software_license_links_audit_update` AFTER UPDATE ON `software_license_links` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'software_license_links', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'software_id', OLD.`software_id`, 'license_management_id', OLD.`license_management_id`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'software_id', NEW.`software_id`, 'license_management_id', NEW.`license_management_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_software_license_links_audit_delete` AFTER DELETE ON `software_license_links` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'software_license_links', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'software_id', OLD.`software_id`, 'license_management_id', OLD.`license_management_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
 DROP TRIGGER IF EXISTS `trg_license_types_audit_insert`;
 
 DROP TRIGGER IF EXISTS `trg_license_types_audit_update`;

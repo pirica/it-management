@@ -33,6 +33,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 | `hotel_booking_portal_date_ddmmmyyyy.sql` | `hotel_booking_settings.portal_date_format` adds `european_ddmmmyyyy` (DD/MMM/YYYY) |
 | `ui_configuration_locale_format.sql` | `ui_configuration` locale display columns (money symbol + suffix/prefix, date/time, combined datetime toggles + default) — destructive DROP+CREATE; Settings UI Configuration; helpers in `includes/itm_ui_locale_format.php` |
 | `software_eol.sql` | `software`, `equipment_software`, plus `workstation_office` / `workstation_os_versions` / `equipment` date columns — destructive DROP+CREATE (backs up required). Helper `includes/itm_software_eol.php`. Doc: `docs/SOFTWARE_EOL.md`. |
+| `software_license_links.sql` | `software_license_links` junction between `software` and `license_management` — destructive DROP+CREATE. Helper `includes/itm_software_license_link.php`. |
 | `budget_categories_category_kind.sql` | `budget_categories.category_kind` enum column (destructive DROP+CREATE when present). |
 | `budget_categories_category_kind_dml.sql` | Non-destructive UPDATE backfill: Revenue→`revenue`, Operating Expense→`opex`, Capital Expense→`capex`. Safe to re-run; also applied on CAPEX/OPEX report page load. |
 

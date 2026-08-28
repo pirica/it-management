@@ -6,12 +6,14 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 ## 2. Key Tables
 - **license_management** — main license records (CRUD module table).
 - **license_types** — seed-only lookup for the **Type** dropdown (`Per User`, `Per Device`, `Enterprise`, `Subscription`, `Other`).
+- **software_license_links** — many-to-many links to `software` (sync from license create/edit via `software_ids[]`; view lists linked catalog rows).
 
 ## 3. Required Relationships
 - **license_management** → **companies** (`company_id`, CASCADE).
 - **license_management** → **license_types** (`license_type_id`, RESTRICT).
 - **license_management** → **suppliers** (`supplier_id`, SET NULL on delete).
 - **license_types** → **companies** (`company_id`, CASCADE).
+- **software_license_links** → **software** (`software_id`, RESTRICT) and **license_management** (`license_management_id`, RESTRICT).
 
 ## 4. Business Rules (Critical for Agents)
 - **Name required** on create/edit (`name` NOT NULL).
@@ -26,6 +28,8 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - **company_id** hidden in list/create/edit/view.
 - **FK labels:** list/view must show Type and Supplier names (not raw IDs) via `cr_fk_label_by_id()` / `itm_fk_label_by_id()`.
 - Form field order: Name, License Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
+- Create/edit: multi-select **Linked software catalog** (`software_ids[]`) syncs `software_license_links` via `itm_software_license_sync_for_license()`.
+- View: read-only **Linked software catalog** table with links to `modules/software/view.php`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — JSON import on `index.php` (`data-itm-db-import-endpoint="index.php"`).
@@ -49,6 +53,7 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - **`license_types` seeds** — five lookup rows per company (companies 1–5) plus cross-company `INSERT IGNORE` replication in `db/03_triggers.sql`. [Cursor-Valid]
 - **Do not use `employees.active`**-style filters elsewhere; unrelated but same class of bug as equipment assignee dropdown. [Cursor-Invalid]
 - **Deleting a `license_types` row** referenced by `license_management` fails (RESTRICT FK). [Cursor-Valid]
+- **Deleting a `license_management` row** still linked in `software_license_links` fails (RESTRICT FK). Unlink from software or license forms first. [Cursor-Valid]
 - **Price import:** normalise comma decimals before `cr_validate_numeric_value()`. [Cursor-Fixed]
 
 ## 11. Examples of Safe Code Patterns
@@ -69,7 +74,7 @@ mysqli_stmt_execute($stmt);
 
 ## 12. Module Owner Notes (Optional)
 Sample seed row per company: Microsoft 365 E3 (`license_types.name = Per User`, supplier from tenant `suppliers` seed).
-Authoritative cross-module rules: **`AGENTS.md` → License Management (mandatory)**. README screenshots: `docs/readme/license_management.png`, `docs/readme/demo_license_management.png`. MBQA: `php scripts/module_browser_qa_runner.php --module=license_management --company=1` (see **`scripts/SCRIPTS.md`**).
+Authoritative cross-module rules: **`AGENTS.md` → License Management (mandatory)**. Software catalog links: `includes/itm_software_license_link.php`; regression `php scripts/verify_software_license_links.php` ([verify_software_license_links.php?run=1](http://localhost/it-management/scripts/verify_software_license_links.php?run=1), Admin session). README screenshots: `docs/readme/license_management.png`, `docs/readme/demo_license_management.png`. MBQA: `php scripts/module_browser_qa_runner.php --module=license_management --company=1` (see **`scripts/SCRIPTS.md`**).
 ## Share (temporary QR / code)
 - **Capable:** `itm_qr_share_capable_module_slugs()`.
 - **UI:** Share buttons on index.php inline view block.
