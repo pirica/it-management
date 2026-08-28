@@ -314,11 +314,22 @@ function tickets_user_select_options(mysqli $conn, int $companyId, $selectedId):
     return itm_user_append_selected_option($conn, $companyId, $options, $selectedId);
 }
 
-function tickets_default_created_by_employee_id(mysqli $conn, int $companyId): int
+function tickets_resolve_context_employee_id(mysqli $conn, int $companyId): int
 {
-    $sessionUserId = (int)($_SESSION['employee_id'] ?? 0);
-    if ($sessionUserId > 0 && itm_user_label_by_id_for_company($conn, $companyId, $sessionUserId) !== '') {
-        return $sessionUserId;
+    $companyId = (int)$companyId;
+    if ($companyId <= 0) {
+        return 0;
+    }
+
+    if (function_exists('itm_company_session_login_employee_id')
+        && function_exists('itm_resolve_company_context_employee_id')) {
+        $loginEmployeeId = itm_company_session_login_employee_id();
+        $contextEmployeeId = itm_resolve_company_context_employee_id($conn, $loginEmployeeId, $companyId);
+        if ($contextEmployeeId > 0
+            && function_exists('itm_user_label_by_id_for_company')
+            && itm_user_label_by_id_for_company($conn, $companyId, $contextEmployeeId) !== '') {
+            return $contextEmployeeId;
+        }
     }
 
     if (function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
@@ -326,6 +337,11 @@ function tickets_default_created_by_employee_id(mysqli $conn, int $companyId): i
     }
 
     return 0;
+}
+
+function tickets_default_created_by_employee_id(mysqli $conn, int $companyId): int
+{
+    return tickets_resolve_context_employee_id($conn, $companyId);
 }
 
 function tickets_resolve_created_by_employee_id(mysqli $conn, int $companyId): int
