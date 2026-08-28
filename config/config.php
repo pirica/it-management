@@ -597,6 +597,8 @@ if (
 
 $company_id = itm_resolve_active_company_id((int)($_SESSION['company_id'] ?? 0));
 
+// Why: itm_is_admin() must already exist (itm_company_session.php) so Admin company
+// switches remap session employee_id to the tenant seed Admin on this GET, not only on POST.
 if (
     $company_id > 0
     && isset($conn)
@@ -2387,53 +2389,9 @@ if (!function_exists('itm_handle_json_table_import')) {
     }
 }
 
-/**
- * Checks if a user has administrative privileges.
- *
- * Why: Used frequently for access control (e.g. sidebar); uses static cache to minimize DB queries.
- *
- * @param mysqli $conn
- * @param int $employeeId
- * @return bool
- */
-if (!function_exists('itm_is_admin')) {
-    function itm_is_admin($conn, $employeeId) {
-        static $cache = [];
-        $employeeId = (int)$employeeId;
-
-        if (!$conn instanceof mysqli || $employeeId <= 0) {
-            return false;
-        }
-
-        $cacheKey = $employeeId . ':' . spl_object_hash($conn);
-        if (isset($cache[$cacheKey])) {
-            return $cache[$cacheKey];
-        }
-
-        $sql = 'SELECT 1
-            FROM `employees` u
-            LEFT JOIN `employee_roles` ur ON ur.id = u.role_id
-            WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(COALESCE(u.username, "")) = "admin")
-            LIMIT 1';
-
-        $stmt = mysqli_prepare($conn, $sql);
-        if (!$stmt) {
-            return false;
-        }
-
-        mysqli_stmt_bind_param($stmt, 'i', $employeeId);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $isAdmin = $res && mysqli_num_rows($res) > 0;
-        mysqli_stmt_close($stmt);
-
-        $cache[$cacheKey] = $isAdmin;
-        return $isAdmin;
-    }
-}
-
-// Why: Browser scripts/* must run under disposable test employees — never the signed-in Admin cookie.
-// Must run after itm_is_admin() so session actors receive the Admin role when the real user is Admin.
+// Why: itm_is_admin() is defined in includes/itm_company_session.php (loaded before tenant remap).
+// Browser scripts/* must run under disposable test employees — never the signed-in Admin cookie.
+// Isolated session actors receive the Admin role when the real user is Admin.
 if (
     !$itmSkipWebAuth
     && PHP_SAPI !== 'cli'

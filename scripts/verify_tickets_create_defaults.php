@@ -56,6 +56,21 @@ if ($expectedAdminId <= 0) {
     vtcd_pass('Tenant seed admin for company ' . $probeCompanyId . ' is employee id ' . $expectedAdminId . '.');
 }
 
+$configSource = (string)file_get_contents(ROOT_PATH . 'config/config.php');
+$sessionSource = (string)file_get_contents(ROOT_PATH . 'includes/itm_company_session.php');
+if (strpos($sessionSource, 'function itm_is_admin') === false) {
+    vtcd_fail('itm_is_admin() must be defined in includes/itm_company_session.php so tenant remap can run during config.php bootstrap.');
+} else {
+    vtcd_pass('itm_is_admin() is defined in itm_company_session.php before tenant remap.');
+}
+$requirePos = strpos($configSource, 'includes/itm_company_session.php');
+$ensurePos = strpos($configSource, 'itm_ensure_company_context_employee_session($conn');
+if ($requirePos === false || $ensurePos === false || $requirePos > $ensurePos) {
+    vtcd_fail('config.php must require itm_company_session.php before itm_ensure_company_context_employee_session().');
+} else {
+    vtcd_pass('config.php loads itm_company_session.php before tenant employee remap.');
+}
+
 if (!($conn instanceof mysqli)) {
     vtcd_fail('Database connection unavailable.');
     itm_script_output_end();

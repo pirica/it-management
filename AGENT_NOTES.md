@@ -73,7 +73,7 @@ Module-specific JSON/import endpoints are documented in `scripts/api.php` and pe
 - **config/**, **includes/**, **modules/**, **scripts/**, **db/** — application and schema.
 - **login.php** — Authentication; regenerates session id on success; Admin login calls `itm_switch_active_company_session()` for the initial company so welcome email/username match the tenant (not only after manual company switch).
 - **index.php** — Company selection after login (no forced error display); skipped when `itm_try_auto_select_single_company_session()` finds exactly one accessible tenant (also from `login.php` for non-admins).
-- **dashboard.php** — Employee landing: **company switcher** (POST `company_id` + `itm_try_post_csrf()` + `itm_switch_active_company_session()`; options from `itm_list_employee_accessible_companies()` — home + `employee_companies` grants, or all active companies for Admin); CSRF failures show `crud_error` in the Company card (does not `die()`); **smart widgets** (`includes/itm_dashboard_widgets.php` — role/RBAC-aware metrics + Chart.js sparklines; per-employee pin/unpin on [user-config.php](http://localhost/it-management/user-config.php)) above personal stat cards via `includes/itm_employee_dashboard.php` / `itm_employee_dashboard_cards.php`; **My Activity** → `modules/myactivity/`; **Private** section cards; no Sidebar Prefs or Audit Logs cards. Regression: `php scripts/verify_employee_dashboard.php`, `php scripts/verify_dashboard_widgets.php`.
+- **dashboard.php** — Employee landing: **company switcher** (POST `company_id` + `itm_try_post_csrf()` + `itm_switch_active_company_session()` from `itm_company_session_login_employee_id()`; options from `itm_list_employee_accessible_companies()` — home + `employee_companies` grants, or all active companies for Admin). Cross-tenant **Admin** switches also change the visible user (hero / session `employee_id` / `username`) to that tenant's seed Admin (`Admin2` … `Admin5`); `login_employee_id` stays the authenticated login. CSRF failures show `crud_error` in the Company card (does not `die()`); **smart widgets** (`includes/itm_dashboard_widgets.php` — role/RBAC-aware metrics + Chart.js sparklines; per-employee pin/unpin on [user-config.php](http://localhost/it-management/user-config.php)) above personal stat cards via `includes/itm_employee_dashboard.php` / `itm_employee_dashboard_cards.php`; **My Activity** → `modules/myactivity/`; **Private** section cards; no Sidebar Prefs or Audit Logs cards. Regression: `php scripts/verify_employee_dashboard.php`, `php scripts/verify_dashboard_widgets.php`.
 - **admin.php** — Admin company overview: module totals exclude soft-deleted rows; **Active** / **On Leave** via `itm_employee_count_by_employment_status_name()`; **Online now** via session presence; **Settings** + **Scripts** cards; sections via `includes/itm_admin_dashboard_cards.php`. Regression: `php scripts/verify_dashboard_active_employees.php`, `php scripts/verify_admin_page_gate.php`.
 - **css/styles.css** — Global stylesheet (see **`css/AGENT_NOTES.md`**).
 - **phpunit/** — PHPUnit PHAR and tests; runner **`scripts/run_tests.php`**; coverage **`phpunit/coverage/html/coverage.html`**. See **`phpunit/AGENT_NOTES.md`** and **`scripts/SCRIPTS.md`**.
@@ -86,7 +86,7 @@ Module-specific JSON/import endpoints are documented in `scripts/api.php` and pe
 - Default list/CRUD queries bind `company_id` from `$_SESSION['company_id']`.
 - Vault/private modules also bind `employee_id` from the session.
 - Profile and file paths under `files/{home_company_id}/Private/{username}_{employee_id}/` use the employee **home** company, not only the switched tenant.
-- Admins use `employee_companies` + session switcher; switching updates active `company_id` for subsequent requests.
+- Admins use `employee_companies` + session switcher; switching updates active `company_id` and remaps session `employee_id` to that tenant's seed Admin (`Admin2` … `Admin5`) while `login_employee_id` stays the authenticated user. Non-admins keep the same `employee_id` across grants.
 
 ---
 
@@ -100,6 +100,7 @@ Module-specific JSON/import endpoints are documented in `scripts/api.php` and pe
 ## 10. Common Pitfalls
 
 - Bypassing session-based company isolation. [Cursor-Valid]
+- Defining `itm_is_admin()` after `itm_ensure_company_context_employee_session()` in `config.php` — Admin company switch then keeps the previous tenant's user on the next GET. [Cursor-Fixed]
 - Introducing external libraries. [Cursor-Valid]
 - Forgetting to update `db/` when changing the schema. [Cursor-Valid]
 - Editing `db/*.sql` by hand instead of keeping `01_schema.sql` / migrations aligned. [Cursor-Valid]

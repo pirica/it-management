@@ -1,10 +1,57 @@
 <?php
 /**
- * Tenant company switcher — session company_id / company_name without swapping employee identity.
+ * Tenant company switcher — session company_id / company_name plus Admin context identity.
  *
- * Why: Cross-company access uses employee_companies grants (same employee_id, new company_id).
- * Matching username in the target tenant (Admin vs Admin4) is wrong and breaks the switcher.
+ * Why: Non-admins keep the same employee_id across employee_companies grants.
+ * Cross-tenant Admin switches remap session employee_id / username / email to that
+ * tenant's seed Admin (Admin2 … Admin5) while login_employee_id stays the authenticated user.
+ * itm_is_admin() lives here so config.php can remap on every request before later helpers load.
  */
+
+if (!function_exists('itm_is_admin')) {
+    /**
+     * Checks if a user has administrative privileges.
+     *
+     * Why: Used for access control and tenant Admin remap; static cache minimizes DB queries.
+     *
+     * @param mysqli $conn
+     * @param int $employeeId
+     * @return bool
+     */
+    function itm_is_admin($conn, $employeeId) {
+        static $cache = [];
+        $employeeId = (int)$employeeId;
+
+        if (!$conn instanceof mysqli || $employeeId <= 0) {
+            return false;
+        }
+
+        $cacheKey = $employeeId . ':' . spl_object_hash($conn);
+        if (isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
+
+        $sql = 'SELECT 1
+            FROM `employees` u
+            LEFT JOIN `employee_roles` ur ON ur.id = u.role_id
+            WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(COALESCE(u.username, "")) = "admin")
+            LIMIT 1';
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'i', $employeeId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $isAdmin = $res && mysqli_num_rows($res) > 0;
+        mysqli_stmt_close($stmt);
+
+        $cache[$cacheKey] = $isAdmin;
+        return $isAdmin;
+    }
+}
 
 if (!function_exists('itm_company_session_login_employee_id')) {
     /**
