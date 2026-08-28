@@ -16,6 +16,8 @@ function mbqa_runner_bespoke_smoke_modules(): array
 {
     return [
         'budget_report',
+        'capex',
+        'opex',
         'expiring',
         'rack_planner',
         'floor_plans',

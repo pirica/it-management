@@ -96,6 +96,19 @@ The screen compares current period totals to the previous month and the same mon
 
 Related CRUD modules for maintaining source data: `annual_budgets`, `monthly_budgets`, `forecast_revisions`, `expenses`, `gl_accounts`, `cost_centers`, `budget_categories`.
 
+## CAPEX and OPEX reports
+
+**Sidebar:** Budgeting → [CAPEX](http://localhost/it-management/modules/capex/index.php) (`modules/capex/`) and [OPEX](http://localhost/it-management/modules/opex/index.php) (`modules/opex/`).
+
+Same computed rollup as Budget Report, filtered by `budget_categories.category_kind`:
+
+| Module | `category_kind` | Typical seed GL |
+| --- | --- | --- |
+| CAPEX | `capex` | 7100 Capital IT Equipment |
+| OPEX | `opex` | 6100 maintenance, 6200 licensing |
+
+Assign kind on [Budget Categories](http://localhost/it-management/modules/budget_categories/index.php) (column `category_kind`); GL accounts link via `gl_accounts.category_id`. Regression: `php scripts/verify_capex_opex.php`.
+
 ## IDFs (non-CRUD entry points)
 
 **Sidebar:** 🗄️ IDFs → `modules/idfs/`

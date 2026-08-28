@@ -22,7 +22,7 @@ Provides a financial overview and comparison of actual expenses vs. budgets. It 
 - **Expense actuals:** Only **Posted** and **Paid** expenses; period from `COALESCE(posting_date, date)`; excludes soft-deleted rows.
 
 ## 6. API Actions (If Applicable)
-- None (Read-only view).
+- None (Read-only view). Query logic: `includes/itm_budget_category_report.php` via `includes/itm_budget_category_report_bootstrap.php` (`category_kind` null = all GL categories). Category-filtered siblings: [CAPEX](http://localhost/it-management/modules/capex/index.php), [OPEX](http://localhost/it-management/modules/opex/index.php).
 
 ## 7. File Structure
 - **index.php** — main report interface and logic.

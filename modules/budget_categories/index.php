@@ -19,6 +19,7 @@ require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 itm_crud_record_share_handle_ajax_request($conn, 'budget_categories');
 
+require_once ROOT_PATH . 'includes/itm_budget_category_report.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
 
 // Check for valid table configuration to prevent injection via $crud_table clones.
@@ -311,7 +312,11 @@ function cr_render_cell_value($table, $field, $value) {
             return $auditHtml;
         }
     }
-if ($field === 'active') {
+if ($field === 'category_kind') {
+        return sanitize(itm_budget_category_report_kind_label($value));
+    }
+
+    if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
@@ -1155,6 +1160,19 @@ if (!isset($crud_title)) {
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
+                            <?php elseif ($name === 'category_kind'): ?>
+                                <?php
+                                    $kindOptions = itm_budget_category_report_kinds();
+                                    $selectedKind = strtolower(trim((string)$displayVal));
+                                    if ($selectedKind === '' || !isset($kindOptions[$selectedKind])) {
+                                        $selectedKind = 'other';
+                                    }
+                                ?>
+                                <select name="<?php echo sanitize($name); ?>">
+                                    <?php foreach ($kindOptions as $kindKey => $kindLabel): ?>
+                                        <option value="<?php echo sanitize($kindKey); ?>" <?php echo $selectedKind === $kindKey ? 'selected' : ''; ?>><?php echo sanitize($kindLabel); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>

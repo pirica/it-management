@@ -114,10 +114,10 @@ INSERT INTO `bookmark_folders` (`company_id`, `employee_id`, `name`, `name_hash`
 INSERT INTO `bookmarks` (`company_id`, `employee_id`, `folder_id`, `title`, `url`, `url_hash`, `notes`, `position`, `shared`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', NULL, 'ServiceNow', 'https://www.servicenow.com/', 'e76619ad9660a1c181a33522ddeb5503070639508be9f84e096fb967ad0f632c', NULL, '0', '1', '1', NULL, NULL, NULL, '2026-08-28 00:35:36', NULL, NULL);
 
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES
-(NULL, '1', 'Revenue', 'Revenue-related general ledger accounts', '1', '2026-01-01 00:00:01'),
-(NULL, '1', 'Operating Expense', 'Operational expense accounts', '1', '2026-01-01 00:00:01'),
-(NULL, '1', 'Capital Expense', 'Capital expense accounts', '1', '2026-01-01 00:00:01');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `category_kind`, `active`, `created_at`) VALUES
+(NULL, '1', 'Revenue', 'Revenue-related general ledger accounts', 'revenue', '1', '2026-01-01 00:00:01'),
+(NULL, '1', 'Operating Expense', 'Operational expense accounts', 'opex', '1', '2026-01-01 00:00:01'),
+(NULL, '1', 'Capital Expense', 'Capital expense accounts', 'capex', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES
 ('1', '1', 'Gray', '#808080', NULL, '2026-01-01 00:00:01'),

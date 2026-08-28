@@ -15,6 +15,8 @@ ui_configuration
 attempts
 audit_logs
 budget_report
+capex
+opex
 expiring
 
 # Thin index.php routers; list/create UI lives under includes/partials/render.php.
