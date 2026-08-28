@@ -15,7 +15,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser: <a href="verify_employee_dashboard.php">verify_employee_dashboard.php</a>. CLI: <code>php scripts/verify_employee_dashboard.php</code>. Run when changing employee dashboard cards, company switcher, Admin tenant user remap, or stats loader.
+Browser: <a href="verify_employee_dashboard.php">verify_employee_dashboard.php</a>. CLI: <code>php scripts/verify_employee_dashboard.php</code>. Run when changing employee dashboard cards, Admin-only company switcher, or stats loader.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 define('ITM_CLI_SCRIPT', true);
@@ -99,6 +99,18 @@ if (strpos($dashboardSource, 'Switch Company') === false
     ed_verify_fail('dashboard.php must contain company switcher markup and switch from login employee identity');
 } else {
     ed_verify_pass('dashboard.php has company switcher keyed from login employee identity');
+}
+
+if (strpos($dashboardSource, 'isset($_POST[\'company_id\']) && $isAdminUser') === false) {
+    ed_verify_fail('dashboard.php company switch POST must require $isAdminUser');
+} else {
+    ed_verify_pass('dashboard.php company switch POST is Admin-gated');
+}
+
+if (!preg_match('/if\s*\(\s*\$isAdminUser\s*\)\s*:\s*\?>\s*<div class="card itm-emp-dash-company-switch"/s', $dashboardSource)) {
+    ed_verify_fail('dashboard.php company switcher card must render only when $isAdminUser is true');
+} else {
+    ed_verify_pass('dashboard.php company switcher card is Admin-only');
 }
 
 $sessionSource = (string)@file_get_contents(ROOT_PATH . 'includes/itm_company_session.php');

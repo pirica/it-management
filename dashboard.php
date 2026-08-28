@@ -1,7 +1,7 @@
 <?php
 /**
  * Employee landing dashboard — personal stat cards scoped to the signed-in employee,
- * plus a company switcher for tenants the session may access.
+ * plus an Admin-only company switcher for tenants the session may access.
  */
 
 require_once 'config/config.php';
@@ -26,9 +26,9 @@ if ($loginEmployeeId <= 0) {
 }
 $isAdminUser = itm_is_admin($conn, $loginEmployeeId);
 
-// Why: Restore the tenant switcher on the employee landing page (same contract as admin.php / index.php).
+// Why: Dashboard Switch Company card is Admin-only; ignore crafted POSTs from other roles.
 // Switch from the authenticated login employee so Admin remap targets the tenant seed Admin, not a prior context id.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id']) && $isAdminUser) {
     if (!itm_try_post_csrf()) {
         $dashCsrfError = 'Invalid CSRF token.';
         $csrfToken = itm_get_csrf_token();
@@ -80,9 +80,10 @@ if (!empty($dash['reload_required'])) {
 
 $smartDash = itm_dashboard_load_smart_widgets($conn, $company_id, $user_id);
 
-$accessibleCompanies = function_exists('itm_list_employee_accessible_companies')
-    ? itm_list_employee_accessible_companies($conn, $user_id, $isAdminUser)
-    : [];
+$accessibleCompanies = [];
+if ($isAdminUser && function_exists('itm_list_employee_accessible_companies')) {
+    $accessibleCompanies = itm_list_employee_accessible_companies($conn, $user_id, $isAdminUser);
+}
 
 $displayName = trim((string)($current_user['display_name'] ?? ''));
 if ($displayName === '') {
@@ -168,6 +169,7 @@ $stylesCssVersion = is_file($stylesCssPath) ? (string)filemtime($stylesCssPath) 
                     </div>
                 </div>
 
+                <?php if ($isAdminUser): ?>
                 <div class="card itm-emp-dash-company-switch">
                     <div class="card-header">
                         <h2>Company</h2>
@@ -204,6 +206,7 @@ $stylesCssVersion = is_file($stylesCssPath) ? (string)filemtime($stylesCssPath) 
                         <?php endif; ?>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <div class="itm-emp-dash-body">
                     <?php include ROOT_PATH . 'includes/itm_dashboard_widgets_cards.php'; ?>
