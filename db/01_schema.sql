@@ -2572,6 +2572,7 @@ CREATE TABLE `patches_updates` (
   `status_id` int DEFAULT NULL,
   `level_id` int DEFAULT NULL,
   `due_date` date DEFAULT NULL,
+  `assigned_to_employee_id` int DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -2585,11 +2586,13 @@ CREATE TABLE `patches_updates` (
   KEY `patches_updates_equipment_idx` (`equipment_id`),
   KEY `patches_updates_status_idx` (`status_id`),
   KEY `patches_updates_level_idx` (`level_id`),
+  KEY `patches_updates_assigned_to_idx` (`assigned_to_employee_id`),
   KEY `patches_updates_created_by_idx` (`created_by`),
   CONSTRAINT `patches_updates_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `patches_updates_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL,
   CONSTRAINT `patches_updates_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `patches_updates_status` (`id`) ON DELETE SET NULL,
   CONSTRAINT `patches_updates_ibfk_level` FOREIGN KEY (`level_id`) REFERENCES `patches_updates_level` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `patches_updates_ibfk_assigned_to` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
   CONSTRAINT `patches_updates_ibfk_created_by` FOREIGN KEY (`created_by`) REFERENCES `employees` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `printer_device_types`

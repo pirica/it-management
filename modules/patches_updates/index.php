@@ -201,6 +201,7 @@ function cr_humanize_field($field) {
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
         'created_by' => 'Created by',
+        'assigned_to_employee_id' => 'Assigned To',
     ];
 
     if (isset($map[$label])) {
@@ -258,6 +259,20 @@ function cr_import_header_aliases() {
         'business_function' => 'business_function',
         'data_source' => 'data_source',
     ];
+}
+
+function cr_list_query_suffix($searchRaw, $sort, $dir, $page, $assignedToFilter = 0, array $overrides = []) {
+    $params = array_merge([
+        'search' => (string)$searchRaw,
+        'sort' => (string)$sort,
+        'dir' => (string)$dir,
+        'page' => (int)$page,
+    ], $overrides);
+    if ((int)$assignedToFilter > 0) {
+        $params['assigned_to_employee_id'] = (int)$assignedToFilter;
+    }
+
+    return http_build_query($params);
 }
 
 function cr_is_hidden_employee_field($field) {
@@ -1122,6 +1137,11 @@ if (function_exists('itm_crud_append_not_deleted_predicate')) {
 }
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
+$assignedToFilter = isset($_GET['assigned_to_employee_id']) ? (int)$_GET['assigned_to_employee_id'] : 0;
+$assigneeFilterOptions = [];
+if (isset($fkMap['assigned_to_employee_id'])) {
+    $assigneeFilterOptions = cr_fk_options($conn, $fkMap['assigned_to_employee_id'], (int)$company_id);
+}
 if ($searchRaw !== '') {
     $searchPattern = (cr_string_contains($searchRaw, '%') || cr_string_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
@@ -1152,6 +1172,10 @@ if ($searchRaw !== '') {
 if (!empty($searchConditions)) {
         $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
     }
+}
+
+if ($assignedToFilter > 0) {
+    $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'assigned_to_employee_id=' . $assignedToFilter;
 }
 
 $sortableColumns = array_map(static function ($col) {
@@ -1263,9 +1287,18 @@ if (!isset($crud_title)) {
                             <label for="moduleSearch">Search (all fields)</label>
                             <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
                         </div>
+                        <div class="form-group" style="margin:0;min-width:220px;">
+                            <label for="patchAssigneeFilter">Assigned To</label>
+                            <select id="patchAssigneeFilter" name="assigned_to_employee_id">
+                                <option value="">All assignees</option>
+                                <?php foreach ($assigneeFilterOptions as $opt): ?>
+                                    <option value="<?php echo (int)$opt['id']; ?>"<?php echo $assignedToFilter === (int)$opt['id'] ? ' selected' : ''; ?>><?php echo sanitize((string)($opt['label'] ?? '')); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn">🔙</a>
+                            <a href="index.php" class="btn" title="Clear">🔙</a>
                         </div>
                     </form>
                 </div>
@@ -1278,7 +1311,7 @@ if (!isset($crud_title)) {
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?<?php echo sanitize(cr_list_query_suffix($searchRaw, $field, $nextDir, $page, $assignedToFilter)); ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
@@ -1334,13 +1367,13 @@ if (!isset($crud_title)) {
                         <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                             <?php if ($page > 1): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=1" title="First page">⏮️</a>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>" title="Previous page">◀️</a>
+                                <a class="btn btn-sm" href="?<?php echo sanitize(cr_list_query_suffix($searchRaw, $sort, $dir, 1, $assignedToFilter)); ?>" title="First page">⏮️</a>
+                                <a class="btn btn-sm" href="?<?php echo sanitize(cr_list_query_suffix($searchRaw, $sort, $dir, $page - 1, $assignedToFilter)); ?>" title="Previous page">◀️</a>
                             <?php endif; ?>
                             <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
                             <?php if ($page < $totalPages): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>" title="Next page">▶️</a>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $totalPages; ?>" title="Last page">⏭️</a>
+                                <a class="btn btn-sm" href="?<?php echo sanitize(cr_list_query_suffix($searchRaw, $sort, $dir, $page + 1, $assignedToFilter)); ?>" title="Next page">▶️</a>
+                                <a class="btn btn-sm" href="?<?php echo sanitize(cr_list_query_suffix($searchRaw, $sort, $dir, $totalPages, $assignedToFilter)); ?>" title="Last page">⏭️</a>
                             <?php endif; ?>
                         </div>
                     </div>

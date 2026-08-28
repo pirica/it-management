@@ -63,6 +63,7 @@ foreach ([
 }
 
 $requiredFunctions = [
+    'itm_patches_updates_assigned_employee_sql',
     'itm_patches_updates_due_within_days_count',
     'itm_patches_updates_list_calendar_rows',
     'itm_patches_updates_integration_summary',
@@ -101,6 +102,19 @@ if (strpos($helperSource, '$dashboardAllowed = !empty($summary[\'dashboard_allow
     pu_verify_fail('Product gaps panel must assign dashboardAllowed from integration summary');
 } else {
     pu_verify_pass('Product gaps panel assigns dashboardAllowed');
+}
+
+if (strpos($indexSource, 'assigned_to_employee_id') === false || strpos($indexSource, 'patchAssigneeFilter') === false) {
+    pu_verify_fail('patches_updates index must include Assigned To list filter');
+} else {
+    pu_verify_pass('List index includes Assigned To filter');
+}
+
+$widgetsSource = is_file(ROOT_PATH . 'includes/itm_dashboard_widgets.php') ? (string)file_get_contents(ROOT_PATH . 'includes/itm_dashboard_widgets.php') : '';
+if (strpos($widgetsSource, 'assigned_to_employee_id=') === false || strpos($widgetsSource, 'My patches due in 30 days') === false) {
+    pu_verify_fail('Dashboard patches_due_30d widget must scope to assigned_to_employee_id');
+} else {
+    pu_verify_pass('Dashboard widget scopes to assignee');
 }
 
 $calendarSource = is_file($calendarPath) ? (string)file_get_contents($calendarPath) : '';
