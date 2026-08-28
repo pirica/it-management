@@ -664,7 +664,7 @@ Per-employee **employee ITM portal** money and date/time display preferences —
 The license management module (`modules/license_management/`) tracks software licenses per company.
 
 1. **Tables:** **`license_management`** (CRUD module table) and **`license_types`** lookup (`Per User`, `Per Device`, `Enterprise`, `Subscription`, `Other`). **`modules/license_types/`** provides CRUD for the lookup; **`company_id`** must stay hidden in list/view/forms (same as warranty_types). Maintain default seeds in `db/03_triggers.sql` and cross-company `INSERT IGNORE` replication.
-2. **Required fields:** **`name`** is required on create/edit; **`quantity`** defaults to **1** when omitted; **`active`** defaults to **1**.
+2. **Required fields:** **`name`** is required on create/edit; **`quantity`** defaults to **1** when omitted; **`license_type_id`** defaults to tenant **`license_types.name = Other`** on create (and import when Type is blank); **`active`** defaults to **1**.
 3. **Foreign keys:** **`license_type_id`** → `license_types` (**RESTRICT** on delete); **`supplier_id`** → `suppliers` (**SET NULL** on delete).
 4. **Price:** Accepts `.` as decimal separator; **comma is converted to dot** on POST and Excel import (`cr_normalize_price_input()`).
 5. **Dates:** Stored as MySQL `DATE`; list/view display follows employee locale via `itm_format_cell_scalar_display()` / `itm_format_date_display()` (default **dd/mmm/yyyy**); import accepts **dd/mm/yyyy** or **dd/mmm/yyyy** via `itm_parse_date_input()`.
