@@ -40,6 +40,28 @@ if (!($conn instanceof mysqli)) {
     exit(1);
 }
 
+$probeCompanyId = 4;
+$probeLoginId = 1;
+if (!function_exists('itm_resolve_company_context_employee_id')
+    || !function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+    vtsd_fail('Company-context helpers unavailable for create-default probe.');
+} else {
+    $expectedContextId = (int)itm_seed_resolve_tenant_seed_admin_employee_id($conn, $probeCompanyId);
+    $contextId = (int)itm_resolve_company_context_employee_id($conn, $probeLoginId, $probeCompanyId);
+    if ($expectedContextId <= 0 || $contextId !== $expectedContextId) {
+        vtsd_fail(
+            'Cross-tenant Admin login at company ' . $probeCompanyId
+            . ' must resolve context employee id ' . $expectedContextId
+            . '; got ' . $contextId . '.'
+        );
+    } else {
+        vtsd_pass(
+            'Company-context employee for Admin login at company ' . $probeCompanyId
+            . ' resolves to tenant seed admin id ' . $contextId . '.'
+        );
+    }
+}
+
 for ($seedCompanyId = 1; $seedCompanyId <= 5; $seedCompanyId++) {
     $expectedAdminId = function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')
         ? (int)itm_seed_resolve_tenant_seed_admin_employee_id($conn, $seedCompanyId)
