@@ -165,6 +165,33 @@ function cr_humanize_field($field) {
 }
 
 /**
+ * Tenant license_types.id for name Other (create default).
+ */
+function cr_license_type_other_id($conn, $companyId)
+{
+    $companyId = (int)$companyId;
+    if (!($conn instanceof mysqli) || $companyId <= 0) {
+        return 0;
+    }
+    $name = 'Other';
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id FROM license_types
+         WHERE company_id = ? AND name = ? AND deleted_at IS NULL
+         ORDER BY id ASC LIMIT 1'
+    );
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'is', $companyId, $name);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = ($res) ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return (int)($row['id'] ?? 0);
+}
+
+/**
  * Checks if a field should be hidden specifically in the employee module view
  */
 function cr_is_hidden_employee_field($field) {
@@ -467,6 +494,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                     if ($resolvedId <= 0 && ctype_digit($rawValue)) {
                         $resolvedId = (int)$rawValue;
                     }
+                    if ($resolvedId <= 0 && $fieldName === 'license_type_id') {
+                        $resolvedId = cr_license_type_other_id($conn, (int)$company_id);
+                    }
                     $rowData[$fieldName] = $resolvedId > 0 ? (string)$resolvedId : 'NULL';
                     continue;
                 }
@@ -620,6 +650,10 @@ foreach ($fieldColumns as $col) {
 if ($crud_action === 'create') {
     $data['quantity'] = '1';
     $data['active'] = 1;
+    $otherTypeId = cr_license_type_other_id($conn, (int)$company_id);
+    if ($otherTypeId > 0) {
+        $data['license_type_id'] = (string)$otherTypeId;
+    }
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -806,6 +840,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         } else {
             $data[$name] = (string) $value;
             $sqlValues[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+        }
+    }
+
+    if ($crud_table === 'license_management') {
+        $postedType = trim((string)($sqlValues['license_type_id'] ?? ''));
+        if ($postedType === '' || $postedType === 'NULL') {
+            $otherTypeId = cr_license_type_other_id($conn, (int)$company_id);
+            if ($otherTypeId > 0) {
+                $data['license_type_id'] = (string)$otherTypeId;
+                $sqlValues['license_type_id'] = (string)$otherTypeId;
+            }
         }
     }
 

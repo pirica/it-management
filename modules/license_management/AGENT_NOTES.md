@@ -19,6 +19,7 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 ## 4. Business Rules (Critical for Agents)
 - **Name required** on create/edit (`name` NOT NULL).
 - **Quantity** defaults to **1** when omitted on create/save.
+- **Type** defaults to tenant `license_types.name = Other` on create (form + save) and Excel import when Type is empty.
 - **Price** accepts `.` as decimal separator; **comma is converted to dot** on POST (`cr_normalize_price_input()`).
 - **Dates** stored as MySQL `DATE`; list/view/import use **dd/mmm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
 - **Type** values come from tenant-scoped `license_types` rows (seeded in `db/03_triggers.sql` + cross-company `INSERT IGNORE` replication). Quick-add on the Type select inserts via `select_options_api.php` (`license_types` whitelist); full CRUD is under **`modules/license_types/`** with **company_id** hidden.
