@@ -38,6 +38,7 @@ This module is read-only and aggregates data from:
 - **Asset lifecycle stages** — `get_asset_lifecycle_stage_summary()` (equipment `lifecycle_stage` counts; see `docs/ASSET_LIFECYCLE.md`)
 - **Upcoming maintenance forecast** — `get_upcoming_maintenance_forecast()` includes warranty, certificate, license, and **EOL** (`includes/itm_software_eol.php`; see `docs/SOFTWARE_EOL.md`)
 - **Problem Management** — `get_problem_management_summary()` (`problems` status doughnut + linked incident / closed-this-month counts; see `docs/PROBLEM_MANAGEMENT.md`)
+- **CAPEX vs OPEX (Financial Performance)** — `get_capex_opex_annual_budget_split()`, `get_capex_opex_budget_vs_actual()`, `get_capex_opex_monthly_actual_trend()` — `category_kind` split; chart year = latest `annual_budgets.year`; links to [CAPEX](http://localhost/it-management/modules/capex/index.php) / [OPEX](http://localhost/it-management/modules/opex/index.php) in card copy.
 
 ---
 
@@ -74,7 +75,7 @@ This module is read-only and aggregates data from:
 
 - Module access is controlled via `has_module_access($conn, $company_id, 'reports')`.
 - All statistical queries must be scoped to the active `company_id`.
-- Advanced Budgeting assumes current year (`YEAR(CURDATE())`) for most comparisons unless specified (e.g. YOY).
+- Advanced Budgeting uses `YEAR(CURDATE())` for legacy budget vs actual / department / YoY charts. **CAPEX/OPEX** hub charts use `reports_resolve_budget_chart_year()` (latest `annual_budgets.year`, aligned with CAPEX/OPEX report modules).
 - `db/` seeds Reports Hub demo rows for company 1: `ops_report` (2025 monthly anchors, Jun–Jul 2026 daily trend), `ops_report_fb_outlet` covers (Jul 2026 MTD), expanded `monthly_budgets` / `expenses`, and 2025 `annual_budgets` for YoY charts. Regression: `php scripts/verify_reports_hub.php`.
 
 ---

@@ -402,6 +402,214 @@ function get_budget_yoy_comparison() {
 }
 
 /**
+ * Budget chart year — latest annual_budgets.year for tenant (matches CAPEX/OPEX reports).
+ */
+function reports_resolve_budget_chart_year()
+{
+    global $conn, $company_id;
+
+    $calendarYear = (int) date('Y');
+    $companyId = (int) $company_id;
+    if ($companyId <= 0 || !($conn instanceof mysqli)) {
+        return $calendarYear;
+    }
+
+    $stmt = mysqli_prepare($conn, 'SELECT MAX(year) AS max_year FROM annual_budgets WHERE company_id = ?');
+    if (!$stmt) {
+        return $calendarYear;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    $maxYear = (int) ($row['max_year'] ?? 0);
+    if ($maxYear >= 2000 && $maxYear <= 2100) {
+        return $maxYear;
+    }
+
+    return $calendarYear;
+}
+
+/**
+ * SQL fragment: Posted/Paid expenses only (aligned with CAPEX/OPEX actual columns).
+ */
+function reports_expense_actual_filter_sql($conn, $companyId)
+{
+    if (!($conn instanceof mysqli)) {
+        return '';
+    }
+
+    require_once ROOT_PATH . 'includes/itm_expenses_ap.php';
+    $paidIds = itm_expenses_paid_status_ids_for_actuals($conn, (int) $companyId);
+    if ($paidIds === []) {
+        return '';
+    }
+
+    return ' AND e.paid_status_id IN (' . implode(',', array_map('intval', $paidIds)) . ')';
+}
+
+/**
+ * CAPEX vs OPEX annual budget split for chart year.
+ *
+ * @return array{labels:array<int,string>,data:array<int,float>,year:int}
+ */
+function get_capex_opex_annual_budget_split()
+{
+    global $conn, $company_id;
+
+    $year = reports_resolve_budget_chart_year();
+    $totals = ['capex' => 0.0, 'opex' => 0.0];
+    $sql = 'SELECT bc.category_kind, SUM(ab.amount) AS total
+            FROM annual_budgets ab
+            INNER JOIN gl_accounts ga ON ga.company_id = ab.company_id AND ga.id = ab.gl_account_id
+            INNER JOIN budget_categories bc ON bc.company_id = ga.company_id AND bc.id = ga.category_id
+            WHERE ab.company_id = ? AND ab.year = ? AND ab.active = 1 AND ab.deleted_at IS NULL
+              AND bc.category_kind IN (\'capex\', \'opex\')
+            GROUP BY bc.category_kind';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $year);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($result && ($row = mysqli_fetch_assoc($result))) {
+            $kind = strtolower((string) ($row['category_kind'] ?? ''));
+            if (isset($totals[$kind])) {
+                $totals[$kind] = (float) $row['total'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => ['CAPEX', 'OPEX'],
+        'data' => [$totals['capex'], $totals['opex']],
+        'year' => $year,
+    ];
+}
+
+/**
+ * CAPEX vs OPEX budget and Posted/Paid actual totals for chart year.
+ *
+ * @return array{labels:array<int,string>,budget:array<int,float>,actual:array<int,float>,year:int}
+ */
+function get_capex_opex_budget_vs_actual()
+{
+    global $conn, $company_id;
+
+    $year = reports_resolve_budget_chart_year();
+    $budget = ['capex' => 0.0, 'opex' => 0.0];
+    $actual = ['capex' => 0.0, 'opex' => 0.0];
+    $paidFilter = reports_expense_actual_filter_sql($conn, (int) $company_id);
+
+    $budgetSql = 'SELECT bc.category_kind, SUM(ab.amount) AS total
+            FROM annual_budgets ab
+            INNER JOIN gl_accounts ga ON ga.company_id = ab.company_id AND ga.id = ab.gl_account_id
+            INNER JOIN budget_categories bc ON bc.company_id = ga.company_id AND bc.id = ga.category_id
+            WHERE ab.company_id = ? AND ab.year = ? AND ab.active = 1 AND ab.deleted_at IS NULL
+              AND bc.category_kind IN (\'capex\', \'opex\')
+            GROUP BY bc.category_kind';
+    $budgetStmt = mysqli_prepare($conn, $budgetSql);
+    if ($budgetStmt) {
+        mysqli_stmt_bind_param($budgetStmt, 'ii', $company_id, $year);
+        mysqli_stmt_execute($budgetStmt);
+        $budgetResult = mysqli_stmt_get_result($budgetStmt);
+        while ($budgetResult && ($row = mysqli_fetch_assoc($budgetResult))) {
+            $kind = strtolower((string) ($row['category_kind'] ?? ''));
+            if (isset($budget[$kind])) {
+                $budget[$kind] = (float) $row['total'];
+            }
+        }
+        mysqli_stmt_close($budgetStmt);
+    }
+
+    $actualSql = 'SELECT bc.category_kind, SUM(e.amount) AS total
+            FROM expenses e
+            INNER JOIN gl_accounts ga ON ga.company_id = e.company_id AND ga.id = e.gl_account_id
+            INNER JOIN budget_categories bc ON bc.company_id = ga.company_id AND bc.id = ga.category_id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL AND e.active = 1
+              AND bc.category_kind IN (\'capex\', \'opex\')
+              AND YEAR(COALESCE(e.posting_date, e.date)) = ?'
+        . $paidFilter
+        . ' GROUP BY bc.category_kind';
+    $actualStmt = mysqli_prepare($conn, $actualSql);
+    if ($actualStmt) {
+        mysqli_stmt_bind_param($actualStmt, 'ii', $company_id, $year);
+        mysqli_stmt_execute($actualStmt);
+        $actualResult = mysqli_stmt_get_result($actualStmt);
+        while ($actualResult && ($row = mysqli_fetch_assoc($actualResult))) {
+            $kind = strtolower((string) ($row['category_kind'] ?? ''));
+            if (isset($actual[$kind])) {
+                $actual[$kind] = (float) $row['total'];
+            }
+        }
+        mysqli_stmt_close($actualStmt);
+    }
+
+    return [
+        'labels' => ['CAPEX', 'OPEX'],
+        'budget' => [$budget['capex'], $budget['opex']],
+        'actual' => [$actual['capex'], $actual['opex']],
+        'year' => $year,
+    ];
+}
+
+/**
+ * Monthly Posted/Paid actual spend by CAPEX vs OPEX for chart year.
+ *
+ * @return array{labels:array<int,string>,capex:array<int,float>,opex:array<int,float>,year:int}
+ */
+function get_capex_opex_monthly_actual_trend()
+{
+    global $conn, $company_id;
+
+    $year = reports_resolve_budget_chart_year();
+    $months = itm_ui_locale_format_month_short_labels();
+    $capexData = array_fill(1, 12, 0.0);
+    $opexData = array_fill(1, 12, 0.0);
+    $paidFilter = reports_expense_actual_filter_sql($conn, (int) $company_id);
+
+    $sql = 'SELECT bc.category_kind, MONTH(COALESCE(e.posting_date, e.date)) AS month_num, SUM(e.amount) AS total
+            FROM expenses e
+            INNER JOIN gl_accounts ga ON ga.company_id = e.company_id AND ga.id = e.gl_account_id
+            INNER JOIN budget_categories bc ON bc.company_id = ga.company_id AND bc.id = ga.category_id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL AND e.active = 1
+              AND bc.category_kind IN (\'capex\', \'opex\')
+              AND YEAR(COALESCE(e.posting_date, e.date)) = ?'
+        . $paidFilter
+        . ' GROUP BY bc.category_kind, month_num';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $year);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($result && ($row = mysqli_fetch_assoc($result))) {
+            $monthNum = (int) ($row['month_num'] ?? 0);
+            if ($monthNum < 1 || $monthNum > 12) {
+                continue;
+            }
+            $kind = strtolower((string) ($row['category_kind'] ?? ''));
+            if ($kind === 'capex') {
+                $capexData[$monthNum] = (float) $row['total'];
+            } elseif ($kind === 'opex') {
+                $opexData[$monthNum] = (float) $row['total'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => array_values($months),
+        'capex' => array_values($capexData),
+        'opex' => array_values($opexData),
+        'year' => $year,
+    ];
+}
+
+/**
  * Asset financial value by equipment type
  */
 function get_asset_financial_value() {
