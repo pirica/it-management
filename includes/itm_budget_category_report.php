@@ -30,6 +30,159 @@ if (!function_exists('itm_budget_category_report_kind_label')) {
     }
 }
 
+if (!function_exists('itm_budget_category_report_category_kind_column_exists')) {
+    function itm_budget_category_report_category_kind_column_exists($conn)
+    {
+        if (!($conn instanceof mysqli)) {
+            return false;
+        }
+
+        $columnRes = mysqli_query($conn, "SHOW COLUMNS FROM budget_categories LIKE 'category_kind'");
+
+        return $columnRes && mysqli_num_rows($columnRes) > 0;
+    }
+}
+
+if (!function_exists('itm_budget_category_report_backfill_category_kinds')) {
+    /**
+     * Map seeded category display names to category_kind on live DBs that predate DML backfill.
+     *
+     * @return int Rows updated
+     */
+    function itm_budget_category_report_backfill_category_kinds($conn)
+    {
+        if (!($conn instanceof mysqli) || !itm_budget_category_report_category_kind_column_exists($conn)) {
+            return 0;
+        }
+
+        $nameKindMap = [
+            'Revenue' => 'revenue',
+            'Operating Expense' => 'opex',
+            'Capital Expense' => 'capex',
+        ];
+        $updated = 0;
+
+        foreach ($nameKindMap as $name => $kind) {
+            $stmt = mysqli_prepare(
+                $conn,
+                'UPDATE budget_categories SET category_kind = ? WHERE name = ? AND category_kind <> ?'
+            );
+            if (!$stmt) {
+                continue;
+            }
+            mysqli_stmt_bind_param($stmt, 'sss', $kind, $name, $kind);
+            mysqli_stmt_execute($stmt);
+            $updated += (int)mysqli_stmt_affected_rows($stmt);
+            mysqli_stmt_close($stmt);
+        }
+
+        return $updated;
+    }
+}
+
+if (!function_exists('itm_budget_category_report_default_year')) {
+    /**
+     * Prefer the latest annual budget year for the tenant so seeded demo rows appear on first load.
+     */
+    function itm_budget_category_report_default_year($conn, $companyId)
+    {
+        $calendarYear = (int)date('Y');
+        $companyId = (int)$companyId;
+        if ($companyId <= 0 || !($conn instanceof mysqli)) {
+            return $calendarYear;
+        }
+
+        $stmt = mysqli_prepare($conn, 'SELECT MAX(year) AS max_year FROM annual_budgets WHERE company_id = ?');
+        if (!$stmt) {
+            return $calendarYear;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = $result ? mysqli_fetch_assoc($result) : null;
+        mysqli_stmt_close($stmt);
+
+        $maxYear = (int)($row['max_year'] ?? 0);
+        if ($maxYear >= 2000 && $maxYear <= 2100) {
+            return $maxYear;
+        }
+
+        return $calendarYear;
+    }
+}
+
+if (!function_exists('itm_budget_category_report_ensure_capital_annual_budget_rows')) {
+    /**
+     * Insert Infrastructure / GL 7100 annual + January monthly budgets when GL exists but no annual row for $year.
+     *
+     * @return int Annual budget rows inserted
+     */
+    function itm_budget_category_report_ensure_capital_annual_budget_rows($conn, $year)
+    {
+        if (!($conn instanceof mysqli)) {
+            return 0;
+        }
+
+        $year = (int)$year;
+        if ($year < 2000 || $year > 2100) {
+            return 0;
+        }
+
+        $inserted = 0;
+        $sql = "INSERT INTO annual_budgets (company_id, cost_center_id, gl_account_id, year, amount, created_by, active, created_at)
+            SELECT ga.company_id, cc.id, ga.id, ?, 120000.00, NULL, 1, NOW()
+            FROM gl_accounts ga
+            INNER JOIN cost_centers cc
+              ON cc.company_id = ga.company_id
+             AND cc.code = 'CC-IT-INFRA'
+             AND cc.name = 'Infrastructure'
+            WHERE ga.account_code = '7100'
+              AND NOT EXISTS (
+                SELECT 1 FROM annual_budgets ab
+                WHERE ab.company_id = ga.company_id
+                  AND ab.cost_center_id = cc.id
+                  AND ab.gl_account_id = ga.id
+                  AND ab.year = ?
+              )";
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $year, $year);
+        mysqli_stmt_execute($stmt);
+        $inserted = (int)mysqli_stmt_affected_rows($stmt);
+        mysqli_stmt_close($stmt);
+
+        if ($inserted <= 0) {
+            return 0;
+        }
+
+        $monthSql = "INSERT INTO monthly_budgets (company_id, annual_budget_id, month, amount, active, created_at)
+            SELECT ab.company_id, ab.id, 1, 10000.00, 1, NOW()
+            FROM annual_budgets ab
+            INNER JOIN gl_accounts ga ON ga.company_id = ab.company_id AND ga.id = ab.gl_account_id
+            INNER JOIN cost_centers cc ON cc.company_id = ab.company_id AND cc.id = ab.cost_center_id
+            WHERE ga.account_code = '7100'
+              AND cc.code = 'CC-IT-INFRA'
+              AND ab.year = ?
+              AND NOT EXISTS (
+                SELECT 1 FROM monthly_budgets mb
+                WHERE mb.company_id = ab.company_id
+                  AND mb.annual_budget_id = ab.id
+                  AND mb.month = 1
+              )";
+        $monthStmt = mysqli_prepare($conn, $monthSql);
+        if ($monthStmt) {
+            mysqli_stmt_bind_param($monthStmt, 'i', $year);
+            mysqli_stmt_execute($monthStmt);
+            mysqli_stmt_close($monthStmt);
+        }
+
+        return $inserted;
+    }
+}
+
 if (!function_exists('itm_budget_category_report_month_options')) {
     /**
      * @return array<int, string>

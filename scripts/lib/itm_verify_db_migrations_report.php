@@ -818,6 +818,38 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'budget_categories_category_kind.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'budget_categories', 'category_kind');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'budget_categories.category_kind column present.'
+                    : 'Missing budget_categories.category_kind — apply migration or fresh db/ import.'
+            );
+        }
+
+        if ($filename === 'budget_categories_category_kind_dml.sql') {
+            $wrong = itm_verify_db_migrations_scalar_count(
+                $conn,
+                "SELECT COUNT(*) FROM budget_categories
+                 WHERE name IN ('Revenue', 'Operating Expense', 'Capital Expense')
+                   AND category_kind NOT IN ('revenue', 'opex', 'capex')"
+            );
+            $ok = ($wrong === 0);
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'Canonical budget category names map to revenue/opex/capex kinds.'
+                    : (int)$wrong . ' budget_categories row(s) still have wrong category_kind for canonical names.'
+            );
+        }
+
         return null;
     }
 }

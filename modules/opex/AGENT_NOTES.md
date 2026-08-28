@@ -33,7 +33,8 @@ No owned table. Reads **annual_budgets**, **monthly_budgets**, **forecast_revisi
 - None (read-only aggregation).
 
 ## 10. Common Pitfalls
-- GL without `category_id` or with `other` kind does not appear on this screen — assign kind on [Budget Categories](http://localhost/it-management/modules/budget_categories/index.php).
+- GL without `category_id` or with `other` kind does not appear on this screen — assign kind on [Budget Categories](http://localhost/it-management/modules/budget_categories/index.php). On first page load the report backfills canonical names (Revenue / Operating Expense / Capital Expense) when `category_kind` was still `other` after a code-only upgrade.
+- Default report year is the tenant’s latest `annual_budgets.year` (not always the calendar year). Seed demo budgets use **2026** — change the Year filter if the grid is empty.
 - Renaming category display names does not change OPEX scope; `category_kind` drives the filter.
 
 ## 11. Examples of Safe Code Patterns

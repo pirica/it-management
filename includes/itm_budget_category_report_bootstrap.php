@@ -26,8 +26,10 @@ require_once ROOT_PATH . 'includes/itm_budget_category_report.php';
 
 itm_budget_category_report_handle_import_reject((string)$itmBcrTitle);
 
+itm_budget_category_report_backfill_category_kinds($conn);
+
 $reportCompanyId = (int)($company_id ?? 0);
-$selectedYear = (int)date('Y');
+$selectedYear = itm_budget_category_report_default_year($conn, $reportCompanyId);
 $selectedMonth = 0;
 $selectedCostCenterId = 0;
 $selectedGlAccountId = 0;
@@ -273,7 +275,12 @@ if (!isset($currentUiConfig)) {
                         </tr>
                     <?php else: ?>
                         <tr>
-                            <td colspan="11" style="text-align:center;">No data found for the selected filters.</td>
+                            <td colspan="11" style="text-align:center;">
+                                No data found for the selected filters.
+                                <?php if ($itmBcrCategoryKind === 'capex' || $itmBcrCategoryKind === 'opex'): ?>
+                                    <br><span style="opacity:.85;font-size:0.92em;">Check <a href="../budget_categories/index.php" target="_blank" rel="noopener">Budget Categories</a> — Capital Expense must be <strong>CAPEX</strong>, Operating Expense <strong>OPEX</strong>. Seed demo budgets use the latest annual budget year (try <?php echo (int)itm_budget_category_report_default_year($conn, $reportCompanyId); ?>).</span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                     <?php endif; ?>
                     </tbody>
