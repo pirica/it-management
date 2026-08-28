@@ -127,6 +127,42 @@ if (!function_exists('itm_apply_company_context_employee_session')) {
     }
 }
 
+if (!function_exists('itm_ensure_company_context_employee_session')) {
+    /**
+     * Keep session employee identity aligned with the active tenant on every request.
+     *
+     * Why: company_id can change without itm_switch_active_company_session() (stale cookies,
+     * scripts, or legacy flows), leaving employee_id on the login/home tenant while modules
+     * scope by company_id — ticket create defaults then pick the wrong Admin row.
+     */
+    function itm_ensure_company_context_employee_session(mysqli $conn, int $companyId): void
+    {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return;
+        }
+
+        $loginEmployeeId = itm_company_session_login_employee_id();
+        if ($loginEmployeeId <= 0) {
+            return;
+        }
+
+        if (!isset($_SESSION['login_employee_id']) || (int)$_SESSION['login_employee_id'] <= 0) {
+            $_SESSION['login_employee_id'] = $loginEmployeeId;
+        }
+
+        $contextEmployeeId = itm_resolve_company_context_employee_id($conn, $loginEmployeeId, $companyId);
+        if ($contextEmployeeId <= 0) {
+            return;
+        }
+
+        $currentEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+        if ($contextEmployeeId !== $currentEmployeeId) {
+            itm_apply_company_context_employee_session($conn, $contextEmployeeId, $loginEmployeeId);
+        }
+    }
+}
+
 if (!function_exists('itm_list_employee_accessible_companies')) {
     /**
      * Active companies the signed-in employee may choose after login.

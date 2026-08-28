@@ -596,6 +596,15 @@ if (
 
 $company_id = itm_resolve_active_company_id((int)($_SESSION['company_id'] ?? 0));
 
+if (
+    $company_id > 0
+    && isset($conn)
+    && $conn instanceof mysqli
+    && function_exists('itm_ensure_company_context_employee_session')
+) {
+    itm_ensure_company_context_employee_session($conn, (int)$company_id);
+}
+
 // Why: Dashboard Online now count uses writable presence touch files (PHP session dirs are not listable).
 $itmActiveEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
 if ($company_id > 0 && $itmActiveEmployeeId > 0) {
