@@ -1679,20 +1679,20 @@ INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`,
 -- Data for `tickets`
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '1', '1', '2', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '2', '2', '2', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('3', '3', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '14', '9', '12', '1', '1', '3', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('3', '3', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '14', '9', '12', '3', '3', '3', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('4', '4', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '19', '13', '17', '1', '1', '4', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('4', '4', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '19', '13', '17', '4', '4', '4', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('5', '5', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '24', '17', '22', '1', '1', '5', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('5', '5', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '24', '17', '22', '5', '5', '5', NULL, '2026-01-01 00:00:01');
 
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES
 ('6', '1', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed hardware ticket for survey demo', '1', '4', '2', '1', '1', '1', NULL, '2026-01-02 00:00:01'),
-('7', '2', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '9', '5', '7', '1', '1', '2', NULL, '2026-01-02 00:00:01'),
-('8', '3', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '14', '9', '12', '1', '1', '3', NULL, '2026-01-02 00:00:01'),
-('9', '4', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '19', '13', '17', '1', '1', '4', NULL, '2026-01-02 00:00:01'),
-('10', '5', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '24', '17', '22', '1', '1', '5', NULL, '2026-01-02 00:00:01');
+('7', '2', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '9', '5', '7', '2', '2', '2', NULL, '2026-01-02 00:00:01'),
+('8', '3', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '14', '9', '12', '3', '3', '3', NULL, '2026-01-02 00:00:01'),
+('9', '4', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '19', '13', '17', '4', '4', '4', NULL, '2026-01-02 00:00:01'),
+('10', '5', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '24', '17', '22', '5', '5', '5', NULL, '2026-01-02 00:00:01');
 
 INSERT INTO `ticket_surveys` (`id`, `company_id`, `ticket_id`, `questionnaire_id`, `token`, `respondent_email`, `reference`, `completed_at`, `average_score`, `accept_feedback`, `issued_by_employee_id`, `active`, `created_by`, `created_at`) VALUES
 (1, 1, 6, 2, 'seed_survey_token_company1_completed', 'admin@techcorp.example.com', 'TCK-CSAT-001 — Laptop replacement completed', '2026-01-03 10:00:00', 4.5, 1, 1, 1, 1, '2026-01-02 12:00:01');

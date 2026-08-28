@@ -314,6 +314,20 @@ function tickets_user_select_options(mysqli $conn, int $companyId, $selectedId):
     return itm_user_append_selected_option($conn, $companyId, $options, $selectedId);
 }
 
+function tickets_default_created_by_employee_id(mysqli $conn, int $companyId): int
+{
+    $sessionUserId = (int)($_SESSION['employee_id'] ?? 0);
+    if ($sessionUserId > 0 && itm_user_label_by_id_for_company($conn, $companyId, $sessionUserId) !== '') {
+        return $sessionUserId;
+    }
+
+    if (function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+        return (int)itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
+    }
+
+    return 0;
+}
+
 function tickets_resolve_created_by_employee_id(mysqli $conn, int $companyId): int
 {
     $fromPost = (int)($_POST['created_by_employee_id'] ?? 0);
@@ -321,14 +335,7 @@ function tickets_resolve_created_by_employee_id(mysqli $conn, int $companyId): i
         return $fromPost;
     }
 
-    $sessionUserId = (int)($_SESSION['employee_id'] ?? 0);
-    if ($sessionUserId > 0) {
-        return $sessionUserId;
-    }
-
-    $options = tickets_user_select_options($conn, $companyId, 0);
-
-    return !empty($options) ? (int)$options[0]['id'] : 0;
+    return tickets_default_created_by_employee_id($conn, $companyId);
 }
 
 $id = (int)($_GET['id'] ?? 0);
@@ -344,7 +351,7 @@ $ticketUploadPath = TICKET_UPLOAD_PATH;
 $data = [
     'ticket_external_code' => '', 'title' => '', 'description' => '',
     'category_id' => '', 'status_id' => '', 'priority_id' => '',
-    'created_by_employee_id' => (int)($_SESSION['employee_id'] ?? 0),
+    'created_by_employee_id' => tickets_default_created_by_employee_id($conn, (int)$company_id),
     'assigned_to_employee_id' => '', 'equipment_id' => '', 'due_date' => '',
     'tickets_photos' => '', 'active' => 1, 'created_at' => date('Y-m-d\TH:i')
 ];
