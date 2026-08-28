@@ -15,7 +15,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser: <a href="verify_employee_dashboard.php">verify_employee_dashboard.php</a>. CLI: <code>php scripts/verify_employee_dashboard.php</code>. Run when changing employee dashboard cards, company switcher, or stats loader.
+Browser: <a href="verify_employee_dashboard.php">verify_employee_dashboard.php</a>. CLI: <code>php scripts/verify_employee_dashboard.php</code>. Run when changing employee dashboard cards, company switcher, Admin tenant user remap, or stats loader.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 define('ITM_CLI_SCRIPT', true);
@@ -94,10 +94,26 @@ if (strpos($dashboardSource, 'Switch Company') === false
     || strpos($dashboardSource, 'Change Company') === false
     || strpos($dashboardSource, 'itm_switch_active_company_session') === false
     || strpos($dashboardSource, 'itm_list_employee_accessible_companies') === false
-    || strpos($dashboardSource, 'itm_try_post_csrf') === false) {
-    ed_verify_fail('dashboard.php must contain company switcher markup and session switch helpers');
+    || strpos($dashboardSource, 'itm_try_post_csrf') === false
+    || strpos($dashboardSource, 'itm_company_session_login_employee_id') === false) {
+    ed_verify_fail('dashboard.php must contain company switcher markup and switch from login employee identity');
 } else {
-    ed_verify_pass('dashboard.php has company switcher');
+    ed_verify_pass('dashboard.php has company switcher keyed from login employee identity');
+}
+
+$sessionSource = (string)@file_get_contents(ROOT_PATH . 'includes/itm_company_session.php');
+$configSource = (string)@file_get_contents(ROOT_PATH . 'config/config.php');
+if (strpos($sessionSource, 'function itm_is_admin') === false) {
+    ed_verify_fail('itm_is_admin() must be defined in includes/itm_company_session.php so Admin company switch remaps the user on the next GET');
+} else {
+    ed_verify_pass('itm_is_admin() is defined in itm_company_session.php for tenant Admin remap');
+}
+$requirePos = strpos($configSource, 'includes/itm_company_session.php');
+$ensurePos = strpos($configSource, 'itm_ensure_company_context_employee_session($conn');
+if ($requirePos === false || $ensurePos === false || $requirePos > $ensurePos) {
+    ed_verify_fail('config.php must require itm_company_session.php before itm_ensure_company_context_employee_session()');
+} else {
+    ed_verify_pass('config.php remaps tenant Admin identity after itm_is_admin() exists');
 }
 
 $cardsSource = is_file($cardsPath) ? (string)file_get_contents($cardsPath) : '';

@@ -18,9 +18,16 @@ $user_id = (int)$_SESSION['employee_id'];
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
 $dashCsrfError = '';
-$isAdminUser = itm_is_admin($conn, $user_id);
+$loginEmployeeId = function_exists('itm_company_session_login_employee_id')
+    ? itm_company_session_login_employee_id()
+    : $user_id;
+if ($loginEmployeeId <= 0) {
+    $loginEmployeeId = $user_id;
+}
+$isAdminUser = itm_is_admin($conn, $loginEmployeeId);
 
 // Why: Restore the tenant switcher on the employee landing page (same contract as admin.php / index.php).
+// Switch from the authenticated login employee so Admin remap targets the tenant seed Admin, not a prior context id.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id'])) {
     if (!itm_try_post_csrf()) {
         $dashCsrfError = 'Invalid CSRF token.';
@@ -28,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id'])) {
     } else {
         $requestedCompanyId = (int)($_POST['company_id'] ?? 0);
         if ($requestedCompanyId > 0 && function_exists('itm_switch_active_company_session')) {
-            if (itm_switch_active_company_session($conn, $user_id, $requestedCompanyId, $isAdminUser)) {
+            if (itm_switch_active_company_session($conn, $loginEmployeeId, $requestedCompanyId, $isAdminUser)) {
                 header('Location: ' . BASE_URL . 'dashboard.php');
                 exit;
             }

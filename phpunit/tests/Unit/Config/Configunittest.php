@@ -65,4 +65,29 @@ class ConfigUnittest extends TestCase
         $this->assertSame(25, itm_resolve_records_per_page(['records_per_page' => 'invalid']));
         $this->assertSame(25, itm_resolve_records_per_page(['records_per_page' => '0']));
     }
+
+    /**
+     * Why: Admin company switch remaps session employee_id on every GET; itm_is_admin()
+     * must exist before itm_ensure_company_context_employee_session() in config.php.
+     */
+    public function testAdminHelperIsDefinedBeforeCompanyContextEnsure()
+    {
+        $configSource = (string)file_get_contents(ROOT_PATH . 'config/config.php');
+        $sessionSource = (string)file_get_contents(ROOT_PATH . 'includes/itm_company_session.php');
+
+        $this->assertNotFalse(
+            strpos($sessionSource, 'function itm_is_admin'),
+            'itm_is_admin() must live in itm_company_session.php so tenant remap can run during bootstrap.'
+        );
+
+        $requirePos = strpos($configSource, 'includes/itm_company_session.php');
+        $ensurePos = strpos($configSource, 'itm_ensure_company_context_employee_session($conn');
+        $this->assertNotFalse($requirePos);
+        $this->assertNotFalse($ensurePos);
+        $this->assertLessThan(
+            $ensurePos,
+            $requirePos,
+            'config.php must require itm_company_session.php before tenant employee remap.'
+        );
+    }
 }

@@ -13,6 +13,7 @@ Unit tests for shared helpers under `includes/` that are safe to exercise withou
 | Test file | Maps to |
 |-----------|---------|
 | `AlertsVisibilityTest.php` | `includes/alerts_visibility.php` |
+| `CompanySessionTest.php` | `includes/itm_company_session.php` (Admin tenant remap, company access grants; skips when MySQL unavailable) |
 | `TodoVisibilityTest.php` | `includes/todo_visibility.php` |
 | `NotesVisibilityTest.php` | `includes/notes_visibility.php` |
 | `ItmMbqaTestUserTest.php` | `includes/itm_mbqa_test_user.php` |
