@@ -32,6 +32,13 @@ $crud_title = ucwords(str_replace('_', ' ', $crud_table));
 $crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
+$licenseMgmtTab = 'licenses';
+if (in_array($crud_action, ['index', 'list_all'], true)) {
+    $rawLicenseTab = isset($_GET['tab']) ? trim((string)$_GET['tab']) : 'licenses';
+    $licenseMgmtTab = in_array($rawLicenseTab, ['licenses', 'equipment'], true) ? $rawLicenseTab : 'licenses';
+}
+$licenseEqSoftwareFilter = (int)($_GET['software_id'] ?? 0);
+
 /**
  * Escapes a database identifier (table or column name)
  */
@@ -963,6 +970,14 @@ if (!isset($crud_title)) {
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
+    <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
+    <style>
+        .license-mgmt-tabs { display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px; flex-wrap:wrap; }
+        .license-mgmt-tab { padding:8px 16px; text-decoration:none; color:var(--text-primary); border-radius:6px; font-weight:500; }
+        .license-mgmt-tab.active { background:var(--accent); color:#fff; font-weight:600; }
+        .license-mgmt-tab:hover:not(.active) { background:var(--bg-secondary); }
+    </style>
+    <?php endif; ?>
 </head>
 <body>
 <div class="container">
@@ -987,6 +1002,13 @@ if (!isset($crud_title)) {
                         <span></span>
                     <?php endif; ?>
                 </div>
+                <div class="license-mgmt-tabs">
+                    <a href="index.php" class="itm-plain-link license-mgmt-tab<?php echo $licenseMgmtTab === 'licenses' ? ' active' : ''; ?>">Licenses</a>
+                    <a href="index.php?tab=equipment" class="itm-plain-link license-mgmt-tab<?php echo $licenseMgmtTab === 'equipment' ? ' active' : ''; ?>">Equipment</a>
+                </div>
+            <?php if ($licenseMgmtTab === 'equipment'): ?>
+                <?php include __DIR__ . '/includes/tab_equipment.php'; ?>
+            <?php else: ?>
             <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
                     <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
@@ -1103,6 +1125,7 @@ if (!isset($crud_title)) {
                         </div>
                     </div>
                 <?php endif; ?>
+            <?php endif; ?>
 
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <!-- DATA ENTRY FORM VIEW -->
