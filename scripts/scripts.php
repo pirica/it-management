@@ -1246,6 +1246,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     </td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="tickets">
+                    <td><a href="verify_tickets_create_defaults.php" target="_blank" rel="nofollow noreferrer">verify_tickets_create_defaults.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="tickets">tickets</span></span></td>
+                    <td>
+                        CLI regression for tickets create <strong>Created By</strong> default at company <code>4</code>: stale Admin session (<code>employee_id=1</code>, <code>company_id=4</code>) must remap via <code>itm_ensure_company_context_employee_session()</code> and <code>tickets_default_created_by_employee_id()</code>; probes edit seed <code>TCK-0001</code> FKs. Read-only.
+                    </td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="registration_invitations">
                     <td><a href="verify_registration_invitations_sample_cycle.php?run=1&amp;cycles=4" target="_blank" rel="nofollow noreferrer">verify_registration_invitations_sample_cycle.php?run=1&amp;cycles=4</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

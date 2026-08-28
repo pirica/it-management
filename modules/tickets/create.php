@@ -13,6 +13,7 @@
 
 require '../../config/config.php';
 itm_require_crud_role_module_permission($conn, 'create', 'tickets');
+require_once __DIR__ . '/tickets_form_employee_defaults.php';
 
 
 /**
@@ -312,46 +313,6 @@ function tickets_user_select_options(mysqli $conn, int $companyId, $selectedId):
     $options = itm_user_options_for_company($conn, $companyId);
 
     return itm_user_append_selected_option($conn, $companyId, $options, $selectedId);
-}
-
-function tickets_resolve_context_employee_id(mysqli $conn, int $companyId): int
-{
-    $companyId = (int)$companyId;
-    if ($companyId <= 0) {
-        return 0;
-    }
-
-    if (function_exists('itm_company_session_login_employee_id')
-        && function_exists('itm_resolve_company_context_employee_id')) {
-        $loginEmployeeId = itm_company_session_login_employee_id();
-        $contextEmployeeId = itm_resolve_company_context_employee_id($conn, $loginEmployeeId, $companyId);
-        if ($contextEmployeeId > 0
-            && function_exists('itm_user_label_by_id_for_company')
-            && itm_user_label_by_id_for_company($conn, $companyId, $contextEmployeeId) !== '') {
-            return $contextEmployeeId;
-        }
-    }
-
-    if (function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
-        return (int)itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
-    }
-
-    return 0;
-}
-
-function tickets_default_created_by_employee_id(mysqli $conn, int $companyId): int
-{
-    return tickets_resolve_context_employee_id($conn, $companyId);
-}
-
-function tickets_resolve_created_by_employee_id(mysqli $conn, int $companyId): int
-{
-    $fromPost = (int)($_POST['created_by_employee_id'] ?? 0);
-    if ($fromPost > 0) {
-        return $fromPost;
-    }
-
-    return tickets_default_created_by_employee_id($conn, $companyId);
 }
 
 $id = (int)($_GET['id'] ?? 0);

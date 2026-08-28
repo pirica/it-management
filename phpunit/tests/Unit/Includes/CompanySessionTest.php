@@ -82,6 +82,26 @@ class CompanySessionTest extends TestCase
         $this->assertSame('admin@techcorp.example4.com', (string)$_SESSION['email']);
     }
 
+    public function testEnsureCompanyContextEmployeeSessionRemapsStaleSessionOnRequest(): void
+    {
+        $loginEmployeeId = 1;
+        $targetCompanyId = 4;
+
+        $_SESSION['employee_id'] = $loginEmployeeId;
+        $_SESSION['login_employee_id'] = $loginEmployeeId;
+        $_SESSION['company_id'] = $targetCompanyId;
+        $_SESSION['username'] = 'Admin';
+        $_SESSION['email'] = 'admin@techcorp.example1.com';
+
+        $this->assertTrue(function_exists('itm_ensure_company_context_employee_session'));
+        itm_ensure_company_context_employee_session($this->conn, $targetCompanyId);
+
+        $this->assertSame($loginEmployeeId, (int)$_SESSION['login_employee_id']);
+        $this->assertSame(4, (int)$_SESSION['employee_id']);
+        $this->assertSame('Admin4', (string)$_SESSION['username']);
+        $this->assertSame('admin@techcorp.example4.com', (string)$_SESSION['email']);
+    }
+
     public function testEmployeeHasCompanyAccessViaGrant(): void
     {
         $companyId = $this->createTempCompany('Grant Test ' . uniqid());

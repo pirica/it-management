@@ -1011,6 +1011,16 @@
         ],
         "override": false
     },
+    "verify_tickets_create_defaults.php": {
+        "tags": [
+            "tickets"
+        ],
+        "tables": [
+            "employees",
+            "tickets"
+        ],
+        "override": false
+    },
     "verify_equipment_triggers.php": {
         "tags": [
             "Mixed"
