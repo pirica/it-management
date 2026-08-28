@@ -19,7 +19,7 @@ Tenant software catalog used for EOL / Extended / ESU tracking. Dates on this ta
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD: search (`$displayFieldColumns` alias), sort, pagination, bulk delete/clear, Excel import/export, Add sample data.
-- Hide `company_id`. Actions cells: `itm-actions-cell` + `data-itm-actions-origin="1"`. Import endpoint `index.php`.
+- Hide `company_id`. Keep `software` in `$hideCompanyIdTables` on `index.php`, `edit.php`, `view.php`, and `list_all.php` (materialize from manufacturers does not add the new table name). Actions cells: `itm-actions-cell` + `data-itm-actions-origin="1"`. Import endpoint `index.php`.
 - Calendar emits **one event per catalog product**, not per linked asset (`itm_software_eol_append_calendar_events()`).
 
 ## 6. API Actions (If Applicable)
@@ -39,6 +39,7 @@ Tenant software catalog used for EOL / Extended / ESU tracking. Dates on this ta
 - **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields. Inventory: `docs/list_soft-delete.txt`. [Cursor-Valid]
 - Do not delete a software row still linked by `equipment_software` (RESTRICT). Unlink from equipment first. [Cursor-Valid]
 - Dashboard/email use **eol_date only** (hardware or inherited). Extended/ESU are calendar/expiring only. [Cursor-Valid]
+- Omitting `software` from `$hideCompanyIdTables` shows a **Company** list/view column (often the company email as the FK label). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 
