@@ -18,7 +18,7 @@ Column names use `_date` so `itm_is_date_field_name()` formats them. Per-install
 
 ## UI
 
-- Catalog CRUD: [modules/software/index.php](http://localhost/it-management/modules/software/index.php), [modules/workstation_office/index.php](http://localhost/it-management/modules/workstation_office/index.php), [modules/workstation_os_versions/index.php](http://localhost/it-management/modules/workstation_os_versions/index.php) (open in a new browser tab).
+- Catalog CRUD: [modules/software/index.php](http://localhost/it-management/modules/software/index.php), [modules/workstation_office/index.php](http://localhost/it-management/modules/workstation_office/index.php), [modules/workstation_os_versions/index.php](http://localhost/it-management/modules/workstation_os_versions/index.php) (open in a new browser tab). List/view hide `company_id`.
 - Equipment create/edit: hardware EOL/Extended/ESU plus multi-select **Software catalog** (`software_ids[]`). Sync: `itm_equipment_software_sync()` in `includes/itm_software_eol.php`.
 - Equipment view: hardware dates plus read-only inherited Office / OS / linked software dates.
 

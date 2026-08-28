@@ -16,7 +16,7 @@ Junction between **equipment** and the **software** catalog. Dates are **not** s
 - Do not add date columns on this table.
 
 ## 5. UI Behavior Requirements
-- Standard flattened CRUD materialized from manufacturers. FK labels for `equipment_id` / `software_id`. Hide `company_id`.
+- Standard flattened CRUD materialized from manufacturers. FK labels for `equipment_id` / `software_id`. Hide `company_id` via `$hideCompanyIdTables` including `equipment_software` on `index.php`, `edit.php`, `view.php`, and `list_all.php`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** on `index.php`.
