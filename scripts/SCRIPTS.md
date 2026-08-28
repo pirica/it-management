@@ -1178,8 +1178,9 @@ Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/
 | `php scripts/run_asset_depreciation.php` | Monthly cron: depreciation snapshots on `equipment_lifecycle_events`. Optional `--company=ID`. |
 | `php scripts/verify_asset_depreciation.php` | Regression: equipment lifecycle columns, months-elapsed math, book value sample |
 | `php scripts/verify_software_eol.php` | Regression: Office/OS/software catalog and equipment hardware EOL/Extended/ESU columns, calendar collector, inherited 30-day count, email helper. Doc: `docs/SOFTWARE_EOL.md`. Browser: [verify_software_eol.php?run=1](http://localhost/it-management/scripts/verify_software_eol.php?run=1) (Admin session) |
+| `php scripts/verify_software_license_links.php` | Regression: `software_license_links` junction, `includes/itm_software_license_link.php` sync/list helpers, bidirectional software ↔ license_management UI linking. Browser: [verify_software_license_links.php?run=1](http://localhost/it-management/scripts/verify_software_license_links.php?run=1) (Admin session) |
 
-Run the matching `verify_*.php` after changing `includes/itm_scheduled_reports.php`, `includes/itm_saved_reports.php`, `includes/itm_webhook_queue.php`, `includes/itm_asset_depreciation.php`, `includes/itm_software_eol.php`, or related `db/` DDL.
+Run the matching `verify_*.php` after changing `includes/itm_scheduled_reports.php`, `includes/itm_saved_reports.php`, `includes/itm_webhook_queue.php`, `includes/itm_asset_depreciation.php`, `includes/itm_software_eol.php`, `includes/itm_software_license_link.php`, or related `db/` DDL.
 
 ### Appointment scripts
 

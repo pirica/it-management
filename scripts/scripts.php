@@ -2433,6 +2433,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for software/Office/OS/hardware EOL columns, <code>includes/itm_software_eol.php</code> calendar/expiring/email helpers, and the <code>eol_date</code> email alert catalog slug. See <code>docs/SOFTWARE_EOL.md</code>.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_software_eol.php</code></td>
                 </tr>
+                <tr data-tags="software license_management software_license_links">
+                    <td><a href="verify_software_license_links.php" target="_blank" rel="nofollow noreferrer">verify_software_license_links.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">software</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">license_management</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">software_license_links</span></span></td>
+                    <td>Regression for bidirectional <code>software_license_links</code> junction sync/list helpers (<code>includes/itm_software_license_link.php</code>) and software ↔ license_management create/edit/view linking.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_software_license_links.php</code></td>
+                </tr>
                 <tr data-tags="equipment equipment_lifecycle_events">
                     <td><a href="verify_asset_depreciation.php" target="_blank" rel="nofollow noreferrer">verify_asset_depreciation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

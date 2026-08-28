@@ -630,6 +630,15 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     }
 }
 
+$licenseSoftwareOptions = [];
+$selectedLicenseSoftwareIds = [];
+if ($crud_table === 'license_management' && function_exists('itm_software_license_software_options')) {
+    $licenseSoftwareOptions = itm_software_license_software_options($conn, (int)$company_id);
+    if ($editId > 0 && function_exists('itm_software_license_ids_for_license')) {
+        $selectedLicenseSoftwareIds = itm_software_license_ids_for_license($conn, (int)$company_id, $editId);
+    }
+}
+
 // Handle record submission (Create or Edit)
 
 // Handle sample data seeding for empty companies in list view
@@ -826,6 +835,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            $savedLicenseId = ($crud_action === 'create') ? (int)mysqli_insert_id($conn) : $editId;
+            if ($savedLicenseId > 0 && function_exists('itm_software_license_sync_for_license')) {
+                $syncError = itm_software_license_sync_for_license(
+                    $conn,
+                    (int)$company_id,
+                    $savedLicenseId,
+                    $_POST['software_ids'] ?? [],
+                    (int)($_SESSION['employee_id'] ?? 0)
+                );
+                if ($syncError !== '') {
+                    $_SESSION['crud_error'] = $syncError;
+                }
+            }
             header('Location: ' . $listUrl);
             exit;
         }
@@ -1142,6 +1164,18 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
+                    <?php if ($crud_table === 'license_management' && !empty($licenseSoftwareOptions)): ?>
+                        <div class="form-group">
+                            <label>Linked software catalog</label>
+                            <select name="software_ids[]" multiple size="6">
+                                <?php foreach ($licenseSoftwareOptions as $softwareOption): ?>
+                                    <?php $softwareOptionId = (int)($softwareOption['id'] ?? 0); ?>
+                                    <option value="<?php echo $softwareOptionId; ?>" <?php echo in_array($softwareOptionId, $selectedLicenseSoftwareIds, true) ? 'selected' : ''; ?>><?php echo sanitize((string)($softwareOption['label'] ?? '')); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small>Hold Ctrl to select multiple software catalog rows.</small>
+                        </div>
+                    <?php endif; ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1162,6 +1196,32 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php
+                    $licenseLinkedSoftware = function_exists('itm_software_license_list_for_license')
+                        ? itm_software_license_list_for_license($conn, (int)$company_id, (int)($data['id'] ?? $editId))
+                        : [];
+                    ?>
+                    <?php if (!empty($licenseLinkedSoftware)): ?>
+                    <table style="margin-top:16px;">
+                        <tbody>
+                            <tr><th colspan="2">Linked software catalog</th></tr>
+                            <?php foreach ($licenseLinkedSoftware as $softwareRow): ?>
+                            <tr>
+                                <th style="width:240px;">Software</th>
+                                <td>
+                                    <a class="itm-plain-link" href="../software/view.php?id=<?php echo (int)($softwareRow['id'] ?? 0); ?>"><?php echo sanitize((string)($softwareRow['name'] ?? '')); ?></a>
+                                    <?php if (trim((string)($softwareRow['build'] ?? '')) !== ''): ?>
+                                        (<?php echo sanitize((string)$softwareRow['build']); ?>)
+                                    <?php endif; ?>
+                                    — EOL <?php echo sanitize(itm_format_date_display((string)($softwareRow['eol_date'] ?? '')) ?: '—'); ?>
+                                    · Extended <?php echo sanitize(itm_format_date_display((string)($softwareRow['extended_date'] ?? '')) ?: '—'); ?>
+                                    · ESU <?php echo sanitize(itm_format_date_display((string)($softwareRow['esu_date'] ?? '')) ?: '—'); ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <?php endif; ?>
                     <p style="margin-top:16px;">
                         <?php echo itm_crud_record_share_render_action_buttons('license_management', (int)($data['id'] ?? 0), 'license'); ?>
                         <a href="index.php" class="btn" title="Back">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a></p>

@@ -45,7 +45,16 @@ erDiagram
     }
     license_management }o--|| license_types : "RESTRICT on delete"
     license_management }o--|| suppliers : "SET NULL on delete"
+    software_license_links }o--|| software : "RESTRICT on delete"
+    software_license_links }o--|| license_management : "RESTRICT on delete"
 ```
+
+### Software catalog links
+
+- Junction table **`software_license_links`** connects tenant **software** catalog rows to **license_management** records (many-to-many).
+- **Software** create/edit: multi-select `license_management_ids[]` → `itm_software_license_sync_for_software()`.
+- **License Management** create/edit: multi-select `software_ids[]` → `itm_software_license_sync_for_license()`.
+- Both **view** screens list linked peer rows with cross-module links. Helper: `includes/itm_software_license_link.php`. Regression: `php scripts/verify_software_license_links.php`.
 
 ### Table Relationships & Delete Handlers
 

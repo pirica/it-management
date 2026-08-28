@@ -665,6 +665,15 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     if (!$data) { $errors[] = 'Record not found.'; }
 }
 
+$softwareLicenseOptions = [];
+$selectedSoftwareLicenseIds = [];
+if ($crud_table === 'software' && function_exists('itm_software_license_license_options')) {
+    $softwareLicenseOptions = itm_software_license_license_options($conn, (int)$company_id);
+    if ($editId > 0 && function_exists('itm_software_license_ids_for_software')) {
+        $selectedSoftwareLicenseIds = itm_software_license_ids_for_software($conn, (int)$company_id, $editId);
+    }
+}
+
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
 
 // Handle sample data seeding for empty companies in list view
@@ -859,7 +868,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
+                    $savedSoftwareId = (int)mysqli_insert_id($conn);
                     mysqli_stmt_close($stmt);
+                    if ($savedSoftwareId > 0 && function_exists('itm_software_license_sync_for_software')) {
+                        $syncError = itm_software_license_sync_for_software(
+                            $conn,
+                            (int)$company_id,
+                            $savedSoftwareId,
+                            $_POST['license_management_ids'] ?? [],
+                            (int)($_SESSION['employee_id'] ?? 0)
+                        );
+                        if ($syncError !== '') {
+                            $_SESSION['crud_error'] = $syncError;
+                        }
+                    }
                     header('Location: ' . $listUrl);
                     exit;
                 }
@@ -885,6 +907,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
                     mysqli_stmt_close($stmt);
+                    if ($editId > 0 && function_exists('itm_software_license_sync_for_software')) {
+                        $syncError = itm_software_license_sync_for_software(
+                            $conn,
+                            (int)$company_id,
+                            $editId,
+                            $_POST['license_management_ids'] ?? [],
+                            (int)($_SESSION['employee_id'] ?? 0)
+                        );
+                        if ($syncError !== '') {
+                            $_SESSION['crud_error'] = $syncError;
+                        }
+                    }
                     header('Location: ' . $listUrl);
                     exit;
                 }
@@ -1212,6 +1246,18 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
+                    <?php if ($crud_table === 'software' && !empty($softwareLicenseOptions)): ?>
+                        <div class="form-group">
+                            <label>Linked licenses</label>
+                            <select name="license_management_ids[]" multiple size="6">
+                                <?php foreach ($softwareLicenseOptions as $licenseOption): ?>
+                                    <?php $licenseOptionId = (int)($licenseOption['id'] ?? 0); ?>
+                                    <option value="<?php echo $licenseOptionId; ?>" <?php echo in_array($licenseOptionId, $selectedSoftwareLicenseIds, true) ? 'selected' : ''; ?>><?php echo sanitize((string)($licenseOption['label'] ?? '')); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small>Hold Ctrl to select multiple license records.</small>
+                        </div>
+                    <?php endif; ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1232,6 +1278,31 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php
+                    $softwareLinkedLicenses = function_exists('itm_software_license_list_for_software')
+                        ? itm_software_license_list_for_software($conn, (int)$company_id, (int)($data['id'] ?? $editId))
+                        : [];
+                    ?>
+                    <?php if (!empty($softwareLinkedLicenses)): ?>
+                    <table style="margin-top:16px;">
+                        <tbody>
+                            <tr><th colspan="2">Linked licenses</th></tr>
+                            <?php foreach ($softwareLinkedLicenses as $licenseRow): ?>
+                            <tr>
+                                <th style="width:240px;">License</th>
+                                <td>
+                                    <a class="itm-plain-link" href="../license_management/view.php?id=<?php echo (int)($licenseRow['id'] ?? 0); ?>"><?php echo sanitize((string)($licenseRow['name'] ?? '')); ?></a>
+                                    <?php if (trim((string)($licenseRow['license_key'] ?? '')) !== ''): ?>
+                                        — <?php echo sanitize((string)$licenseRow['license_key']); ?>
+                                    <?php endif; ?>
+                                    · Qty <?php echo sanitize((string)($licenseRow['quantity'] ?? '—')); ?>
+                                    · Expiry <?php echo sanitize(itm_format_date_display((string)($licenseRow['expiry_date'] ?? '')) ?: '—'); ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <?php endif; ?>
                     <p style="margin-top:16px;">
                         <a href="index.php" class="btn">🔙</a> 
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
