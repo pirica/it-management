@@ -42,6 +42,17 @@ if (!$conn instanceof mysqli) {
     exit(1);
 }
 
+$backfilledKinds = itm_budget_category_report_backfill_category_kinds($conn);
+if ($backfilledKinds > 0) {
+    vco_pass('Backfilled ' . $backfilledKinds . ' budget_categories.category_kind row(s) from canonical names.');
+}
+
+$companyId = 1;
+$reportYear = itm_budget_category_report_default_year($conn, $companyId);
+$seededCapital = itm_budget_category_report_ensure_capital_annual_budget_rows($conn, $reportYear);
+if ($seededCapital > 0) {
+    vco_pass('Inserted ' . $seededCapital . ' GL 7100 annual budget row(s) for year ' . $reportYear . '.');
+}
 $columnRes = mysqli_query($conn, "SHOW COLUMNS FROM budget_categories LIKE 'category_kind'");
 if (!$columnRes || mysqli_num_rows($columnRes) === 0) {
     vco_fail('budget_categories.category_kind column missing — import db/ or run migration budget_categories_category_kind.sql.');
@@ -49,7 +60,6 @@ if (!$columnRes || mysqli_num_rows($columnRes) === 0) {
     vco_pass('budget_categories.category_kind column exists.');
 }
 
-$companyId = 1;
 $seedChecks = [
     'Capital Expense' => 'capex',
     'Operating Expense' => 'opex',
@@ -76,7 +86,7 @@ foreach ($seedChecks as $name => $expectedKind) {
     }
 }
 
-$year = (int)date('Y');
+$year = $reportYear;
 $capexResult = itm_budget_category_report_run($conn, [
     'company_id' => $companyId,
     'year' => $year,
