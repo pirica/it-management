@@ -37,6 +37,49 @@ if (!function_exists('itm_patches_updates_assigned_employee_sql')) {
     }
 }
 
+if (!function_exists('itm_patches_updates_my_work_summary_counts')) {
+    /**
+     * Employee dashboard My work card: tenant-wide vs assignee-scoped live rows.
+     *
+     * @return array{all: int, for_me: int}
+     */
+    function itm_patches_updates_my_work_summary_counts($conn, $companyId, $employeeId)
+    {
+        $companyId = (int)$companyId;
+        $employeeId = (int)$employeeId;
+        $empty = ['all' => 0, 'for_me' => 0];
+        if (!($conn instanceof mysqli) || $companyId <= 0) {
+            return $empty;
+        }
+
+        $sql = 'SELECT COUNT(*) AS total_all,
+                       SUM(CASE WHEN pu.assigned_to_employee_id = ? THEN 1 ELSE 0 END) AS total_for_me
+                FROM patches_updates pu
+                WHERE pu.company_id = ?
+                  AND pu.deleted_at IS NULL';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return $empty;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $employeeId, $companyId);
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            return $empty;
+        }
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!is_array($row)) {
+            return $empty;
+        }
+
+        return [
+            'all' => (int)($row['total_all'] ?? 0),
+            'for_me' => (int)($row['total_for_me'] ?? 0),
+        ];
+    }
+}
+
 if (!function_exists('itm_patches_updates_due_within_days_count')) {
     function itm_patches_updates_due_within_days_count($conn, $companyId, $days = 30, $employeeId = 0)
     {

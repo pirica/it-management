@@ -64,6 +64,7 @@ foreach ([
 
 $requiredFunctions = [
     'itm_patches_updates_assigned_employee_sql',
+    'itm_patches_updates_my_work_summary_counts',
     'itm_patches_updates_due_within_days_count',
     'itm_patches_updates_list_calendar_rows',
     'itm_patches_updates_integration_summary',
@@ -146,6 +147,25 @@ if (!is_array($summary) || !array_key_exists('due_within_30_days', $summary)) {
     pu_verify_fail('Integration summary must include due_within_30_days');
 } else {
     pu_verify_pass('Integration summary shape OK');
+}
+
+$myWorkCounts = itm_patches_updates_my_work_summary_counts($conn, $companyId, 1);
+if (!is_array($myWorkCounts)
+    || !array_key_exists('all', $myWorkCounts)
+    || !array_key_exists('for_me', $myWorkCounts)
+    || (int)$myWorkCounts['for_me'] > (int)$myWorkCounts['all']) {
+    pu_verify_fail('My work summary counts must return all/for_me with for_me <= all');
+} else {
+    pu_verify_pass('My work summary counts shape OK (' . (int)$myWorkCounts['all'] . '/' . (int)$myWorkCounts['for_me'] . ')');
+}
+
+$cardsSource = is_file(ROOT_PATH . 'includes/itm_employee_dashboard_cards.php')
+    ? (string)file_get_contents(ROOT_PATH . 'includes/itm_employee_dashboard_cards.php')
+    : '';
+if (strpos($cardsSource, 'My Patches (All/For Me)') === false) {
+    pu_verify_fail('Employee dashboard cards must include My Patches (All/For Me)');
+} else {
+    pu_verify_pass('Employee dashboard cards include My Patches (All/For Me)');
 }
 
 if ($failures > 0) {

@@ -288,6 +288,14 @@ if (!function_exists('itm_employee_dashboard_load_context')) {
             $savedReportsSnapshot = itm_saved_reports_dashboard_snapshot($conn, $companyId, $userId, 3);
         }
 
+        $patchesSummary = ['all' => 0, 'for_me' => 0];
+        if (itm_employee_dashboard_module_slug_allowed($conn, $companyId, 'patches_updates')) {
+            if (!function_exists('itm_patches_updates_my_work_summary_counts')) {
+                require_once ROOT_PATH . 'includes/itm_patches_updates_integrations.php';
+            }
+            $patchesSummary = itm_patches_updates_my_work_summary_counts($conn, $companyId, $userId);
+        }
+
         return [
             'reload_required' => false,
             'file_count' => (int)$fileCount,
@@ -306,6 +314,7 @@ if (!function_exists('itm_employee_dashboard_load_context')) {
             'my_activity_count' => $myActivityCount,
             'private_module_counts' => itm_employee_dashboard_fetch_private_module_counts($conn, $userId, $companyId),
             'saved_reports_snapshot' => $savedReportsSnapshot,
+            'patches_summary' => $patchesSummary,
         ];
     }
 }
@@ -422,6 +431,7 @@ if (!function_exists('itm_employee_dashboard_card_shown_tables')) {
             'todo_categories',
             'events',
             'emails',
+            'patches_updates',
         ];
     }
 }
