@@ -2437,7 +2437,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_software_license_links.php" target="_blank" rel="nofollow noreferrer">verify_software_license_links.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">software</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">license_management</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">software_license_links</span></span></td>
-                    <td>Regression for bidirectional <code>software_license_links</code> junction sync/list helpers (<code>includes/itm_software_license_link.php</code>) and software ↔ license_management create/edit/view linking.</td>
+                    <td>Regression for bidirectional <code>software_license_links</code> junction sync/list helpers (<code>includes/itm_software_license_link.php</code>), License Management Equipment tab listing via <code>itm_software_license_list_equipment()</code>, and software ↔ license_management create/edit/view linking.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_software_license_links.php</code></td>
                 </tr>
                 <tr data-tags="equipment equipment_lifecycle_events">

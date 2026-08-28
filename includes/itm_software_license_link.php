@@ -271,6 +271,107 @@ if (!function_exists('itm_software_license_list_for_license')) {
     }
 }
 
+if (!function_exists('itm_software_license_list_equipment')) {
+    /**
+     * Equipment that has catalog software installed, optionally filtered by software_id.
+     * License names come from software_license_links when present.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    function itm_software_license_list_equipment(mysqli $conn, $companyId, $softwareId = 0)
+    {
+        $companyId = (int)$companyId;
+        $softwareId = (int)$softwareId;
+        $grouped = [];
+        if ($companyId <= 0) {
+            return [];
+        }
+        $hasEquipmentSoftware = function_exists('itm_software_eol_table_has_column')
+            ? itm_software_eol_table_has_column($conn, 'equipment_software', 'software_id')
+            : true;
+        if (!$hasEquipmentSoftware) {
+            return [];
+        }
+
+        $sql = 'SELECT e.id, e.name, e.hostname, e.serial_number, e.status_id, e.assigned_to_employee_id,
+                    COALESCE(st.name, \'\') AS status_name,
+                    TRIM(CONCAT(IFNULL(emp.first_name, \'\'), \' \', IFNULL(emp.last_name, \'\'))) AS assignee_full_name,
+                    IFNULL(emp.username, \'\') AS assignee_username,
+                    s.id AS software_id, s.name AS software_name, s.build AS software_build,
+                    lm.id AS license_id, lm.name AS license_name
+             FROM equipment e
+             INNER JOIN equipment_software esw
+                ON esw.equipment_id = e.id AND esw.company_id = e.company_id
+                AND esw.deleted_at IS NULL AND esw.active = 1
+             INNER JOIN software s
+                ON s.id = esw.software_id AND s.company_id = e.company_id AND s.deleted_at IS NULL
+             LEFT JOIN equipment_statuses st
+                ON st.id = e.status_id AND st.company_id = e.company_id
+             LEFT JOIN employees emp ON emp.id = e.assigned_to_employee_id
+             LEFT JOIN software_license_links sll
+                ON sll.software_id = s.id AND sll.company_id = e.company_id
+                AND sll.deleted_at IS NULL AND sll.active = 1
+             LEFT JOIN license_management lm
+                ON lm.id = sll.license_management_id AND lm.company_id = e.company_id
+                AND lm.deleted_at IS NULL
+             WHERE e.company_id = ? AND e.deleted_at IS NULL
+               AND (? = 0 OR esw.software_id = ?)
+             ORDER BY e.name ASC, s.name ASC';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return [];
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $companyId, $softwareId, $softwareId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $eid = (int)($row['id'] ?? 0);
+            if ($eid <= 0) {
+                continue;
+            }
+            if (!isset($grouped[$eid])) {
+                $fullName = trim((string)($row['assignee_full_name'] ?? ''));
+                $username = trim((string)($row['assignee_username'] ?? ''));
+                $grouped[$eid] = [
+                    'id' => $eid,
+                    'name' => (string)($row['name'] ?? ''),
+                    'hostname' => (string)($row['hostname'] ?? ''),
+                    'serial_number' => (string)($row['serial_number'] ?? ''),
+                    'status_id' => (int)($row['status_id'] ?? 0),
+                    'status_name' => (string)($row['status_name'] ?? ''),
+                    'assignee_label' => $fullName !== '' ? $fullName : $username,
+                    'software' => [],
+                    'licenses' => [],
+                ];
+            }
+            $sid = (int)($row['software_id'] ?? 0);
+            if ($sid > 0 && !isset($grouped[$eid]['software'][$sid])) {
+                $grouped[$eid]['software'][$sid] = [
+                    'id' => $sid,
+                    'name' => (string)($row['software_name'] ?? ''),
+                    'build' => (string)($row['software_build'] ?? ''),
+                ];
+            }
+            $lid = (int)($row['license_id'] ?? 0);
+            if ($lid > 0 && !isset($grouped[$eid]['licenses'][$lid])) {
+                $grouped[$eid]['licenses'][$lid] = [
+                    'id' => $lid,
+                    'name' => (string)($row['license_name'] ?? ''),
+                ];
+            }
+        }
+        mysqli_stmt_close($stmt);
+
+        $out = [];
+        foreach ($grouped as $item) {
+            $item['software'] = array_values($item['software']);
+            $item['licenses'] = array_values($item['licenses']);
+            $out[] = $item;
+        }
+        return $out;
+    }
+}
+
 if (!function_exists('itm_software_license_sync_for_software')) {
     /**
      * @param array<int,int> $licenseIds

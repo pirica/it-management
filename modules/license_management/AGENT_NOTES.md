@@ -7,6 +7,7 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - **license_management** — main license records (CRUD module table).
 - **license_types** — seed-only lookup for the **Type** dropdown (`Per User`, `Per Device`, `Enterprise`, `Subscription`, `Other`).
 - **software_license_links** — many-to-many links to `software` (sync from license create/edit via `software_ids[]`; view lists linked catalog rows).
+- **equipment** / **equipment_software** — Equipment tab (installed catalog software per asset).
 
 ## 3. Required Relationships
 - **license_management** → **companies** (`company_id`, CASCADE).
@@ -22,9 +23,11 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - **Dates** stored as MySQL `DATE`; list/view/import use **dd/mmm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
 - **Type** values come from tenant-scoped `license_types` rows (seeded in `db/03_triggers.sql` + cross-company `INSERT IGNORE` replication). Quick-add on the Type select inserts via `select_options_api.php` (`license_types` whitelist); full CRUD is under **`modules/license_types/`** with **company_id** hidden.
 - **Active** uses the standard checkbox double-label pattern on forms and badges on list/view.
+- **Equipment tab** (`index.php?tab=equipment`) lists assets from `equipment_software` with a **Software** select filter (`software_id`). Helper: `itm_software_license_list_equipment()`.
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD duplicated from **departments** scaffold: bulk delete, search, pagination, Excel import/export, empty-state sample data.
+- **List tabs:** Licenses (default CRUD) and Equipment (`?tab=equipment`) with Software select + search. Pane: `includes/tab_equipment.php`.
 - **company_id** hidden in list/create/edit/view.
 - **FK labels:** list/view must show Type and Supplier names (not raw IDs) via `cr_fk_label_by_id()` / `itm_fk_label_by_id()`.
 - Form field order: Name, License Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
@@ -36,6 +39,7 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 
 ## 7. File Structure
 - Flat CRUD: `index.php` (primary handler), thin wrappers `create.php`, `edit.php`, `view.php`, `list_all.php`, standalone `delete.php`.
+- **`includes/tab_equipment.php`** — Equipment tab (included when `tab=equipment`).
 
 ## 8. Multi-Tenant Rules
 - All queries scoped by `company_id`.

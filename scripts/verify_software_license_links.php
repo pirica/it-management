@@ -9,7 +9,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/verify_software_license_links.php</code> — schema, sync from software and license forms, list helpers, soft-delete unlink. Run after changing <code>includes/itm_software_license_link.php</code> or <code>software_license_links</code> DDL.
+<code>php scripts/verify_software_license_links.php</code> — schema, sync from software and license forms, list helpers (including equipment listing), soft-delete unlink. Run after changing <code>includes/itm_software_license_link.php</code>, License Management Equipment tab, or <code>software_license_links</code> DDL.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -163,6 +163,45 @@ if ($syncError !== '') {
     sll_fail('Sync from license failed: ' . $syncError);
 } else {
     sll_pass('Sync from license restored link');
+}
+
+$eqId = 0;
+$eqRes = mysqli_query($conn, 'SELECT id FROM equipment WHERE company_id = ' . (int)$companyId . ' AND deleted_at IS NULL ORDER BY id ASC LIMIT 1');
+if ($eqRes && ($eqRow = mysqli_fetch_assoc($eqRes))) {
+    $eqId = (int)($eqRow['id'] ?? 0);
+}
+if ($eqId > 0 && function_exists('itm_software_license_list_equipment')) {
+    $linkEq = mysqli_prepare(
+        $conn,
+        'INSERT IGNORE INTO equipment_software (company_id, equipment_id, software_id, active, created_by, updated_by)
+         VALUES (?, ?, ?, 1, ?, ?)'
+    );
+    if ($linkEq) {
+        mysqli_stmt_bind_param($linkEq, 'iiiii', $companyId, $eqId, $softwareId, $employeeId, $employeeId);
+        if (mysqli_stmt_execute($linkEq)) {
+            $eqList = itm_software_license_list_equipment($conn, $companyId, $softwareId);
+            $foundEq = false;
+            foreach ($eqList as $eqItem) {
+                if ((int)($eqItem['id'] ?? 0) === $eqId) {
+                    $foundEq = true;
+                    break;
+                }
+            }
+            if ($foundEq) {
+                sll_pass('list_equipment returns linked asset for software filter');
+            } else {
+                sll_fail('list_equipment missing equipment id ' . $eqId);
+            }
+        } else {
+            sll_fail('Unable to attach disposable equipment_software row: ' . mysqli_stmt_error($linkEq));
+        }
+        mysqli_stmt_close($linkEq);
+        mysqli_query($conn, 'DELETE FROM equipment_software WHERE company_id = ' . (int)$companyId . ' AND equipment_id = ' . (int)$eqId . ' AND software_id = ' . (int)$softwareId);
+    } else {
+        sll_fail('Unable to prepare equipment_software insert');
+    }
+} else {
+    sll_pass('list_equipment skipped (no live equipment row for company 1)');
 }
 
 mysqli_query($conn, 'DELETE FROM software_license_links WHERE company_id = ' . (int)$companyId . ' AND software_id = ' . (int)$softwareId);
