@@ -39,7 +39,30 @@
 
 <p align="center"><img src="docs/readme/demo_login.png" alt="Login page" /></p>
 
-<p align="center"><strong>Dashboard</strong> — company-scoped overview with quick stats (equipment, tickets, employees).</p>
+<p align="center"><strong>Seed companies and login accounts</strong> — a fresh <code>db/</code> import creates five tenants and the logins below. Password for <code>Admin</code> / <code>Admin2</code>–<code>Admin5</code> is <code>Admin</code>. Demo passwords match the username (<code>demo1</code> / <code>demo1</code>, …). After sign-in, change tenant from the dashboard <strong>Switch Company</strong> control (open <a href="http://localhost/it-management/dashboard.php">dashboard.php</a> in a new browser tab). Admin is detected as role name <code>Admin</code>, or username exactly <code>admin</code> (case-insensitive) — that is why <code>Admin2</code>–<code>Admin5</code> can open every tenant even though their grant table only has the home company.</p>
+
+| ID | Company |
+| --- | --- |
+| 1 | TechCorp Global |
+| 2 | DataCenter Plus |
+| 3 | Network Solutions |
+| 4 | CloudTech Services |
+| 5 | Enterprise IT |
+
+| Username | Home company | Extra grants (`employee_companies`) | Effective switcher access |
+| --- | --- | --- | --- |
+| **Admin** | 1 TechCorp Global | 2, 3, 4, 5 | All 5 (Admin role and username Admin) |
+| **Admin2** | 2 DataCenter Plus | Home only | All 5 (Admin role) |
+| **Admin3** | 3 Network Solutions | Home only | All 5 (Admin role) |
+| **Admin4** | 4 CloudTech Services | Home only | All 5 (Admin role) |
+| **Admin5** | 5 Enterprise IT | Home only | All 5 (Admin role) |
+| **demo1** | 1 TechCorp Global | Home only | TechCorp only |
+| **demo2** | 1 TechCorp Global | Home only | TechCorp only |
+| **demo3** | 1 TechCorp Global | Home only | TechCorp only |
+| **demo4** | 1 TechCorp Global | Home only | TechCorp only |
+| **demo5** | 1 TechCorp Global | Home only | TechCorp only |
+
+<p align="center"><strong>Dashboard</strong> — employee landing with company switcher, smart widgets, and personal stats (equipment, tickets, vault, patches).</p>
 
 <p align="center"><img src="docs/readme/demo_dashboard.png" alt="Dashboard with TechCorp Global" /></p>
 

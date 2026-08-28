@@ -1,6 +1,7 @@
 <?php
 /**
- * Employee landing dashboard — personal stat cards scoped to the signed-in employee.
+ * Employee landing dashboard — personal stat cards scoped to the signed-in employee,
+ * plus a company switcher for tenants the session may access.
  */
 
 require_once 'config/config.php';
@@ -15,6 +16,29 @@ if (!isset($_SESSION['employee_id'])) {
 
 $user_id = (int)$_SESSION['employee_id'];
 $company_id = (int)($_SESSION['company_id'] ?? 0);
+$csrfToken = itm_get_csrf_token();
+$dashCsrfError = '';
+$isAdminUser = itm_is_admin($conn, $user_id);
+
+// Why: Restore the tenant switcher on the employee landing page (same contract as admin.php / index.php).
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id'])) {
+    if (!itm_try_post_csrf()) {
+        $dashCsrfError = 'Invalid CSRF token.';
+        $csrfToken = itm_get_csrf_token();
+    } else {
+        $requestedCompanyId = (int)($_POST['company_id'] ?? 0);
+        if ($requestedCompanyId > 0 && function_exists('itm_switch_active_company_session')) {
+            if (itm_switch_active_company_session($conn, $user_id, $requestedCompanyId, $isAdminUser)) {
+                header('Location: ' . BASE_URL . 'dashboard.php');
+                exit;
+            }
+        }
+    }
+}
+
+$user_id = (int)$_SESSION['employee_id'];
+$company_id = (int)($_SESSION['company_id'] ?? 0);
+$isAdminUser = itm_is_admin($conn, $user_id);
 
 $stmt = mysqli_prepare(
     $conn,
@@ -49,7 +73,10 @@ if (!empty($dash['reload_required'])) {
 
 $smartDash = itm_dashboard_load_smart_widgets($conn, $company_id, $user_id);
 
-$isAdminUser = itm_is_admin($conn, $user_id);
+$accessibleCompanies = function_exists('itm_list_employee_accessible_companies')
+    ? itm_list_employee_accessible_companies($conn, $user_id, $isAdminUser)
+    : [];
+
 $displayName = trim((string)($current_user['display_name'] ?? ''));
 if ($displayName === '') {
     $displayName = trim((string)($current_user['first_name'] ?? '') . ' ' . (string)($current_user['last_name'] ?? ''));
@@ -130,6 +157,43 @@ $stylesCssVersion = is_file($stylesCssPath) ? (string)filemtime($stylesCssPath) 
                         <a class="btn" href="<?php echo BASE_URL; ?>user-config.php" title="Profile and preferences">👤</a>
                         <?php if ($isAdminUser): ?>
                             <a class="btn" href="<?php echo BASE_URL; ?>admin.php" title="Admin overview">🛡️</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="card itm-emp-dash-company-switch">
+                    <div class="card-header">
+                        <h2>Company</h2>
+                    </div>
+                    <div class="card-body">
+                        <?php if ($dashCsrfError !== ''): ?>
+                            <p class="crud_error" style="margin-top:0;"><?php echo htmlspecialchars($dashCsrfError, ENT_QUOTES, 'UTF-8'); ?></p>
+                        <?php endif; ?>
+                        <?php if (!empty($accessibleCompanies)): ?>
+                            <form method="POST" class="itm-emp-dash-company-switch-form">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                                <div class="itm-emp-dash-company-switch-fields">
+                                    <label for="company"><strong>Switch Company:</strong></label>
+                                    <select name="company_id" id="company" required>
+                                        <option value="">-- Select a Company --</option>
+                                        <?php foreach ($accessibleCompanies as $c): ?>
+                                            <?php
+                                            $optionId = (int)($c['id'] ?? 0);
+                                            $optionName = trim((string)($c['company'] ?? ''));
+                                            if ($optionId <= 0) {
+                                                continue;
+                                            }
+                                            ?>
+                                            <option value="<?php echo $optionId; ?>" <?php echo ($optionId === $company_id) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($optionName, ENT_QUOTES, 'UTF-8'); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary" title="Change company">Change Company</button>
+                            </form>
+                        <?php else: ?>
+                            <p style="color:#999;margin:0;">No companies available.</p>
                         <?php endif; ?>
                     </div>
                 </div>

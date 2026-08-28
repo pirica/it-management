@@ -2521,7 +2521,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_employee_dashboard.php" target="_blank" rel="nofollow noreferrer">verify_employee_dashboard.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
-                    <td>Regression for employee <code>dashboard.php</code>: hero + grouped stat cards, smart widget wiring + Chart.js, <code>includes/itm_employee_dashboard.php</code> loader, no company switcher or employment-status counts.</td>
+                    <td>Regression for employee <code>dashboard.php</code>: hero + grouped stat cards, company switcher, smart widget wiring + Chart.js, <code>includes/itm_employee_dashboard.php</code> loader, no employment-status counts.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="employees">
