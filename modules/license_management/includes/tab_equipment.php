@@ -171,6 +171,7 @@ $licenseEqQs = static function ($pageNum) use ($licenseEqSearchRaw, $licenseEqSo
                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                         <div class="itm-actions-wrap">
                             <a class="btn btn-sm" href="../equipment/view.php?id=<?php echo (int)$eqRow['id']; ?>" title="View">🔎</a>
+                            <a class="btn btn-sm" href="../equipment/edit.php?id=<?php echo (int)$eqRow['id']; ?>" title="Edit">✏️</a>
                         </div>
                     </td>
                 </tr>

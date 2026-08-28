@@ -17,12 +17,12 @@ Holds tab panes included from `modules/license_management/index.php`. Does not b
 - Included only when `tab=equipment` on the parent list (`index` / `list_all`).
 - Software filter is GET `software_id`; empty = all catalog software that is installed on equipment.
 - Search runs in PHP after `itm_software_license_list_equipment()` (name, hostname, serial, status, assignee, software, license labels).
-- Read-only list — no bulk delete, import, or sample-data on this tab.
+- Read-only of license rows — no bulk delete, import, or sample-data on this tab. Equipment **View** / **Edit** open `modules/equipment/`.
 
 ## 5. UI Behavior Requirements
 - Software `<select>` auto-submits on change.
 - Equipment / software / license cells link to the matching `view.php` (labels, not raw IDs).
-- Actions: emoji-only 🔎 to equipment view; `itm-actions-cell` + `data-itm-actions-origin="1"`.
+- Actions: emoji-only 🔎 View and ✏️ Edit to equipment `view.php` / `edit.php`; `itm-actions-cell` + `data-itm-actions-origin="1"`.
 - Table opts out of table-tools import/export (`data-itm-no-import-excel`, `data-itm-no-export-*`).
 - Pagination uses ⏮️ / ◀️ / ▶️ / ⏭️ and preserves `tab=equipment`, `software_id`, `search`.
 

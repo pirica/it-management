@@ -24,7 +24,7 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - **Dates** stored as MySQL `DATE`; list/view/import use **dd/mmm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
 - **Type** values come from tenant-scoped `license_types` rows (seeded in `db/03_triggers.sql` + cross-company `INSERT IGNORE` replication). Quick-add on the Type select inserts via `select_options_api.php` (`license_types` whitelist); full CRUD is under **`modules/license_types/`** with **company_id** hidden.
 - **Active** uses the standard checkbox double-label pattern on forms and badges on list/view.
-- **Equipment tab** (`index.php?tab=equipment`) lists assets from `equipment_software` with a **Software** select filter (`software_id`). Helper: `itm_software_license_list_equipment()`.
+- **Equipment tab** (`index.php?tab=equipment`) lists assets from `equipment_software` with a **Software** select filter (`software_id`). Actions: 🔎 view and ✏️ edit on `modules/equipment/`. Helper: `itm_software_license_list_equipment()`.
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD duplicated from **departments** scaffold: bulk delete, search, pagination, Excel import/export, empty-state sample data.
