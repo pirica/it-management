@@ -15,7 +15,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser: <a href="verify_employee_dashboard.php">verify_employee_dashboard.php</a>. CLI: <code>php scripts/verify_employee_dashboard.php</code>. Run when changing employee dashboard cards or stats loader.
+Browser: <a href="verify_employee_dashboard.php">verify_employee_dashboard.php</a>. CLI: <code>php scripts/verify_employee_dashboard.php</code>. Run when changing employee dashboard cards, company switcher, or stats loader.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 define('ITM_CLI_SCRIPT', true);
@@ -90,10 +90,14 @@ if (strpos($dashboardSource, 'itm_employee_count_by_employment_status_name') !==
     ed_verify_pass('dashboard.php has no company employment status counts');
 }
 
-if (strpos($dashboardSource, 'Switch Company') !== false) {
-    ed_verify_fail('dashboard.php must not contain company switcher markup');
+if (strpos($dashboardSource, 'Switch Company') === false
+    || strpos($dashboardSource, 'Change Company') === false
+    || strpos($dashboardSource, 'itm_switch_active_company_session') === false
+    || strpos($dashboardSource, 'itm_list_employee_accessible_companies') === false
+    || strpos($dashboardSource, 'itm_try_post_csrf') === false) {
+    ed_verify_fail('dashboard.php must contain company switcher markup and session switch helpers');
 } else {
-    ed_verify_pass('dashboard.php has no company switcher');
+    ed_verify_pass('dashboard.php has company switcher');
 }
 
 $cardsSource = is_file($cardsPath) ? (string)file_get_contents($cardsPath) : '';
@@ -216,6 +220,12 @@ if (strpos($stylesSource, 'itm-emp-dash-section--activity .itm-emp-dash-grid') =
     ed_verify_fail('Activity section CSS must use a three-column single-row card grid');
 } else {
     ed_verify_pass('Activity section uses three-column card row');
+}
+
+if (strpos($stylesSource, 'itm-emp-dash-company-switch') === false) {
+    ed_verify_fail('Employee dashboard CSS must style the company switcher card');
+} else {
+    ed_verify_pass('Employee dashboard CSS includes company switcher');
 }
 
 if ($failures > 0) {
