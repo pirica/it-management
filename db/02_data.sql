@@ -416,6 +416,13 @@ INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `cat
 
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `category_kind`, `active`, `created_at`) VALUES (NULL, '1', 'Capital Expense', 'Capital expense accounts', 'capex', '1', '2026-01-01 00:00:01');
 
+-- Why: GL account and annual_budget seeds join budget_categories per company_id; replicate before companies 2–5 GL rows below.
+INSERT IGNORE INTO `budget_categories` (`company_id`, `name`, `description`, `category_kind`, `active`, `created_at`)
+SELECT c.`id`, t.`name`, t.`description`, t.`category_kind`, t.`active`, '2026-01-01 00:00:01'
+FROM `budget_categories` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+WHERE t.`company_id` = 1;
+
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '1', '1', 'Infrastructure', 'CC-IT-INFRA', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '2', '6', 'Infrastructure', 'CC-IT-INFRA', '1', '2026-01-01 00:00:01');
@@ -2040,6 +2047,52 @@ JOIN `companies` c ON c.`id` <> ga.`company_id`
 LEFT JOIN `budget_categories` source_bc ON source_bc.`id` = ga.`category_id`
 LEFT JOIN `budget_categories` target_bc ON target_bc.`company_id` = c.`id` AND target_bc.`name` = source_bc.`name`
 WHERE ga.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `annual_budgets` (`company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`)
+SELECT
+    c.`id`,
+    cc_target.`id`,
+    ga_target.`id`,
+    ab.`year`,
+    ab.`amount`,
+    NULL,
+    ab.`active`,
+    '2026-01-01 00:00:01'
+FROM `annual_budgets` ab
+JOIN `companies` c ON c.`id` <> ab.`company_id`
+JOIN `cost_centers` cc_source ON cc_source.`id` = ab.`cost_center_id`
+JOIN `cost_centers` cc_target ON cc_target.`company_id` = c.`id` AND cc_target.`code` = cc_source.`code` AND cc_target.`name` = cc_source.`name`
+JOIN `gl_accounts` ga_source ON ga_source.`id` = ab.`gl_account_id`
+JOIN `gl_accounts` ga_target ON ga_target.`company_id` = c.`id` AND ga_target.`account_code` = ga_source.`account_code`
+WHERE ab.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `monthly_budgets` (`company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`)
+SELECT
+    ab_target.`company_id`,
+    ab_target.`id`,
+    mb.`month`,
+    mb.`amount`,
+    mb.`active`,
+    '2026-01-01 00:00:01'
+FROM `monthly_budgets` mb
+JOIN `annual_budgets` ab_source ON ab_source.`id` = mb.`annual_budget_id`
+JOIN `companies` c ON c.`id` <> mb.`company_id`
+JOIN `cost_centers` cc_source ON cc_source.`id` = ab_source.`cost_center_id`
+JOIN `cost_centers` cc_target ON cc_target.`company_id` = c.`id` AND cc_target.`code` = cc_source.`code` AND cc_target.`name` = cc_source.`name`
+JOIN `gl_accounts` ga_source ON ga_source.`id` = ab_source.`gl_account_id`
+JOIN `gl_accounts` ga_target ON ga_target.`company_id` = c.`id` AND ga_target.`account_code` = ga_source.`account_code`
+JOIN `annual_budgets` ab_target
+  ON ab_target.`company_id` = c.`id`
+ AND ab_target.`cost_center_id` = cc_target.`id`
+ AND ab_target.`gl_account_id` = ga_target.`id`
+ AND ab_target.`year` = ab_source.`year`
+WHERE mb.`company_id` = @replicate_source_company_id
+  AND NOT EXISTS (
+    SELECT 1 FROM `monthly_budgets` mb_existing
+    WHERE mb_existing.`company_id` = ab_target.`company_id`
+      AND mb_existing.`annual_budget_id` = ab_target.`id`
+      AND mb_existing.`month` = mb.`month`
+  );
 
 INSERT IGNORE INTO `employee_statuses` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `employee_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 

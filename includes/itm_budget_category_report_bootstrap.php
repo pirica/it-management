@@ -29,6 +29,52 @@ itm_budget_category_report_handle_import_reject((string)$itmBcrTitle);
 itm_budget_category_report_backfill_category_kinds($conn);
 
 $reportCompanyId = (int)($company_id ?? 0);
+$sampleDataFlash = '';
+
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && isset($_POST['add_sample_data'])
+    && function_exists('itm_require_post_csrf')
+) {
+    itm_require_post_csrf();
+    if (!function_exists('itm_is_admin') || !itm_is_admin()) {
+        $sampleDataFlash = 'Only administrators can add CAPEX/OPEX sample data.';
+    } elseif ($reportCompanyId <= 0) {
+        $sampleDataFlash = 'Select an active company before adding sample data.';
+    } else {
+        $seedAllCompanies = !empty($_POST['seed_all_companies']);
+        $sampleYear = itm_budget_category_report_default_year($conn, $reportCompanyId);
+        if (isset($_POST['sample_year'])) {
+            $sampleYear = (int)$_POST['sample_year'];
+        }
+        if ($sampleYear < 2000 || $sampleYear > 2100) {
+            $sampleYear = itm_budget_category_report_default_year($conn, $reportCompanyId);
+        }
+        $seedCompanyId = $seedAllCompanies ? null : $reportCompanyId;
+        $seedStats = itm_budget_category_report_ensure_demo_sample_rows($conn, $sampleYear, $seedCompanyId);
+        $scopeLabel = $seedAllCompanies ? 'all five seed companies' : 'this company';
+        $sampleDataFlash = 'Added sample data for ' . $scopeLabel . ': '
+            . (int)$seedStats['annual'] . ' annual budget(s), '
+            . (int)$seedStats['monthly'] . ' monthly row(s), '
+            . (int)$seedStats['expenses'] . ' expense(s).';
+        $redirectQuery = itm_budget_category_report_filter_query(
+            $sampleYear,
+            0,
+            0,
+            0,
+            trim((string)($_GET['search'] ?? ''))
+        );
+        if (isset($_GET['sort'])) {
+            $redirectQuery['sort'] = trim((string)$_GET['sort']);
+        }
+        if (isset($_GET['dir'])) {
+            $redirectQuery['dir'] = trim((string)$_GET['dir']);
+        }
+        header('Location: index.php?' . http_build_query($redirectQuery));
+        exit;
+    }
+}
+
 $selectedYear = itm_budget_category_report_default_year($conn, $reportCompanyId);
 $selectedMonth = 0;
 $selectedCostCenterId = 0;
@@ -186,6 +232,9 @@ if (!isset($currentUiConfig)) {
             <?php if ($reportError !== ''): ?>
                 <?php echo itm_render_alert_errors($reportError ?? ''); ?>
             <?php endif; ?>
+            <?php if ($sampleDataFlash !== ''): ?>
+                <?php echo itm_render_alert_errors($sampleDataFlash); ?>
+            <?php endif; ?>
 
             <div class="card">
                 <table class="bgr-table" data-itm-db-import-endpoint="index.php">
@@ -279,6 +328,21 @@ if (!isset($currentUiConfig)) {
                                 No data found for the selected filters.
                                 <?php if ($itmBcrCategoryKind === 'capex' || $itmBcrCategoryKind === 'opex'): ?>
                                     <br><span style="opacity:.85;font-size:0.92em;">Check <a href="../budget_categories/index.php" target="_blank" rel="noopener">Budget Categories</a> — Capital Expense must be <strong>CAPEX</strong>, Operating Expense <strong>OPEX</strong>. Seed demo budgets use the latest annual budget year (try <?php echo (int)itm_budget_category_report_default_year($conn, $reportCompanyId); ?>).</span>
+                                    <?php if (function_exists('itm_is_admin') && itm_is_admin()): ?>
+                                        <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                                <input type="hidden" name="sample_year" value="<?php echo (int)$selectedYear; ?>">
+                                                <button type="submit" name="add_sample_data" value="1" class="btn btn-primary" title="Add sample data for this company">Add sample data (this company)</button>
+                                            </form>
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                                <input type="hidden" name="sample_year" value="<?php echo (int)$selectedYear; ?>">
+                                                <input type="hidden" name="seed_all_companies" value="1">
+                                                <button type="submit" name="add_sample_data" value="1" class="btn btn-primary" title="Add sample data for all five seed companies">Add sample data (5 companies)</button>
+                                            </form>
+                                        </div>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </td>
                         </tr>

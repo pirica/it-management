@@ -154,6 +154,72 @@ if (in_array('6100', $capexCodes, true) || in_array('6200', $capexCodes, true)) 
     vco_pass('CAPEX report excludes operating GL 6100/6200.');
 }
 
+$seedCompanyIds = itm_budget_category_report_seed_company_ids($conn);
+if (count($seedCompanyIds) < 5) {
+    vco_fail('Expected five seed companies (id 1–5) for multi-tenant CAPEX/OPEX demo checks.');
+} else {
+    vco_pass('Seed company list includes five tenants.');
+}
+
+foreach ($seedCompanyIds as $seedCompanyId) {
+    $companyYear = itm_budget_category_report_default_year($conn, $seedCompanyId);
+    $companyCapex = itm_budget_category_report_run($conn, [
+        'company_id' => $seedCompanyId,
+        'year' => $companyYear,
+        'month' => 0,
+        'cost_center_id' => 0,
+        'gl_account_id' => 0,
+        'search' => '',
+        'sort' => 'account_code',
+        'dir' => 'ASC',
+        'category_kind' => 'capex',
+    ]);
+    $companyOpex = itm_budget_category_report_run($conn, [
+        'company_id' => $seedCompanyId,
+        'year' => $companyYear,
+        'month' => 0,
+        'cost_center_id' => 0,
+        'gl_account_id' => 0,
+        'search' => '',
+        'sort' => 'account_code',
+        'dir' => 'ASC',
+        'category_kind' => 'opex',
+    ]);
+    if ($companyCapex['error'] !== '') {
+        vco_fail('Company ' . $seedCompanyId . ' CAPEX error: ' . $companyCapex['error']);
+        continue;
+    }
+    if ($companyOpex['error'] !== '') {
+        vco_fail('Company ' . $seedCompanyId . ' OPEX error: ' . $companyOpex['error']);
+        continue;
+    }
+
+    $companyCapexCodes = [];
+    foreach ($companyCapex['rows'] as $row) {
+        $companyCapexCodes[] = (string)$row['account_code'];
+    }
+    $companyOpexCodes = [];
+    foreach ($companyOpex['rows'] as $row) {
+        $companyOpexCodes[] = (string)$row['account_code'];
+    }
+
+    if (!in_array('7100', $companyCapexCodes, true)) {
+        vco_fail('Company ' . $seedCompanyId . ' CAPEX missing GL 7100 for year ' . $companyYear . '.');
+    } else {
+        vco_pass('Company ' . $seedCompanyId . ' CAPEX includes GL 7100 (year ' . $companyYear . ').');
+    }
+
+    if (!in_array('6100', $companyOpexCodes, true) && !in_array('6200', $companyOpexCodes, true)) {
+        vco_fail('Company ' . $seedCompanyId . ' OPEX missing GL 6100/6200 for year ' . $companyYear . '.');
+    } else {
+        vco_pass('Company ' . $seedCompanyId . ' OPEX includes operating GL account(s) (year ' . $companyYear . ').');
+    }
+
+    if (in_array('7100', $companyOpexCodes, true)) {
+        vco_fail('Company ' . $seedCompanyId . ' OPEX incorrectly includes GL 7100.');
+    }
+}
+
 $monthResult = itm_budget_category_report_run($conn, [
     'company_id' => $companyId,
     'year' => $year,

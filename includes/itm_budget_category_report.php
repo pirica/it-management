@@ -183,6 +183,228 @@ if (!function_exists('itm_budget_category_report_ensure_capital_annual_budget_ro
     }
 }
 
+if (!function_exists('itm_budget_category_report_seed_company_ids')) {
+    /**
+     * @return array<int, int>
+     */
+    function itm_budget_category_report_seed_company_ids($conn, $companyId = null)
+    {
+        if (!($conn instanceof mysqli)) {
+            return [];
+        }
+
+        if ($companyId !== null && (int)$companyId > 0) {
+            return [(int)$companyId];
+        }
+
+        $ids = [];
+        $res = mysqli_query($conn, 'SELECT id FROM companies WHERE id BETWEEN 1 AND 5 ORDER BY id');
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $ids[] = (int)$row['id'];
+        }
+
+        return $ids;
+    }
+}
+
+if (!function_exists('itm_budget_category_report_ensure_demo_sample_rows')) {
+    /**
+     * Insert CAPEX/OPEX demo budgets (GL 6100/6200/7100), January monthly splits, and one Posted 6100 expense per company.
+     *
+     * @param int|null $companyId One tenant, or null for seed companies 1–5.
+     * @return array{annual:int,monthly:int,expenses:int,companies:int}
+     */
+    function itm_budget_category_report_ensure_demo_sample_rows($conn, $year, $companyId = null)
+    {
+        $stats = ['annual' => 0, 'monthly' => 0, 'expenses' => 0, 'companies' => 0];
+        if (!($conn instanceof mysqli)) {
+            return $stats;
+        }
+
+        $year = (int)$year;
+        if ($year < 2000 || $year > 2100) {
+            return $stats;
+        }
+
+        itm_budget_category_report_backfill_category_kinds($conn);
+
+        $companyIds = itm_budget_category_report_seed_company_ids($conn, $companyId);
+        if ($companyIds === []) {
+            return $stats;
+        }
+
+        $categoryTemplates = [
+            ['Revenue', 'Revenue-related general ledger accounts', 'revenue'],
+            ['Operating Expense', 'Operational expense accounts', 'opex'],
+            ['Capital Expense', 'Capital expense accounts', 'capex'],
+        ];
+
+        $glTemplates = [
+            ['6100', 'IT Maintenance Contracts', 'Operating Expense', 48000.00, 4000.00],
+            ['6200', 'Software Licensing', 'Operating Expense', 36000.00, 3000.00],
+            ['7100', 'Capital IT Equipment', 'Capital Expense', 120000.00, 10000.00],
+        ];
+
+        foreach ($companyIds as $cid) {
+            $stats['companies']++;
+
+            foreach ($categoryTemplates as $categoryTemplate) {
+                $stmt = mysqli_prepare(
+                    $conn,
+                    'INSERT INTO budget_categories (company_id, name, description, category_kind, active, created_at)
+                    SELECT ?, ?, ?, ?, 1, NOW()
+                    FROM DUAL
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM budget_categories bc
+                        WHERE bc.company_id = ? AND bc.name = ?
+                    )'
+                );
+                if (!$stmt) {
+                    continue;
+                }
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    'isssis',
+                    $cid,
+                    $categoryTemplate[0],
+                    $categoryTemplate[1],
+                    $categoryTemplate[2],
+                    $cid,
+                    $categoryTemplate[0]
+                );
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+
+            foreach ($glTemplates as $glTemplate) {
+                $stmt = mysqli_prepare(
+                    $conn,
+                    'INSERT INTO gl_accounts (company_id, account_code, account_name, category_id, active, created_at)
+                    SELECT ?, ?, ?, bc.id, 1, NOW()
+                    FROM budget_categories bc
+                    WHERE bc.company_id = ? AND bc.name = ?
+                      AND NOT EXISTS (
+                        SELECT 1 FROM gl_accounts ga
+                        WHERE ga.company_id = ? AND ga.account_code = ?
+                      )'
+                );
+                if (!$stmt) {
+                    continue;
+                }
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    'ississ',
+                    $cid,
+                    $glTemplate[0],
+                    $glTemplate[1],
+                    $cid,
+                    $glTemplate[2],
+                    $cid,
+                    $glTemplate[0]
+                );
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+
+            foreach ($glTemplates as $glTemplate) {
+                $annualSql = "INSERT INTO annual_budgets (company_id, cost_center_id, gl_account_id, year, amount, created_by, active, created_at)
+                    SELECT ?, cc.id, ga.id, ?, ?, NULL, 1, NOW()
+                    FROM gl_accounts ga
+                    INNER JOIN cost_centers cc
+                      ON cc.company_id = ga.company_id
+                     AND cc.code = 'CC-IT-INFRA'
+                     AND cc.name = 'Infrastructure'
+                    WHERE ga.company_id = ?
+                      AND ga.account_code = ?
+                      AND NOT EXISTS (
+                        SELECT 1 FROM annual_budgets ab
+                        WHERE ab.company_id = ga.company_id
+                          AND ab.cost_center_id = cc.id
+                          AND ab.gl_account_id = ga.id
+                          AND ab.year = ?
+                      )";
+                $annualStmt = mysqli_prepare($conn, $annualSql);
+                if (!$annualStmt) {
+                    continue;
+                }
+                $annualAmount = (float)$glTemplate[3];
+                mysqli_stmt_bind_param(
+                    $annualStmt,
+                    'iidisi',
+                    $cid,
+                    $year,
+                    $annualAmount,
+                    $cid,
+                    $glTemplate[0],
+                    $year
+                );
+                mysqli_stmt_execute($annualStmt);
+                $stats['annual'] += (int)mysqli_stmt_affected_rows($annualStmt);
+                mysqli_stmt_close($annualStmt);
+
+                $monthSql = "INSERT INTO monthly_budgets (company_id, annual_budget_id, month, amount, active, created_at)
+                    SELECT ab.company_id, ab.id, 1, ?, 1, NOW()
+                    FROM annual_budgets ab
+                    INNER JOIN gl_accounts ga ON ga.company_id = ab.company_id AND ga.id = ab.gl_account_id
+                    INNER JOIN cost_centers cc ON cc.company_id = ab.company_id AND cc.id = ab.cost_center_id
+                    WHERE ab.company_id = ?
+                      AND ab.year = ?
+                      AND ga.account_code = ?
+                      AND cc.code = 'CC-IT-INFRA'
+                      AND NOT EXISTS (
+                        SELECT 1 FROM monthly_budgets mb
+                        WHERE mb.company_id = ab.company_id
+                          AND mb.annual_budget_id = ab.id
+                          AND mb.month = 1
+                      )";
+                $monthStmt = mysqli_prepare($conn, $monthSql);
+                if ($monthStmt) {
+                    $monthAmount = (float)$glTemplate[4];
+                    mysqli_stmt_bind_param($monthStmt, 'diis', $monthAmount, $cid, $year, $glTemplate[0]);
+                    mysqli_stmt_execute($monthStmt);
+                    $stats['monthly'] += (int)mysqli_stmt_affected_rows($monthStmt);
+                    mysqli_stmt_close($monthStmt);
+                }
+            }
+
+            $expenseSql = "INSERT INTO expenses (
+                    company_id, cost_center_id, gl_account_id, date, posting_date, invoice_date,
+                    amount, paid_status_id, currency_code, exchange_rate, description, invoice_number,
+                    created_by, active, created_at
+                )
+                SELECT ?, cc.id, ga.id, ?, ?, ?, 3890.00, ps.id, 'EUR', 1.000000,
+                    'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', NULL, 1, NOW()
+                FROM gl_accounts ga
+                INNER JOIN cost_centers cc
+                  ON cc.company_id = ga.company_id
+                 AND cc.code = 'CC-IT-INFRA'
+                 AND cc.name = 'Infrastructure'
+                INNER JOIN paid_statuses ps
+                  ON ps.company_id = ga.company_id
+                 AND ps.name = 'Posted'
+                WHERE ga.company_id = ?
+                  AND ga.account_code = '6100'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM expenses e
+                    WHERE e.company_id = ga.company_id
+                      AND e.cost_center_id = cc.id
+                      AND e.gl_account_id = ga.id
+                      AND e.invoice_number = 'INV-IT-2026-0001'
+                  )";
+            $expenseDate = sprintf('%04d-01-15', $year);
+            $expenseStmt = mysqli_prepare($conn, $expenseSql);
+            if ($expenseStmt) {
+                mysqli_stmt_bind_param($expenseStmt, 'isssi', $cid, $expenseDate, $expenseDate, $expenseDate, $cid);
+                mysqli_stmt_execute($expenseStmt);
+                $stats['expenses'] += (int)mysqli_stmt_affected_rows($expenseStmt);
+                mysqli_stmt_close($expenseStmt);
+            }
+        }
+
+        return $stats;
+    }
+}
+
 if (!function_exists('itm_budget_category_report_month_options')) {
     /**
      * @return array<int, string>
