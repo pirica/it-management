@@ -197,6 +197,9 @@ $ops_fb_covers = get_ops_fb_outlet_covers();
 $budget_vs_actual = get_budget_vs_actual_trend();
 $budget_by_dept = get_budget_by_department();
 $budget_yoy = get_budget_yoy_comparison();
+$capex_opex_budget_split = get_capex_opex_annual_budget_split();
+$capex_opex_budget_vs_actual = get_capex_opex_budget_vs_actual();
+$capex_opex_monthly_actual = get_capex_opex_monthly_actual_trend();
 $asset_value = get_asset_financial_value();
 $maintenance_forecast = get_upcoming_maintenance_forecast();
 $employee_growth = get_employee_growth_trend();
@@ -692,6 +695,30 @@ if (!isset($crud_title)) {
                         </article>
 
                         <article class="report-card">
+                            <h2>🏗️ CAPEX vs OPEX Budget (<?php echo (int) $capex_opex_budget_split['year']; ?>)</h2>
+                            <div class="chart-container">
+                                <canvas id="capexOpexBudgetSplitChart"></canvas>
+                            </div>
+                            <p class="report-desc">Annual budget split by <code>category_kind</code> (Capital vs Operating Expense). Detail: <a class="itm-plain-link" href="../capex/index.php" target="_blank" rel="noopener">CAPEX</a> · <a class="itm-plain-link" href="../opex/index.php" target="_blank" rel="noopener">OPEX</a>.</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>📊 CAPEX vs OPEX Budget vs Actual</h2>
+                            <div class="chart-container">
+                                <canvas id="capexOpexBudgetVsActualChart"></canvas>
+                            </div>
+                            <p class="report-desc">Full-year annual budget vs Posted/Paid actuals for <?php echo (int) $capex_opex_budget_vs_actual['year']; ?>.</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>📈 CAPEX vs OPEX Monthly Actuals</h2>
+                            <div class="chart-container">
+                                <canvas id="capexOpexMonthlyActualChart"></canvas>
+                            </div>
+                            <p class="report-desc">Posted/Paid expense trend by month for <?php echo (int) $capex_opex_monthly_actual['year']; ?> (GL accounts classified as CAPEX or OPEX).</p>
+                        </article>
+
+                        <article class="report-card">
                             <h2>💎 Asset Inventory Value</h2>
                             <div class="chart-container">
                                 <canvas id="assetValueChart"></canvas>
@@ -1144,6 +1171,79 @@ if (!isset($crud_title)) {
             },
             options: Object.assign({}, baseOptions, {
                 plugins: { tooltip: itmChartMoneyTooltipOptions() },
+                scales: {
+                    y: Object.assign({}, baseOptions.scales.y, itmChartMoneyAxisOptions())
+                }
+            })
+        });
+
+        new Chart(document.getElementById('capexOpexBudgetSplitChart'), {
+            type: 'doughnut',
+            data: {
+                labels: <?php echo json_encode($capex_opex_budget_split['labels']); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($capex_opex_budget_split['data']); ?>,
+                    backgroundColor: ['#6366f1', '#f59e0b'],
+                    borderWidth: 0
+                }]
+            },
+            options: Object.assign({}, baseOptions, {
+                plugins: { legend: { display: true, position: 'bottom' }, tooltip: itmChartMoneyTooltipOptions() }
+            })
+        });
+
+        new Chart(document.getElementById('capexOpexBudgetVsActualChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($capex_opex_budget_vs_actual['labels']); ?>,
+                datasets: [
+                    {
+                        label: 'Budget',
+                        data: <?php echo json_encode($capex_opex_budget_vs_actual['budget']); ?>,
+                        backgroundColor: 'rgba(99, 102, 241, 0.75)',
+                        borderRadius: 5
+                    },
+                    {
+                        label: 'Actual',
+                        data: <?php echo json_encode($capex_opex_budget_vs_actual['actual']); ?>,
+                        backgroundColor: 'rgba(245, 158, 11, 0.75)',
+                        borderRadius: 5
+                    }
+                ]
+            },
+            options: Object.assign({}, baseOptions, {
+                plugins: { legend: { display: true, position: 'top' }, tooltip: itmChartMoneyTooltipOptions() },
+                scales: {
+                    y: Object.assign({}, baseOptions.scales.y, itmChartMoneyAxisOptions())
+                }
+            })
+        });
+
+        new Chart(document.getElementById('capexOpexMonthlyActualChart'), {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode($capex_opex_monthly_actual['labels']); ?>,
+                datasets: [
+                    {
+                        label: 'CAPEX actual',
+                        data: <?php echo json_encode($capex_opex_monthly_actual['capex']); ?>,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'OPEX actual',
+                        data: <?php echo json_encode($capex_opex_monthly_actual['opex']); ?>,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: Object.assign({}, baseOptions, {
+                plugins: { legend: { display: true, position: 'top' }, tooltip: itmChartMoneyTooltipOptions() },
                 scales: {
                     y: Object.assign({}, baseOptions.scales.y, itmChartMoneyAxisOptions())
                 }

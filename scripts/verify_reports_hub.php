@@ -110,6 +110,9 @@ $helperNames = [
     'get_budget_by_department',
     'get_budget_vs_actual_trend',
     'get_budget_yoy_comparison',
+    'get_capex_opex_annual_budget_split',
+    'get_capex_opex_budget_vs_actual',
+    'get_capex_opex_monthly_actual_trend',
     'get_asset_financial_value',
     'get_upcoming_maintenance_forecast',
     'get_employee_growth_trend',
@@ -189,6 +192,20 @@ if (array_sum($yoy['data'] ?? []) <= 0) {
     rh_verify_pass('Year-over-year budget comparison has annual totals.');
 }
 
+$capexOpexSplit = get_capex_opex_annual_budget_split();
+if (array_sum($capexOpexSplit['data'] ?? []) <= 0) {
+    rh_verify_fail('CAPEX/OPEX annual budget split has zero totals.');
+} else {
+    rh_verify_pass('CAPEX/OPEX annual budget split has budget totals for year ' . (int) ($capexOpexSplit['year'] ?? 0) . '.');
+}
+
+$capexOpexBvA = get_capex_opex_budget_vs_actual();
+if (array_sum($capexOpexBvA['budget'] ?? []) <= 0) {
+    rh_verify_fail('CAPEX/OPEX budget vs actual chart has zero budget totals.');
+} else {
+    rh_verify_pass('CAPEX/OPEX budget vs actual chart has budget totals.');
+}
+
 $indexPath = ROOT_PATH . 'modules/reports/index.php';
 if (!is_file($indexPath)) {
     rh_verify_fail('modules/reports/index.php is missing.');
@@ -197,6 +214,9 @@ if (!is_file($indexPath)) {
     $requiredCanvas = [
         'opsOccupancyChart',
         'budgetVsActualChart',
+        'capexOpexBudgetSplitChart',
+        'capexOpexBudgetVsActualChart',
+        'capexOpexMonthlyActualChart',
         'equipmentChart',
         'hrChart',
     ];

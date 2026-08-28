@@ -9,6 +9,7 @@ Aggregates metrics from:
 
 ## 3. Required Relationships
 - Joins multiple tables (e.g., matching expenses to GL accounts and budget categories) to calculate accurate budget variances.
+- **CAPEX/OPEX charts:** `get_capex_opex_*()` helpers filter `budget_categories.category_kind` (`capex` / `opex`); actuals use Posted/Paid `paid_statuses` via `reports_expense_actual_filter_sql()` (aligned with CAPEX/OPEX report modules). Chart year: `reports_resolve_budget_chart_year()` (latest `annual_budgets.year`).
 
 ## 4. Business Rules (Critical for Agents)
 - **Prepared Statements**: All aggregation queries inside `helpers.php` must use MySQLi prepared statements to prevent SQL Injection.
