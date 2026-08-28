@@ -11,7 +11,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-CLI: <code>php scripts/verify_tickets_sample_data.php</code> — exit <code>1</code> on failure. Run when changing <code>itm_seed_insert_tickets_sample_row()</code>, <code>modules/tickets/sample_seed_helpers.php</code>, or tickets sample POST in <code>index.php</code>.
+CLI: <code>php scripts/verify_tickets_sample_data.php</code> — exit <code>1</code> on failure. Run when changing <code>itm_seed_insert_tickets_sample_row()</code>, <code>modules/tickets/sample_seed_helpers.php</code>, tickets sample POST in <code>index.php</code>, or <code>db/02_data.sql</code> per-tenant <code>TCK-0001</code> employee FK seeds.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 define('ITM_CLI_SCRIPT', true);
@@ -38,6 +38,51 @@ function vtsd_pass($message)
 if (!($conn instanceof mysqli)) {
     vtsd_fail('Database connection unavailable.');
     exit(1);
+}
+
+for ($seedCompanyId = 1; $seedCompanyId <= 5; $seedCompanyId++) {
+    $expectedAdminId = function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')
+        ? (int)itm_seed_resolve_tenant_seed_admin_employee_id($conn, $seedCompanyId)
+        : $seedCompanyId;
+    if ($expectedAdminId <= 0) {
+        vtsd_fail('Could not resolve tenant seed admin for company ' . $seedCompanyId . '.');
+        continue;
+    }
+
+    $seedStmt = mysqli_prepare(
+        $conn,
+        'SELECT created_by_employee_id, assigned_to_employee_id
+         FROM tickets
+         WHERE company_id = ? AND ticket_external_code = ?
+         LIMIT 1'
+    );
+    if (!$seedStmt) {
+        vtsd_fail('Prepare failed for tenant ticket seed probe (company ' . $seedCompanyId . ').');
+        continue;
+    }
+    $seedCode = 'TCK-0001';
+    mysqli_stmt_bind_param($seedStmt, 'is', $seedCompanyId, $seedCode);
+    mysqli_stmt_execute($seedStmt);
+    $seedRes = mysqli_stmt_get_result($seedStmt);
+    $seedRow = ($seedRes && ($fetched = mysqli_fetch_assoc($seedRes))) ? $fetched : null;
+    mysqli_stmt_close($seedStmt);
+
+    if (!is_array($seedRow)) {
+        vtsd_fail('Missing seeded TCK-0001 row for company ' . $seedCompanyId . '.');
+        continue;
+    }
+
+    $createdBy = (int)($seedRow['created_by_employee_id'] ?? 0);
+    $assignedTo = (int)($seedRow['assigned_to_employee_id'] ?? 0);
+    if ($createdBy !== $expectedAdminId || $assignedTo !== $expectedAdminId) {
+        vtsd_fail(
+            'Seeded TCK-0001 for company ' . $seedCompanyId
+            . ' must use tenant admin employee id ' . $expectedAdminId
+            . '; got created_by=' . $createdBy . ' assigned_to=' . $assignedTo . '.'
+        );
+    } else {
+        vtsd_pass('Seeded TCK-0001 for company ' . $seedCompanyId . ' uses tenant admin employee id ' . $expectedAdminId . '.');
+    }
 }
 
 $companyId = 4;
