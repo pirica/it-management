@@ -3,6 +3,8 @@
 ## 1. Module Purpose
 Lookup table for categorizing budgets and expenses (e.g., "Hardware", "Software Licenses").
 
+**`category_kind`** classifies rows for CAPEX/OPEX reports: `revenue`, `opex`, `capex`, `other` (stable filter — not display `name`). Seeds: Revenue → `revenue`, Operating Expense → `opex`, Capital Expense → `capex`. Reports: [CAPEX](http://localhost/it-management/modules/capex/index.php), [OPEX](http://localhost/it-management/modules/opex/index.php).
+
 ## 2. Key Tables
 - **budget_categories** — stores category names and descriptions.
 

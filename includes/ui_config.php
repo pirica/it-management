@@ -102,6 +102,8 @@ function itm_sidebar_base_structure() {
                 ['id' => 'approver_type', 'label' => '🧩 Approver Type', 'href' => 'modules/approver_type/', 'match_dir' => 'approver_type'],
                 ['id' => 'approvers', 'label' => '✅ Approvers', 'href' => 'modules/approvers/', 'match_dir' => 'approvers'],
                 ['id' => 'budget_report', 'label' => '📑 Budget Report', 'href' => 'modules/budget_report/', 'match_dir' => 'budget_report'],
+                ['id' => 'capex', 'label' => '🏗️ CAPEX', 'href' => 'modules/capex/', 'match_dir' => 'capex'],
+                ['id' => 'opex', 'label' => '📊 OPEX', 'href' => 'modules/opex/', 'match_dir' => 'opex'],
             ],
         ],
         [

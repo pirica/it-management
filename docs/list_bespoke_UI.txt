@@ -10,6 +10,8 @@ backup_tape_log
 birthdays
 bookmarks
 budget_report
+capex
+opex
 cable_colors
 calendar
 companies

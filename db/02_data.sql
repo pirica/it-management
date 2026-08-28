@@ -70,6 +70,10 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("budget_report", "Budget Report", 0, 1);
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("capex", "CAPEX", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("opex", "OPEX", 0, 1);
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("cable_colors", "Cable Colors", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("calendar", "Calendar", 0, 1);
@@ -406,11 +410,11 @@ INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `e
 
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '1', 'Front Office', 'FO', 'Front Office', 'frontoffice@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
 
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '1', 'Revenue', 'Revenue-related general ledger accounts', '1', '2026-01-01 00:00:01');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `category_kind`, `active`, `created_at`) VALUES (NULL, '1', 'Revenue', 'Revenue-related general ledger accounts', 'revenue', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '1', 'Operating Expense', 'Operational expense accounts', '1', '2026-01-01 00:00:01');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `category_kind`, `active`, `created_at`) VALUES (NULL, '1', 'Operating Expense', 'Operational expense accounts', 'opex', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '1', 'Capital Expense', 'Capital expense accounts', '1', '2026-01-01 00:00:01');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `category_kind`, `active`, `created_at`) VALUES (NULL, '1', 'Capital Expense', 'Capital expense accounts', 'capex', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '1', '1', 'Infrastructure', 'CC-IT-INFRA', '1', '2026-01-01 00:00:01');
 
@@ -479,8 +483,13 @@ FROM (
   UNION ALL SELECT 8, 3, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 36000.00, 'Admin3', '2026-01-01 00:00:01'
   UNION ALL SELECT 9, 4, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 36000.00, 'Admin4', '2026-01-01 00:00:01'
   UNION ALL SELECT 10, 5, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 36000.00, 'Admin5', '2026-01-01 00:00:01'
-  UNION ALL SELECT 11, 1, 'Infrastructure', 'CC-IT-INFRA', '6100', 2025, 45000.00, 'Admin', '2025-01-01 00:00:01'
-  UNION ALL SELECT 12, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2025, 33000.00, 'Admin', '2025-01-01 00:00:01'
+  UNION ALL SELECT 11, 1, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 120000.00, 'Admin', '2026-01-01 00:00:01'
+  UNION ALL SELECT 12, 2, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 120000.00, 'Admin2', '2026-01-01 00:00:01'
+  UNION ALL SELECT 13, 3, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 120000.00, 'Admin3', '2026-01-01 00:00:01'
+  UNION ALL SELECT 14, 4, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 120000.00, 'Admin4', '2026-01-01 00:00:01'
+  UNION ALL SELECT 15, 5, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 120000.00, 'Admin5', '2026-01-01 00:00:01'
+  UNION ALL SELECT 16, 1, 'Infrastructure', 'CC-IT-INFRA', '6100', 2025, 45000.00, 'Admin', '2025-01-01 00:00:01'
+  UNION ALL SELECT 17, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2025, 33000.00, 'Admin', '2025-01-01 00:00:01'
 ) seed
 INNER JOIN `cost_centers` cc
   ON cc.`company_id` = seed.`company_id`
@@ -516,6 +525,11 @@ FROM (
   UNION ALL SELECT 20, 3, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 1, 3000.00, '2026-01-01 00:00:01'
   UNION ALL SELECT 21, 4, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 1, 3000.00, '2026-01-01 00:00:01'
   UNION ALL SELECT 22, 5, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 1, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 23, 1, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 1, 10000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 24, 2, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 1, 10000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 25, 3, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 1, 10000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 26, 4, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 1, 10000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 27, 5, 'Infrastructure', 'CC-IT-INFRA', '7100', 2026, 1, 10000.00, '2026-01-01 00:00:01'
 ) seed
 INNER JOIN `cost_centers` cc
   ON cc.`company_id` = seed.`company_id`
@@ -1210,6 +1224,8 @@ INNER JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'approvals_stage' AS entry_id, 'budgeting' AS section_id, 8 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'expenses' AS entry_id, 'budgeting' AS section_id, 9 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'budget_report' AS entry_id, 'budgeting' AS section_id, 10 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'capex' AS entry_id, 'budgeting' AS section_id, 11 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'opex' AS entry_id, 'budgeting' AS section_id, 12 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'inventory_items' AS entry_id, 'admin' AS section_id, 0 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'companies' AS entry_id, 'admin' AS section_id, 1 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'it_locations' AS entry_id, 'reference_data' AS section_id, 0 AS display_order
@@ -2001,7 +2017,7 @@ INSERT IGNORE INTO `access_levels` (`company_id`, `name`, `created_at`) SELECT c
 
 INSERT IGNORE INTO `assignment_types` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `assignment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
-INSERT IGNORE INTO `budget_categories` (`company_id`, `name`, `description`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`description`, t.`active`, '2026-01-01 00:00:01' FROM `budget_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `budget_categories` (`company_id`, `name`, `description`, `category_kind`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`description`, t.`category_kind`, t.`active`, '2026-01-01 00:00:01' FROM `budget_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `floor_plan_folders` (`company_id`, `parent_folder_id`, `name`, `active`, `created_at`)
 SELECT c.`id`, NULL, t.`name`, t.`active`, '2026-01-01 00:00:01'

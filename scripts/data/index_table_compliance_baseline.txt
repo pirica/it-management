@@ -5,6 +5,8 @@ approver_type
 assignment_types
 attempts
 budget_report
+capex
+opex
 catalogs
 companies
 departments
