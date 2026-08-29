@@ -4,7 +4,7 @@
 
 ## Executive summary
 
-ITM is already a **broad multi-tenant operations platform** (ITAM, IPAM/DCIM, HR, helpdesk, finance, hospitality, vault productivity) with **222 module folders**, **246 tables**, mature RBAC, audit triggers, and an extensive `scripts/` verification catalog. Strengths: deep vertical coverage, tenant isolation, zero external dependencies, and strong security hardening. Software/OS/Office/hardware EOL dates are tracked in-app (`docs/SOFTWARE_EOL.md`).
+ITM is already a **broad multi-tenant operations platform** (ITAM, IPAM/DCIM, HR, helpdesk, finance, hospitality, vault productivity) with **222 module folders**, **247 tables**, mature RBAC, audit triggers, and an extensive `scripts/` verification catalog. Strengths: deep vertical coverage, tenant isolation, zero external dependencies, and strong security hardening. Software/OS/Office/hardware EOL dates are tracked in-app (`docs/SOFTWARE_EOL.md`).
 
 The biggest **product gaps** are not missing CRUD tables but **incomplete workflows**, **limited automation**, **weak operational visibility**, and **enterprise integration/auth** layers on top of an otherwise feature-rich core. The highest ROI additions:
 
