@@ -36,6 +36,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 | `software_license_links.sql` | `software_license_links` junction between `software` and `license_management` — destructive DROP+CREATE. Helper `includes/itm_software_license_link.php`. |
 | `budget_categories_category_kind.sql` | `budget_categories.category_kind` enum column (destructive DROP+CREATE when present). |
 | `budget_categories_category_kind_dml.sql` | Non-destructive UPDATE backfill: Revenue→`revenue`, Operating Expense→`opex`, Capital Expense→`capex`. Safe to re-run; also applied on CAPEX/OPEX report page load. |
+| `job_queue.sql` | `job_queue` — generic background job queue (`includes/itm_job_queue.php`, `scripts/run_job_queue.php`). |
 
 ## 12. Module Owner Notes
 

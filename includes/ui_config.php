@@ -209,6 +209,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'ops_report', 'label' => '📋 Ops Report', 'href' => 'modules/ops_report/', 'match_dir' => 'ops_report'],
                 ['id' => 'system_status', 'label' => '🖥️ System Status', 'href' => 'modules/system_status/', 'match_dir' => 'system_status'],
                 ['id' => 'schema_migrations', 'label' => '📜 Schema Migrations', 'href' => 'modules/schema_migrations/', 'match_dir' => 'schema_migrations'],
+                ['id' => 'job_queue', 'label' => '⏱️ Job Queue', 'href' => 'modules/job_queue/', 'match_dir' => 'job_queue'],
                 ['id' => 'automation_rules', 'label' => '⚙️ Automation Rules', 'href' => 'modules/automation_rules/', 'match_dir' => 'automation_rules'],
             ],
         ],
@@ -361,6 +362,7 @@ function itm_sidebar_module_default_label($moduleName) {
         'is_other' => '📦 Is Other',
         'system_status' => '🖥️ System Status',
         'schema_migrations' => '📜 Schema Migrations',
+        'job_queue' => '⏱️ Job Queue',
     ];
 
     return $labels[$moduleName] ?? null;
