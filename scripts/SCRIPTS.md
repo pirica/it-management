@@ -144,7 +144,7 @@ function colorText($text, $type) {
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **247** tables (must match `CREATE TABLE` count in `db/01_schema.sql`; [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php) / [verify_database_schema.php?run=1](http://localhost/it-management/scripts/verify_database_schema.php?run=1)). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
+| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **248** tables (must match `CREATE TABLE` count in `db/01_schema.sql`; [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php) / [verify_database_schema.php?run=1](http://localhost/it-management/scripts/verify_database_schema.php?run=1)). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
 | `php scripts/verify_count_db_tables_recon.php` | Low-impact recon contract: `count_db_tables.php` stays no-auth digits-only output (no table-name enumeration). |
 
 Catalog: `scripts/scripts.php`.
@@ -1174,6 +1174,8 @@ Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/
 | `php scripts/verify_saved_report_views.php` | Regression: `saved_report_views` schema, filter whitelist, export/share helpers, owner schedule permission, dashboard snapshot, save/run, `saved_view:{id}` slug. See `docs/SAVED_REPORT_VIEWS.md`. |
 | `php scripts/verify_ticket_surveys.php` | Regression: ticket questionnaires/surveys — five-company seeds, issue/submit, activity, webhook `ticket.survey_completed`, automation `send_ticket_survey`, merge `{{survey_url}}`, merge cancel pending, stats. See `docs/TICKET_SURVEYS.md`. |
 | `php scripts/run_webhook_queue.php` | Cron: deliver `integration_webhook_deliveries` with retry/backoff. Optional `--limit=N`. |
+| `php scripts/run_job_queue.php` | Cron: dispatch generic `job_queue` rows to typed handlers (`webhook_delivery`, `scheduled_report`, `network_discovery`, `license_compliance`, `email_send`). Schedule every minute. Optional `--company=ID`, `--type=`, `--limit=20`. Parallel to dedicated webhook/background_jobs runners (phase 1). |
+| `php scripts/verify_job_queue.php` | Regression: `job_queue` schema, enqueue/claim/complete/fail/retry, worker `GET_LOCK`. |
 | `php scripts/verify_integration_webhooks.php` | Regression: webhook tables, secret round-trip, URL SSRF guard, enqueue |
 | `php scripts/run_asset_depreciation.php` | Monthly cron: depreciation snapshots on `equipment_lifecycle_events`. Optional `--company=ID`. |
 | `php scripts/verify_asset_depreciation.php` | Regression: equipment lifecycle columns, months-elapsed math, book value sample |

@@ -1705,6 +1705,31 @@ END$$
 
 DELIMITER ;
 
+DROP TRIGGER IF EXISTS `trg_job_queue_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_job_queue_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_job_queue_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_job_queue_audit_insert` AFTER INSERT ON `job_queue` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'job_queue', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'job_type', NEW.`job_type`, 'status', NEW.`status`, 'priority', NEW.`priority`, 'attempts', NEW.`attempts`, 'max_attempts', NEW.`max_attempts`, 'scheduled_at', NEW.`scheduled_at`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_job_queue_audit_update` AFTER UPDATE ON `job_queue` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'job_queue', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'job_type', OLD.`job_type`, 'status', OLD.`status`, 'priority', OLD.`priority`, 'attempts', OLD.`attempts`, 'max_attempts', OLD.`max_attempts`, 'scheduled_at', OLD.`scheduled_at`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'job_type', NEW.`job_type`, 'status', NEW.`status`, 'priority', NEW.`priority`, 'attempts', NEW.`attempts`, 'max_attempts', NEW.`max_attempts`, 'scheduled_at', NEW.`scheduled_at`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_job_queue_audit_delete` AFTER DELETE ON `job_queue` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'job_queue', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'job_type', OLD.`job_type`, 'status', OLD.`status`, 'priority', OLD.`priority`, 'attempts', OLD.`attempts`, 'max_attempts', OLD.`max_attempts`, 'scheduled_at', OLD.`scheduled_at`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
 DROP TRIGGER IF EXISTS `trg_network_discovery_profiles_audit_insert`;
 
 DROP TRIGGER IF EXISTS `trg_network_discovery_profiles_audit_update`;

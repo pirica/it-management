@@ -671,6 +671,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Processes pending <code>background_jobs</code> rows (network discovery scan batches); optional <code>--company=1</code>, <code>--type=network_discovery_scan</code>, <code>--limit=20</code>.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/run_background_jobs.php</code></td>
                 </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="run_job_queue.php" target="_blank" rel="nofollow noreferrer">run_job_queue.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="job_queue">job_queue</span></span></td>
+                    <td>Generic job queue worker — dispatches <code>job_queue</code> rows to typed handlers (webhook delivery, scheduled reports, discovery, license compliance, email). Schedule every minute; optional <code>--company=1</code>, <code>--type=</code>, <code>--limit=20</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/run_job_queue.php</code></td>
+                </tr>
+                <tr data-tags="CLI">
+                    <td><a href="verify_job_queue.php" target="_blank" rel="nofollow noreferrer">verify_job_queue.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="job_queue">job_queue</span></span></td>
+                    <td>Regression for <code>includes/itm_job_queue.php</code> — schema, enqueue/claim/complete/fail/retry, worker lock.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_job_queue.php</code></td>
+                </tr>
                 <tr data-tags="CLI">
                     <td><a href="verify_background_jobs.php" target="_blank" rel="nofollow noreferrer">verify_background_jobs.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

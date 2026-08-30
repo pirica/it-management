@@ -41,6 +41,7 @@ explorer
 floor_designer
 import
 inventory_items
+job_queue
 notes
 news
 ops_report

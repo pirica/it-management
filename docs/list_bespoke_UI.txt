@@ -28,6 +28,7 @@ floor_plans
 idfs
 import
 inventory_items
+job_queue
 ip_addresses
 ip_subnets
 is_access_point

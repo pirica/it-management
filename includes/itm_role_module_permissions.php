@@ -333,6 +333,7 @@ if (!function_exists('itm_crud_rbac_exempt_module_slugs')) {
             'role_module_permissions',
             'roles_permissions',
             'schema_migrations',
+            'job_queue',
             'settings',
             'switch_ports',
             'ui_configuration',
