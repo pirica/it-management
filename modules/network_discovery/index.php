@@ -8,7 +8,7 @@ require_once ROOT_PATH . 'includes/itm_network_discovery.php';
 
 $companyId = (int)($company_id ?? 0);
 $employeeId = (int)($_SESSION['employee_id'] ?? 0);
-$isAdmin = function_exists('itm_is_admin') && itm_is_admin();
+$isAdmin = function_exists('itm_is_admin') && itm_is_admin($conn, $employeeId);
 $csrfToken = itm_get_csrf_token();
 
 $ndApiBase = 'api.php';
