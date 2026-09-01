@@ -1143,9 +1143,32 @@ if (!function_exists('itm_hotel_booking_portal_build_rooms_restart_url')) {
     }
 }
 
+if (!function_exists('itm_hotel_booking_portal_merge_occupancy_into_url')) {
+    hb_fail('itm_hotel_booking_portal_merge_occupancy_into_url helper missing');
+} else {
+    $mergedOccUrl = itm_hotel_booking_portal_merge_occupancy_into_url(
+        APPURL . '/rooms/select-rate.php?id=1&check_in=2026-09-30&nights=1&rooms=1&adults=1&children=0&babies=0',
+        ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 0]
+    );
+    if (strpos($mergedOccUrl, 'adults=2') === false || strpos($mergedOccUrl, 'adults=1') !== false) {
+        hb_fail('merge_occupancy_into_url must replace adults query param on checkout redirect');
+    } else {
+        hb_pass('portal checkout occupancy merge into redirect URL');
+    }
+}
+
+$applyOccSrc = is_file($applyOccupancyPhp) ? (string) file_get_contents($applyOccupancyPhp) : '';
+if (strpos($applyOccSrc, 'itm_hotel_booking_portal_checkout_redirect_url_allowed') === false) {
+    hb_fail('apply-occupancy.php must use checkout_redirect_url_allowed for redirect_url validation');
+}
+
 $occApplyExpired = itm_hotel_booking_portal_apply_checkout_occupancy_change($conn, 1, ['hotel_id' => 0], [], []);
 if (empty($occApplyExpired['ok']) && !empty($occApplyExpired['restart'])) {
-    hb_pass('portal apply checkout occupancy rejects expired draft');
+    if (empty($occApplyExpired['redirect_url'])) {
+        hb_fail('portal apply checkout occupancy expired draft must include redirect_url when restart');
+    } else {
+        hb_pass('portal apply checkout occupancy rejects expired draft');
+    }
 } else {
     hb_fail('portal apply checkout occupancy must restart when draft is invalid');
 }
