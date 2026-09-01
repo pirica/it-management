@@ -1072,8 +1072,103 @@ if (!is_file($bookingGalleryJs)) {
         hb_fail('manage bookings must render stay bar');
     } else {
         hb_pass('booking portal photo gallery arrows and counter');
-        hb_pass('booking stay-bar occupancy interactive only on rooms.php');
     }
+}
+
+$applyOccupancyPhp = $repoRoot . '/booking/apply-occupancy.php';
+$occupancyJs = $repoRoot . '/booking/js/hotel-booking-occupancy.js';
+$selectRatePhp = $repoRoot . '/booking/rooms/select-rate.php';
+$customizePhp = $repoRoot . '/booking/rooms/customize.php';
+$roomSinglePhp = $repoRoot . '/booking/rooms/room-single.php';
+$portalBookingSrcOcc = is_file($repoRoot . '/includes/itm_hotel_booking.php')
+    ? (string) file_get_contents($repoRoot . '/includes/itm_hotel_booking.php')
+    : '';
+if (!is_file($applyOccupancyPhp)) {
+    hb_fail('booking/apply-occupancy.php missing');
+} elseif (!is_file($occupancyJs)) {
+    hb_fail('booking/js/hotel-booking-occupancy.js missing');
+} elseif (strpos($portalBookingSrcOcc, 'function itm_hotel_booking_portal_apply_checkout_occupancy_change') === false) {
+    hb_fail('itm_hotel_booking_portal_apply_checkout_occupancy_change helper missing');
+} elseif (strpos($chromeSrc, 'hb_portal_render_occupancy_modal') === false
+    || strpos($chromeSrc, 'hb_portal_render_checkout_occupancy_assets') === false
+    || strpos($chromeSrc, 'hb-occupancy-unavailable-modal') === false) {
+    hb_fail('portal_chrome must expose shared occupancy modal + checkout assets');
+} elseif (strpos($roomsSrc, 'hb_portal_render_occupancy_modal') === false) {
+    hb_fail('rooms.php must use shared occupancy modal renderer');
+} elseif (strpos((string) file_get_contents($applyOccupancyPhp), 'itm_hotel_booking_portal_apply_checkout_occupancy_change') === false) {
+    hb_fail('apply-occupancy.php must call checkout occupancy apply helper');
+} elseif (strpos((string) file_get_contents($occupancyJs), 'hb-occupancy-unavailable-modal') === false
+    || strpos((string) file_get_contents($occupancyJs), 'cfg.applyUrl') === false) {
+    hb_fail('hotel-booking-occupancy.js must POST apply URL and show unavailable modal');
+} else {
+    $selectRateSrcOcc = is_file($selectRatePhp) ? (string) file_get_contents($selectRatePhp) : '';
+    $customizeSrcOcc = is_file($customizePhp) ? (string) file_get_contents($customizePhp) : '';
+    $roomSingleSrcOcc = is_file($roomSinglePhp) ? (string) file_get_contents($roomSinglePhp) : '';
+    if (strpos($selectRateSrcOcc, "'occupancy_interactive' => true") === false
+        && strpos($selectRateSrcOcc, '"occupancy_interactive" => true') === false) {
+        hb_fail('select-rate.php must enable interactive stay-bar occupancy');
+    } elseif (strpos($customizeSrcOcc, "'occupancy_interactive' => true") === false
+        && strpos($customizeSrcOcc, '"occupancy_interactive" => true') === false) {
+        hb_fail('customize.php must enable interactive stay-bar occupancy');
+    } elseif (strpos($roomSingleSrcOcc, "'occupancy_interactive' => true") === false
+        && strpos($roomSingleSrcOcc, '"occupancy_interactive" => true') === false) {
+        hb_fail('room-single.php must enable interactive stay-bar occupancy');
+    } elseif (strpos($selectRateSrcOcc, 'hb_portal_render_checkout_occupancy_assets') === false
+        || strpos($customizeSrcOcc, 'hb_portal_render_checkout_occupancy_assets') === false
+        || strpos($roomSingleSrcOcc, 'hb_portal_render_checkout_occupancy_assets') === false) {
+        hb_fail('checkout steps 2–4 must wire hb_portal_render_checkout_occupancy_assets');
+    } else {
+        hb_pass('booking stay-bar occupancy interactive through checkout step 4');
+    }
+}
+
+if (!function_exists('itm_hotel_booking_portal_build_rooms_restart_url')) {
+    hb_fail('itm_hotel_booking_portal_build_rooms_restart_url helper missing');
+} else {
+    if (!defined('APPURL')) {
+        define('APPURL', 'http://localhost/it-management/booking');
+    }
+    $restartUrl = itm_hotel_booking_portal_build_rooms_restart_url(
+        1,
+        '2026-09-24',
+        2,
+        ['rooms' => 2, 'adults' => 2, 'children' => 0, 'babies' => 0]
+    );
+    if (strpos($restartUrl, 'rooms.php') === false
+        || strpos($restartUrl, 'rooms=2') === false
+        || strpos($restartUrl, 'check_in=2026-09-24') === false) {
+        hb_fail('build_rooms_restart_url must preserve stay dates and occupancy query');
+    } else {
+        hb_pass('portal checkout occupancy restart URL builder');
+    }
+}
+
+$occApplyExpired = itm_hotel_booking_portal_apply_checkout_occupancy_change($conn, 1, ['hotel_id' => 0], [], []);
+if (empty($occApplyExpired['ok']) && !empty($occApplyExpired['restart'])) {
+    hb_pass('portal apply checkout occupancy rejects expired draft');
+} else {
+    hb_fail('portal apply checkout occupancy must restart when draft is invalid');
+}
+
+$occApplyRoomBump = itm_hotel_booking_portal_apply_checkout_occupancy_change(
+    $conn,
+    1,
+    [
+        'hotel_id' => 1,
+        'check_in' => '2026-12-01',
+        'check_out' => '2026-12-03',
+        'nights' => 2,
+        'occupancy' => ['rooms' => 1, 'adults' => 1, 'children' => 0, 'babies' => 0],
+        'room_id' => 1,
+    ],
+    ['rooms' => 2, 'adults' => 2, 'children' => 0, 'babies' => 0],
+    []
+);
+if (empty($occApplyRoomBump['ok']) && !empty($occApplyRoomBump['restart'])
+    && strpos((string) ($occApplyRoomBump['redirect_url'] ?? ''), 'rooms.php') !== false) {
+    hb_pass('portal apply checkout occupancy room-count change restarts at step 1');
+} else {
+    hb_fail('portal apply checkout occupancy must restart step 1 when room count changes');
 }
 
 $selectRoomJs = $repoRoot . '/booking/js/hotel-booking-select-room.js';

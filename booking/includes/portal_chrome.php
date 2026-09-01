@@ -273,7 +273,7 @@ if (!function_exists('hb_portal_render_amenities_scroll')) {
 
 if (!function_exists('hb_portal_render_stay_bar')) {
     /**
-     * @param array $options action_href, action_label, occupancy_interactive (bool; only rooms.php wires the modal)
+     * @param array $options action_href, action_label, occupancy_interactive (bool; checkout steps 1–4 wire the occupancy modal)
      */
     function hb_portal_render_stay_bar(array $hotel, $checkInIso, $nights = 1, array $occupancy = null, array $options = []) {
         if (!is_array($occupancy)) {
@@ -306,6 +306,80 @@ if (!function_exists('hb_portal_render_stay_bar')) {
 <a class="hb-stay-edit" href="<?php echo htmlspecialchars($actionHref, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo htmlspecialchars($actionLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($actionLabel, ENT_QUOTES, 'UTF-8'); ?></a>
 </div>
 </div>
+        <?php
+    }
+}
+
+if (!function_exists('hb_portal_render_occupancy_modal')) {
+    /**
+     * Shared stay-bar occupancy stepper modal (Step 1 + checkout steps 2–4).
+     */
+    function hb_portal_render_occupancy_modal(array $occupancy, array $occupancyLimits, array $settings = []) {
+        $occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy);
+        $occupancyLimits = is_array($occupancyLimits) ? $occupancyLimits : itm_hotel_booking_portal_default_occupancy_limits();
+        ?>
+<div id="hb-occupancy-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-occupancy-title">
+<div class="hb-modal-card hb-portal-modal-card">
+<button type="button" class="hb-modal-close" data-hb-modal-close="hb-occupancy-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
+<h2 id="hb-occupancy-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_modal_title', [], $settings); ?></h2>
+<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_rooms_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-rooms-minus">−</button><input id="hb-occ-rooms" type="number" min="1" max="<?php echo (int) ($occupancyLimits['rooms'] ?? 1); ?>" value="<?php echo (int) $occupancy['rooms']; ?>" readonly><button type="button" id="hb-occ-rooms-plus">+</button></div></div>
+<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_adults_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-adults-minus">−</button><input id="hb-occ-adults" type="number" min="1" max="<?php echo (int) ($occupancyLimits['adults'] ?? 1); ?>" value="<?php echo (int) $occupancy['adults']; ?>" readonly><button type="button" id="hb-occ-adults-plus">+</button></div></div>
+<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_children_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-children-minus">−</button><input id="hb-occ-children" type="number" min="0" max="<?php echo (int) ($occupancyLimits['children'] ?? 0); ?>" value="<?php echo (int) $occupancy['children']; ?>" readonly><button type="button" id="hb-occ-children-plus">+</button></div></div>
+<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_babies_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-babies-minus">−</button><input id="hb-occ-babies" type="number" min="0" max="<?php echo (int) ($occupancyLimits['babies'] ?? 0); ?>" value="<?php echo (int) $occupancy['babies']; ?>" readonly><button type="button" id="hb-occ-babies-plus">+</button></div></div>
+<p class="hb-modal-note"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_modal_note', [], $settings); ?></p>
+<button type="button" class="hb-btn hb-btn-primary" id="hb-occupancy-apply" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_button', [], $settings); ?></button>
+</div>
+</div>
+        <?php
+    }
+}
+
+if (!function_exists('hb_portal_render_occupancy_unavailable_modal')) {
+    function hb_portal_render_occupancy_unavailable_modal(array $settings = []) {
+        ?>
+<div id="hb-occupancy-unavailable-modal" class="hb-modal hb-portal-modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="hb-occupancy-unavailable-title">
+<div class="hb-modal-card hb-portal-modal-card">
+<button type="button" class="hb-modal-close" data-hb-modal-close="hb-occupancy-unavailable-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
+<h2 id="hb-occupancy-unavailable-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_room_not_available', [], $settings); ?></h2>
+<p id="hb-occupancy-unavailable-message" class="hb-modal-note"></p>
+<button type="button" class="hb-btn hb-btn-primary" data-hb-modal-close="hb-occupancy-unavailable-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?></button>
+</div>
+</div>
+        <?php
+    }
+}
+
+if (!function_exists('hb_portal_render_checkout_occupancy_assets')) {
+    /**
+     * Occupancy AJAX wiring for checkout steps 2–4 (Step 1 uses hotel-booking-select-room.js reload).
+     *
+     * @param array $config hotelId, roomId, checkInIso, nights, occupancy, occupancyLimits, settings
+     */
+    function hb_portal_render_checkout_occupancy_assets(array $config) {
+        $settings = is_array($config['settings'] ?? null) ? $config['settings'] : hb_portal_money_settings_bound();
+        $occupancy = itm_hotel_booking_portal_parse_occupancy($config['occupancy'] ?? []);
+        $occupancyLimits = is_array($config['occupancyLimits'] ?? null)
+            ? $config['occupancyLimits']
+            : itm_hotel_booking_portal_default_occupancy_limits();
+        hb_portal_render_occupancy_modal($occupancy, $occupancyLimits, $settings);
+        hb_portal_render_occupancy_unavailable_modal($settings);
+        $payload = [
+            'applyUrl' => APPURL . '/apply-occupancy.php',
+            'csrfToken' => itm_get_csrf_token(),
+            'hotelId' => (int) ($config['hotelId'] ?? 0),
+            'roomId' => (int) ($config['roomId'] ?? 0),
+            'checkInIso' => (string) ($config['checkInIso'] ?? ''),
+            'nights' => max(1, (int) ($config['nights'] ?? 1)),
+            'occupancy' => $occupancy,
+            'occupancyLimits' => $occupancyLimits,
+            'occupancyLabel' => itm_hotel_booking_portal_occupancy_label($occupancy),
+            'unavailableMessage' => hb_portal_ui_copy('portal_ui_step1_room_not_available', [], $settings),
+        ];
+        ?>
+<script>
+window.HB_OCCUPANCY = <?php echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+</script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-occupancy.js"></script>
         <?php
     }
 }

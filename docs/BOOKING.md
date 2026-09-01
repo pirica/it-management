@@ -73,7 +73,8 @@ sequenceDiagram
 | `hotel-booking-public.js` | `index.php` — hotel detail modal, gallery |
 | `hotel-booking-dates.js` | `index.php` — Select Dates modal (check-in + check-out range; **◀ / ▶** month nav; auto-advance when `daysLeftInMonth < calendar_month_advance_days_left` from hotel settings) |
 | `hotel-booking-amenity-icons.js` | Amenity SVG resolution |
-| `hotel-booking-select-room.js` | `rooms.php` — filters, occupancy/rates modals, room detail |
+| `hotel-booking-select-room.js` | `rooms.php` — filters, occupancy/rates modals (Step 1 reload), room detail |
+| `hotel-booking-occupancy.js` | Checkout steps 2–4 — stay-bar occupancy modal AJAX via `apply-occupancy.php` |
 | `hotel-booking-customize.js` | `rooms/customize.php` — upgrade totals, room detail modal |
 | `hotel-booking-confirmation-pdf.js` | Confirmation PDF (self-hosted html2canvas + jsPDF from `js/vendor/`); adds a `/URI` link annotation over **Manage my booking** |
 | `hotel-booking-change-booking.js` | Manage booking — hotel contacts modal |
@@ -89,13 +90,13 @@ Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room
 | Step | URL | Summary |
 |------|-----|---------|
 | 0 | [index.php](http://localhost/it-management/booking/index.php) | Hotel list (all active hotels, all companies); detail modal; **Select Dates** (1 night = single check-in; range = multi-night) |
-| 1 | [rooms.php](http://localhost/it-management/booking/rooms.php) | Room types, special rates, filters, occupancy |
-| 2 | [rooms/select-rate.php](http://localhost/it-management/booking/rooms/select-rate.php) | Room-only vs breakfast, pets, special requests |
-| 3 | [rooms/customize.php](http://localhost/it-management/booking/rooms/customize.php) | Optional room upgrade; reservation summary sidebar |
-| 4 | [rooms/room-single.php](http://localhost/it-management/booking/rooms/room-single.php) | Guest name, email, phone (E.164); creates booking |
+| 1 | [rooms.php](http://localhost/it-management/booking/rooms.php) | Room types, special rates, filters, occupancy (stay-bar modal reloads query) |
+| 2 | [rooms/select-rate.php](http://localhost/it-management/booking/rooms/select-rate.php) | Room-only vs breakfast; stay-bar occupancy modal (AJAX) |
+| 3 | [rooms/customize.php](http://localhost/it-management/booking/rooms/customize.php) | Optional room upgrade; pets/special requests; stay-bar occupancy modal (AJAX) |
+| 4 | [rooms/room-single.php](http://localhost/it-management/booking/rooms/room-single.php) | Guest name, email, phone (E.164); stay-bar occupancy modal (AJAX); creates booking |
 | — | [rooms/payment.php](http://localhost/it-management/booking/rooms/payment.php) | Confirmation, PDF download, manage link |
 
-Draft state (dates, rate, occupancy, upgrade) is stored in session via `itm_hotel_booking_portal_draft_*` helpers until step 4 succeeds.
+Draft state (dates, rate, occupancy, upgrade) is stored in session via `itm_hotel_booking_portal_draft_*` helpers until step 4 succeeds. Changing occupancy on steps 2–4 POSTs to [`apply-occupancy.php`](http://localhost/it-management/booking/apply-occupancy.php) (`itm_hotel_booking_portal_apply_checkout_occupancy_change()`): same guest counts re-validate the draft and reload; room-count changes or invalid picks clear the draft and return to Step 1; failures show `hb-occupancy-unavailable-modal`.
 
 **Step 4 charge:** `itm_hotel_booking_portal_resolve_step4_charge()` re-reads BAR (`itm_hotel_booking_resolve_room_type_nightly_bar`), special-rate discount, and plan discount/surcharge from the database at INSERT time — session draft money fields are not trusted. Multi-room stays re-resolve **each** `room_lines` row via `itm_hotel_booking_portal_resolve_room_lines_pricing_from_db()`.
 
@@ -123,7 +124,7 @@ After lookup:
 
 - Main column: same confirmation card as `payment.php` (room **type** title without room number).
 - **Cancelled** stays: red header (`Reservation cancelled`), status badge, no PDF save.
-- Stay bar: hotel, dates, occupancy (read-only label — occupancy modal is only on `rooms.php`); **Edit stay** links back to date picker on home (checkout flow uses the same control).
+- Stay bar: hotel, dates, occupancy (**read-only** on manage booking; **interactive modal** on checkout steps 1–4); **Edit stay** / **Logout** links back to date picker on home.
 - Aside actions:
   - **Cancellation policy** — opens per-rate HTML under `booking/cancellation_policy/` (configurable in Portal Rate Plans). Relative URLs are restricted to `.html` / `.htm` / `.txt`; folder `.htaccess` blocks PHP execution.
   - **Change booking** — modal with hotel name, directions (Google Maps), website, phone.
@@ -240,7 +241,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 ### Recommended follow-ups (not implemented here)
 
 1. Apply `hotel_booking_portal_rate_plans` migration on all environments; keep `01_schema.sql` in sync.
-2. On manage booking: **Logout** → `auth/logout.php` → `index.php` (stay-bar occupancy is already read-only outside `rooms.php`).
+2. On manage booking: **Logout** → `auth/logout.php` → `index.php` (stay-bar occupancy stays read-only on manage/payment confirmation).
 3. MBQA browser step for full portal flow (index → payment → manage cancel).
 4. Apply `db/migrations/hotel_bookings_auth2_strong.sql` on existing databases (destructive to `hotel_bookings` rows — back up first).
 

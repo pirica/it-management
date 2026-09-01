@@ -4726,6 +4726,147 @@ if (!function_exists('itm_hotel_booking_portal_checkout_required_room_line_count
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_build_rooms_restart_url')) {
+  /**
+   * Step 1 URL after checkout occupancy invalidates room/rate picks.
+   */
+  function itm_hotel_booking_portal_build_rooms_restart_url($hotelId, $checkIn, $nights, array $occupancy) {
+    if (!defined('APPURL')) {
+      return '';
+    }
+    return APPURL . '/rooms.php?' . http_build_query(array_merge(
+      ['id' => (int) $hotelId, 'check_in' => (string) $checkIn, 'nights' => max(1, (int) $nights)],
+      itm_hotel_booking_portal_occupancy_query_params($occupancy)
+    ));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_apply_checkout_occupancy_change')) {
+  /**
+   * Why: Stay-bar occupancy on checkout steps 2–4 must re-validate draft room lines and pricing before reload.
+   *
+   * @return array{ok:bool,error?:string,restart?:bool,redirect_url?:string,occupancy_label?:string}
+   */
+  function itm_hotel_booking_portal_apply_checkout_occupancy_change($conn, $companyId, array $draft, array $source, array $settings, array $options = []) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) ($draft['hotel_id'] ?? 0);
+    $checkIn = (string) ($draft['check_in'] ?? '');
+    $nights = max(1, (int) ($draft['nights'] ?? 1));
+    $checkOut = (string) ($draft['check_out'] ?? '');
+    if ($companyId < 1 || $hotelId < 1 || $checkIn === '' || $checkOut === '' || $checkOut <= $checkIn) {
+      return ['ok' => false, 'error' => 'Checkout session expired. Please start again.', 'restart' => true];
+    }
+
+    $limits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $companyId, $hotelId);
+    $newOcc = itm_hotel_booking_portal_parse_occupancy($source, $limits);
+    $codeFilter = itm_hotel_booking_portal_filter_occupancy_special_rate_codes($conn, $companyId, $hotelId, $newOcc, $checkIn);
+    $newOcc = $codeFilter['occupancy'];
+
+    $oldOcc = itm_hotel_booking_portal_parse_occupancy($draft['occupancy'] ?? []);
+    $oldRooms = max(1, (int) ($oldOcc['rooms'] ?? 1));
+    $newRooms = max(1, (int) ($newOcc['rooms'] ?? 1));
+
+    $unavailableMsg = function_exists('hb_portal_ui_copy')
+      ? hb_portal_ui_copy('portal_ui_step1_room_not_available', [], $settings)
+      : 'This selection is not available for your dates.';
+    if ($unavailableMsg === '') {
+      $unavailableMsg = 'This selection is not available for your dates.';
+    }
+
+    $restartUrl = itm_hotel_booking_portal_build_rooms_restart_url($hotelId, $checkIn, $nights, $newOcc);
+
+    if ($newRooms !== $oldRooms) {
+      itm_hotel_booking_portal_draft_clear();
+      return ['ok' => false, 'restart' => true, 'redirect_url' => $restartUrl, 'error' => $unavailableMsg];
+    }
+
+    $newContext = itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkIn, $nights, $newOcc);
+    $lines = itm_hotel_booking_portal_draft_room_lines_for_display($draft);
+    $ratedLines = itm_hotel_booking_portal_draft_rated_room_lines($draft, (string) ($draft['room_lines_context'] ?? ''));
+
+    $primaryRoomId = (int) ($draft['room_id'] ?? 0);
+    $primaryRoom = $primaryRoomId > 0 ? itm_hotel_booking_fetch_room_row($conn, $companyId, $primaryRoomId) : null;
+    if (!$primaryRoom || (int) ($primaryRoom['hotel_id'] ?? 0) !== $hotelId) {
+      itm_hotel_booking_portal_draft_clear();
+      return ['ok' => false, 'restart' => true, 'redirect_url' => $restartUrl, 'error' => $unavailableMsg];
+    }
+
+    $requiredLineCount = itm_hotel_booking_portal_checkout_required_room_line_count($primaryRoom, $newOcc);
+
+    if ($newRooms > 1) {
+      if (count($ratedLines) !== $newRooms) {
+        itm_hotel_booking_portal_draft_clear();
+        return ['ok' => false, 'restart' => true, 'redirect_url' => $restartUrl, 'error' => $unavailableMsg];
+      }
+    } elseif (count($lines) < $requiredLineCount) {
+      itm_hotel_booking_portal_draft_clear();
+      return ['ok' => false, 'restart' => true, 'redirect_url' => $restartUrl, 'error' => $unavailableMsg];
+    }
+
+    $lineCount = max($newRooms, count($lines), $requiredLineCount);
+    foreach ($lines as $idx => $line) {
+      if (!is_array($line)) {
+        continue;
+      }
+      $roomId = (int) ($line['room_id'] ?? 0);
+      if ($roomId < 1) {
+        itm_hotel_booking_portal_draft_clear();
+        return ['ok' => false, 'restart' => true, 'redirect_url' => $restartUrl, 'error' => $unavailableMsg];
+      }
+      $roomRow = itm_hotel_booking_fetch_room_row($conn, $companyId, $roomId);
+      if (!$roomRow || (int) ($roomRow['hotel_id'] ?? 0) !== $hotelId) {
+        itm_hotel_booking_portal_draft_clear();
+        return ['ok' => false, 'restart' => true, 'redirect_url' => $restartUrl, 'error' => $unavailableMsg];
+      }
+      $typeId = (int) ($roomRow['room_type_id'] ?? 0);
+      $typeRow = $typeId > 0 ? itm_hotel_booking_fetch_room_type_row($conn, $companyId, $typeId) : null;
+      if (!$typeRow) {
+        return ['ok' => false, 'error' => $unavailableMsg];
+      }
+      $sliceOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($newOcc, (int) $idx, $lineCount);
+      if (!itm_hotel_booking_portal_room_type_occupancy_slice_fits($typeRow, $sliceOcc)) {
+        return ['ok' => false, 'error' => $unavailableMsg];
+      }
+      if (itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $roomId, $checkIn, $checkOut, 0, $roomRow)) {
+        return ['ok' => false, 'error' => $unavailableMsg];
+      }
+      if ((int) $idx === 0 && $newRooms === 1 && itm_hotel_booking_portal_connecting_room_id($roomRow) > 0) {
+        if (!itm_hotel_booking_portal_connecting_unit_fits_for_room($conn, $companyId, $roomRow, $typeRow, $newOcc)) {
+          return ['ok' => false, 'error' => $unavailableMsg];
+        }
+        if (!itm_hotel_booking_portal_connecting_unit_inventory_available($conn, $companyId, $hotelId, $roomRow, $checkIn, $checkOut)) {
+          return ['ok' => false, 'error' => $unavailableMsg];
+        }
+      }
+    }
+
+    $draft['occupancy'] = $newOcc;
+    $draft['room_lines_context'] = $newContext;
+    $draft['resolved_rate_slug'] = itm_hotel_booking_portal_resolved_rate_slug($newOcc);
+    $draft['internal_rate_code'] = itm_hotel_booking_normalize_internal_rate_code($newOcc['internal_rate_code'] ?? '');
+
+    if (!empty($draft['portal_rate_plan_id'])) {
+      $charge = itm_hotel_booking_portal_resolve_step4_charge($conn, $companyId, $primaryRoom, $draft, $newOcc);
+      if (empty($charge['ok'])) {
+        return ['ok' => false, 'error' => (string) ($charge['error'] ?? $unavailableMsg)];
+      }
+      if (!empty($charge['draft_for_pay']) && is_array($charge['draft_for_pay'])) {
+        $draft = array_merge($draft, $charge['draft_for_pay']);
+        $draft['occupancy'] = $newOcc;
+        $draft['room_lines_context'] = $newContext;
+      }
+    }
+
+    itm_hotel_booking_portal_draft_save($draft);
+
+    return [
+      'ok' => true,
+      'occupancy_label' => itm_hotel_booking_portal_occupancy_label($newOcc),
+      'redirect_url' => (string) ($options['redirect_url'] ?? ''),
+    ];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_connecting_unit_append_unrated_pick')) {
   /**
    * After primary room is rated, append the fixed connecting partner room (unrated line).

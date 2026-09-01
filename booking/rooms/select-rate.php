@@ -346,6 +346,8 @@ $breakfastInfo = hb_portal_ui_copy('portal_ui_step2_breakfast_disclaimer_templat
 ], $settings);
 $portalDefaultRateLabel = itm_hotel_booking_portal_default_rate_label_from_settings($settings);
 $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 2);
+$occupancyLimits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $company_id, $hotelId);
+$occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy, $occupancyLimits);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -357,7 +359,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 </head>
 <body class="hb-public hb-checkout-page">
 <?php hb_portal_render_header($settings); ?>
-<?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
+<?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy, ['occupancy_interactive' => true]); ?>
 
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
@@ -442,5 +444,14 @@ hb_portal_render_cancellation_policy_button($policyUrl);
 ?>
 </aside>
 </div>
+<?php hb_portal_render_checkout_occupancy_assets([
+    'hotelId' => $hotelId,
+    'roomId' => $roomId,
+    'checkInIso' => $checkInIso,
+    'nights' => $nights,
+    'occupancy' => $occupancy,
+    'occupancyLimits' => $occupancyLimits,
+    'settings' => $settings,
+]); ?>
 </body>
 </html>

@@ -678,18 +678,7 @@ echo hb_portal_render_image_gallery(
 </aside>
 </div>
 
-<div id="hb-occupancy-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-occupancy-title">
-<div class="hb-modal-card hb-portal-modal-card">
-<button type="button" class="hb-modal-close" data-hb-modal-close="hb-occupancy-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
-<h2 id="hb-occupancy-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_modal_title', [], $settings); ?></h2>
-<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_rooms_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-rooms-minus">−</button><input id="hb-occ-rooms" type="number" min="1" max="<?php echo (int) $occupancyLimits['rooms']; ?>" value="<?php echo (int) $occupancy['rooms']; ?>" readonly><button type="button" id="hb-occ-rooms-plus">+</button></div></div>
-<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_adults_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-adults-minus">−</button><input id="hb-occ-adults" type="number" min="1" max="<?php echo (int) $occupancyLimits['adults']; ?>" value="<?php echo (int) $occupancy['adults']; ?>" readonly><button type="button" id="hb-occ-adults-plus">+</button></div></div>
-<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_children_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-children-minus">−</button><input id="hb-occ-children" type="number" min="0" max="<?php echo (int) $occupancyLimits['children']; ?>" value="<?php echo (int) $occupancy['children']; ?>" readonly><button type="button" id="hb-occ-children-plus">+</button></div></div>
-<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_babies_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-babies-minus">−</button><input id="hb-occ-babies" type="number" min="0" max="<?php echo (int) $occupancyLimits['babies']; ?>" value="<?php echo (int) $occupancy['babies']; ?>" readonly><button type="button" id="hb-occ-babies-plus">+</button></div></div>
-<p class="hb-modal-note"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_modal_note', [], $settings); ?></p>
-<button type="button" class="hb-btn hb-btn-primary" id="hb-occupancy-apply" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_button', [], $settings); ?></button>
-</div>
-</div>
+<?php hb_portal_render_occupancy_modal($occupancy, $occupancyLimits, $settings); ?>
 
 <div id="hb-filters-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-filters-title">
 <div class="hb-modal-card hb-portal-modal-card">
