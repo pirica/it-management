@@ -42,6 +42,9 @@ if (!function_exists('itm_crud_fk_label_search_conditions')) {
         $companyId = (int)$companyId;
         $conditions = [];
         $mainPrefix = ($mainAlias !== '') ? ($mainAlias . '.') : '';
+        // Why: Main-table column metadata is identical for every FK in the loop; resolve once per request (cached in itm_fk_table_column_names).
+        $mainTableColumns = itm_fk_table_column_names($conn, $mainTable);
+        $mainTableHasCompanyId = in_array('company_id', $mainTableColumns, true);
 
         foreach ($visibleFieldNames as $fieldName) {
             $fieldName = (string)$fieldName;
@@ -92,7 +95,7 @@ if (!function_exists('itm_crud_fk_label_search_conditions')) {
             }
 
             $scopeSql = '';
-            if ($companyId > 0 && in_array('company_id', $refColumns, true) && in_array('company_id', itm_fk_table_column_names($conn, $mainTable), true)) {
+            if ($companyId > 0 && in_array('company_id', $refColumns, true) && $mainTableHasCompanyId) {
                 $scopeSql = ' AND r.`company_id` = ' . $mainPrefix . '`company_id`';
             } elseif ($companyId > 0 && in_array('company_id', $refColumns, true)) {
                 $scopeSql = ' AND r.`company_id` = ' . (int)$companyId;

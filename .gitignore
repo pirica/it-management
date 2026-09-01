@@ -1,4 +1,5 @@
 .env
+.jules/
 .editorconfig
 up.bat
 up.ps1
