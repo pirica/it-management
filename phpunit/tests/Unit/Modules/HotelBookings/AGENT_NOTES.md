@@ -19,4 +19,14 @@ Maps to `includes/itm_hotel_booking.php` portal rule helpers:
 | `testDraftPetPolicyStrictAllLines` | `draft_pets_allowed`, `draft_pet_policy` (DB) |
 | `testDraftRequiresApprovalHelperExists` | `draft_requires_approval` |
 
-Run: `php scripts/run_tests.php --filter HotelBookingRoomTypePortalRules`
+## HotelBookingCheckoutOccupancyTest
+
+Maps to checkout stay-bar occupancy helpers in `includes/itm_hotel_booking.php` and `booking/apply-occupancy.php`:
+
+| Test | Helpers / contract |
+|------|-------------------|
+| `testBuildRoomsRestartUrlIncludesStayAndOccupancy` | `itm_hotel_booking_portal_build_rooms_restart_url` |
+| `testApplyCheckoutOccupancyChangeRejectsExpiredDraft` | `itm_hotel_booking_portal_apply_checkout_occupancy_change` (invalid draft) |
+| `testApplyCheckoutOccupancyChangeRoomCountRestartsAtStepOne` | `itm_hotel_booking_portal_apply_checkout_occupancy_change` (room-count bump → Step 1; DB) |
+
+Run: `php scripts/run_tests.php --filter HotelBookingRoomTypePortalRules` or `--filter HotelBookingCheckoutOccupancy`

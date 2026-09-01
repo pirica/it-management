@@ -280,6 +280,8 @@ if ($upgradeOffer) {
     }
 }
 $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 3);
+$occupancyLimits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $company_id, $hotelId);
+$occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy, $occupancyLimits);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -291,7 +293,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 </head>
 <body class="hb-public hb-checkout-page">
 <?php hb_portal_render_header($settings); ?>
-<?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
+<?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy, ['occupancy_interactive' => true]); ?>
 
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
@@ -428,5 +430,14 @@ window.HB_CUSTOMIZE_ROOM_DETAIL = <?php echo json_encode([
 <script src="<?php echo APPURL; ?>/js/hotel-booking-money.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-customize.js"></script>
+<?php hb_portal_render_checkout_occupancy_assets([
+    'hotelId' => $hotelId,
+    'roomId' => $roomId,
+    'checkInIso' => $checkInIso,
+    'nights' => $nights,
+    'occupancy' => $occupancy,
+    'occupancyLimits' => $occupancyLimits,
+    'settings' => $settings,
+]); ?>
 </body>
 </html>
