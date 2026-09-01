@@ -14,8 +14,15 @@ if (!function_exists('itm_fk_table_column_names')) {
      */
     function itm_fk_table_column_names(mysqli $conn, string $table): array
     {
+        // Why: Static cache eliminates redundant DESCRIBE queries per table during a single HTTP request lifecycle.
+        static $cache = [];
+
         if (!function_exists('itm_is_safe_identifier') || !itm_is_safe_identifier($table)) {
             return [];
+        }
+
+        if (isset($cache[$table])) {
+            return $cache[$table];
         }
 
         $columns = [];
@@ -24,7 +31,8 @@ if (!function_exists('itm_fk_table_column_names')) {
             $columns[] = (string)($row['Field'] ?? '');
         }
 
-        return array_values(array_filter($columns));
+        $cache[$table] = array_values(array_filter($columns));
+        return $cache[$table];
     }
 }
 
