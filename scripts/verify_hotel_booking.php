@@ -1100,6 +1100,8 @@ if (!is_file($applyOccupancyPhp)) {
 } elseif (strpos((string) file_get_contents($occupancyJs), 'hb-occupancy-unavailable-modal') === false
     || strpos((string) file_get_contents($occupancyJs), 'cfg.applyUrl') === false) {
     hb_fail('hotel-booking-occupancy.js must POST apply URL and show unavailable modal');
+} elseif (strpos((string) file_get_contents($occupancyJs), '$cfg') !== false) {
+    hb_fail('hotel-booking-occupancy.js must use cfg (not PHP-style $cfg) in Apply handler');
 } else {
     $selectRateSrcOcc = is_file($selectRatePhp) ? (string) file_get_contents($selectRatePhp) : '';
     $customizeSrcOcc = is_file($customizePhp) ? (string) file_get_contents($customizePhp) : '';
