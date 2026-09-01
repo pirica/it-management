@@ -1122,6 +1122,55 @@ if (!is_file($applyOccupancyPhp)) {
     }
 }
 
+if (!function_exists('itm_hotel_booking_portal_prepare_checkout_summary')) {
+    hb_fail('itm_hotel_booking_portal_prepare_checkout_summary helper missing');
+} else {
+    $customizeSrcOcc = is_file($customizePhp) ? (string) file_get_contents($customizePhp) : '';
+    $roomSingleSrcOcc = is_file($roomSinglePhp) ? (string) file_get_contents($roomSinglePhp) : '';
+    if (strpos($customizeSrcOcc, 'itm_hotel_booking_portal_prepare_checkout_summary') === false
+        || strpos($roomSingleSrcOcc, 'itm_hotel_booking_portal_prepare_checkout_summary') === false) {
+        hb_fail('customize.php and room-single.php must prepare checkout summary before breakdown');
+    } elseif (strpos($customizeSrcOcc, 'itm_hotel_booking_portal_checkout_breakdown') === false
+        || strpos($roomSingleSrcOcc, 'itm_hotel_booking_portal_checkout_breakdown') === false) {
+        hb_fail('customize.php and room-single.php must render checkout breakdown');
+    } else {
+    $customizePreparePos = strpos($customizeSrcOcc, 'itm_hotel_booking_portal_prepare_checkout_summary');
+    $customizeBreakdownPos = strpos($customizeSrcOcc, 'itm_hotel_booking_portal_checkout_breakdown');
+    $roomSinglePreparePos = strpos($roomSingleSrcOcc, 'itm_hotel_booking_portal_prepare_checkout_summary');
+    $roomSingleBreakdownPos = strpos($roomSingleSrcOcc, 'itm_hotel_booking_portal_checkout_breakdown');
+    if ($customizePreparePos === false || $customizeBreakdownPos === false
+        || $customizePreparePos > $customizeBreakdownPos
+        || $roomSinglePreparePos === false || $roomSingleBreakdownPos === false
+        || $roomSinglePreparePos > $roomSingleBreakdownPos) {
+        hb_fail('steps 3–4 must call prepare_checkout_summary before checkout_breakdown');
+    } else {
+        $taxTwoAdults = itm_hotel_booking_portal_checkout_breakdown(
+            100.0,
+            '2026-09-30',
+            '2026-10-01',
+            ['rooms' => 2, 'adults' => 2, 'children' => 0, 'babies' => 0],
+            0,
+            ['rate_plan' => 'room_only', 'company_id' => 1, 'hotel_id' => 1],
+            2.0
+        );
+        $taxOneAdult = itm_hotel_booking_portal_checkout_breakdown(
+            100.0,
+            '2026-09-30',
+            '2026-10-01',
+            ['rooms' => 2, 'adults' => 1, 'children' => 0, 'babies' => 0],
+            0,
+            ['rate_plan' => 'room_only', 'company_id' => 1, 'hotel_id' => 1],
+            2.0
+        );
+        if ((float) ($taxTwoAdults['tourist_tax'] ?? 0) <= (float) ($taxOneAdult['tourist_tax'] ?? 0)) {
+            hb_fail('checkout breakdown tourist tax must decrease when adults decrease');
+        } else {
+            hb_pass('steps 3–4 prepare checkout summary before breakdown repricing');
+        }
+    }
+    }
+}
+
 if (!function_exists('itm_hotel_booking_portal_build_rooms_restart_url')) {
     hb_fail('itm_hotel_booking_portal_build_rooms_restart_url helper missing');
 } else {

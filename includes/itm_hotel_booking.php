@@ -2008,6 +2008,85 @@ if (!function_exists('itm_hotel_booking_portal_resolve_checkout_page_occupancy')
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_build_customize_redirect_url')) {
+  function itm_hotel_booking_portal_build_customize_redirect_url(array $occupancy) {
+    if (!defined('APPURL')) {
+      return '';
+    }
+    return APPURL . '/rooms/customize.php?' . http_build_query(itm_hotel_booking_portal_occupancy_query_params($occupancy));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_build_room_single_redirect_url')) {
+  function itm_hotel_booking_portal_build_room_single_redirect_url($roomId, $checkIn, $checkOut, array $occupancy) {
+    if (!defined('APPURL')) {
+      return '';
+    }
+    return APPURL . '/rooms/room-single.php?' . http_build_query(array_merge(
+      ['id' => (int) $roomId, 'check_in' => (string) $checkIn, 'check_out' => (string) $checkOut],
+      itm_hotel_booking_portal_occupancy_query_params($occupancy)
+    ));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_prepare_checkout_summary')) {
+  /**
+   * Why: Steps 3–4 must resolve stay-bar occupancy and refresh draft BAR/plan pricing before reservation breakdown.
+   *
+   * @return array{occupancy:array,draft:array,discount_percent:float,surcharge_percent:float,base_per_night:float,occupancy_limits:array}
+   */
+  function itm_hotel_booking_portal_prepare_checkout_summary($conn, $companyId, array $room, array $draft, array $urlSource, $checkInIso, $nights, array $settings) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) ($draft['hotel_id'] ?? $room['hotel_id'] ?? 0);
+    $limits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $companyId, $hotelId);
+    $occupancy = itm_hotel_booking_portal_resolve_checkout_page_occupancy(
+      $urlSource,
+      $draft,
+      $hotelId,
+      (string) $checkInIso,
+      max(1, (int) $nights),
+      $limits
+    );
+    $occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy, $limits);
+    $draft['occupancy'] = $occupancy;
+
+    $discountPercent = (float) ($draft['discount_percent'] ?? 0);
+    $surchargePercent = (float) ($draft['surcharge_percent'] ?? 0);
+    $basePerNight = (float) ($draft['base_price_per_night'] ?? ($room['price_per_night'] ?? 0));
+
+    if ($companyId > 0 && !empty($draft['portal_rate_plan_id'])) {
+      $charge = itm_hotel_booking_portal_resolve_step4_charge($conn, $companyId, $room, $draft, $occupancy);
+      if (!empty($charge['ok'])) {
+        if (!empty($charge['draft_for_pay']) && is_array($charge['draft_for_pay'])) {
+          $draft = array_merge($draft, $charge['draft_for_pay']);
+          $draft['occupancy'] = $occupancy;
+        }
+        if (isset($charge['base_per_night'])) {
+          $basePerNight = (float) $charge['base_per_night'];
+          $draft['base_price_per_night'] = $basePerNight;
+        }
+        if (isset($charge['discount_percent'])) {
+          $discountPercent = (float) $charge['discount_percent'];
+          $draft['discount_percent'] = $discountPercent;
+        }
+        if (isset($charge['surcharge_percent'])) {
+          $surchargePercent = (float) $charge['surcharge_percent'];
+          $draft['surcharge_percent'] = $surchargePercent;
+        }
+      }
+    }
+
+    return [
+      'occupancy' => $occupancy,
+      'draft' => $draft,
+      'discount_percent' => $discountPercent,
+      'surcharge_percent' => $surchargePercent,
+      'base_per_night' => $basePerNight,
+      'occupancy_limits' => $limits,
+    ];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_occupancy_label')) {
   function itm_hotel_booking_portal_occupancy_label(array $occupancy) {
     $rooms = (int) ($occupancy['rooms'] ?? 1);
@@ -4987,12 +5066,20 @@ if (!function_exists('itm_hotel_booking_portal_apply_checkout_occupancy_change')
     if ($redirectOut !== '' && itm_hotel_booking_portal_checkout_redirect_url_allowed($redirectOut)) {
       $redirectOut = itm_hotel_booking_portal_merge_occupancy_into_url($redirectOut, $newOcc);
     } elseif ((int) ($options['room_id'] ?? 0) > 0) {
-      $redirectOut = itm_hotel_booking_portal_build_select_rate_redirect_url(
-        (int) $options['room_id'],
-        $checkIn,
-        $nights,
-        $newOcc
-      );
+      $roomIdForRedirect = (int) $options['room_id'];
+      $checkoutStep = strtolower(trim((string) ($options['checkout_step'] ?? '')));
+      if ($checkoutStep === 'customize') {
+        $redirectOut = itm_hotel_booking_portal_build_customize_redirect_url($newOcc);
+      } elseif ($checkoutStep === 'room_single') {
+        $redirectOut = itm_hotel_booking_portal_build_room_single_redirect_url($roomIdForRedirect, $checkIn, $checkOut, $newOcc);
+      } else {
+        $redirectOut = itm_hotel_booking_portal_build_select_rate_redirect_url(
+          $roomIdForRedirect,
+          $checkIn,
+          $nights,
+          $newOcc
+        );
+      }
     } else {
       $redirectOut = itm_hotel_booking_portal_build_rooms_restart_url($hotelId, $checkIn, $nights, $newOcc);
     }

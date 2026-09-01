@@ -178,13 +178,34 @@ $prefillOutDisplay = hb_portal_format_date_display($checkOutIso);
 $hotelId = (int) ($room['hotel_id'] ?? 0);
 $hotel = ['id' => $hotelId, 'name' => $room['hotel_name'] ?? ''];
 $roomLabel = trim((string) ($room['type_name'] ?? $room['name'] ?? 'Room'));
+$draftForSummary = is_array($draft) ? $draft : [];
+$urlOccupancy = array_merge($_GET, is_array($occupancy) ? $occupancy : []);
+// Why: Step 4 totals and reservation summary must use resolved occupancy and refreshed draft pricing.
+$summaryPrepared = itm_hotel_booking_portal_prepare_checkout_summary(
+    $conn,
+    $company_id,
+    $room,
+    $draftForSummary,
+    $urlOccupancy,
+    $checkInIso,
+    $nights,
+    $settings
+);
+$occupancy = $summaryPrepared['occupancy'];
+if ($draft) {
+    $draft = $summaryPrepared['draft'];
+    itm_hotel_booking_portal_draft_save($draft);
+}
+$discountPercent = $draft
+    ? (float) $summaryPrepared['discount_percent']
+    : itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelId, itm_hotel_booking_portal_resolved_rate_slug($occupancy));
+$occupancyLimits = $summaryPrepared['occupancy_limits'];
 $changeRoomQuery = http_build_query(array_merge(
     ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
     itm_hotel_booking_portal_occupancy_query_params($occupancy)
 ));
 $changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
 
-$discountPercent = $draft ? (float) ($draft['discount_percent'] ?? 0) : itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelId, itm_hotel_booking_portal_resolved_rate_slug($occupancy));
 $draftForDisplay = $draft ?: ['company_id' => $company_id, 'hotel_id' => $hotelId, 'rate_plan' => 'room_only', 'traveling_with_pet' => 0, 'service_animal' => 0];
 if ($draftForDisplay && !isset($draftForDisplay['company_id'])) {
     $draftForDisplay['company_id'] = $company_id;
@@ -194,7 +215,7 @@ if ($draftForDisplay && !isset($draftForDisplay['hotel_id'])) {
 }
 $touristTaxPerPerson = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 $breakdown = itm_hotel_booking_portal_checkout_breakdown(
-    (float) ($draft ? ($draft['base_price_per_night'] ?? $room['price_per_night']) : $room['price_per_night']),
+    (float) ($draft ? $summaryPrepared['base_per_night'] : ($room['price_per_night'] ?? 0)),
     $checkInIso,
     $checkOutIso,
     $occupancy,
@@ -225,16 +246,6 @@ $reservationSummaryContext = [
     'occupancy' => $occupancy,
 ];
 $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 4);
-$occupancyLimits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $company_id, $hotelId);
-$occupancy = itm_hotel_booking_portal_resolve_checkout_page_occupancy(
-    array_merge($_GET, is_array($occupancy) ? $occupancy : []),
-    is_array($draft) ? $draft : [],
-    $hotelId,
-    $checkInIso,
-    $nights,
-    $occupancyLimits
-);
-$occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy, $occupancyLimits);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -390,6 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
     'occupancy' => $occupancy,
     'occupancyLimits' => $occupancyLimits,
     'settings' => $settings,
+    'checkoutStep' => 'room_single',
 ]); ?>
 </body>
 </html>

@@ -370,6 +370,7 @@ if (!function_exists('hb_portal_render_checkout_occupancy_assets')) {
             'roomId' => (int) ($config['roomId'] ?? 0),
             'checkInIso' => (string) ($config['checkInIso'] ?? ''),
             'nights' => max(1, (int) ($config['nights'] ?? 1)),
+            'checkoutStep' => (string) ($config['checkoutStep'] ?? ''),
             'occupancy' => $occupancy,
             'occupancyLimits' => $occupancyLimits,
             'occupancyLabel' => itm_hotel_booking_portal_occupancy_label($occupancy),
