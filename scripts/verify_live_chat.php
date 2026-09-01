@@ -248,6 +248,13 @@ if (!itm_it_settings_chat_same_tenant_enabled($conn, $companyId)) {
     lc_verify_pass('chat_same_tenant defaults to enabled');
 }
 
+$settingsAdminId = (int)($employees[0] ?? 0);
+if ($settingsAdminId > 0 && !itm_it_settings_save_chat_same_tenant($conn, $companyId, 1, $settingsAdminId)) {
+    lc_verify_fail('chat_same_tenant idempotent save should succeed when value is unchanged');
+} elseif ($settingsAdminId > 0) {
+    lc_verify_pass('chat_same_tenant idempotent save when unchanged');
+}
+
 $crossTenantAdminRes = mysqli_query($conn, "SELECT id FROM employees WHERE company_id = 1 AND username = 'Admin' AND active = 1 LIMIT 1");
 $crossTenantAdminRow = $crossTenantAdminRes ? mysqli_fetch_assoc($crossTenantAdminRes) : null;
 $crossTenantAdminId = $crossTenantAdminRow ? (int)$crossTenantAdminRow['id'] : 0;
