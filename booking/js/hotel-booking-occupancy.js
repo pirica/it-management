@@ -24,6 +24,43 @@
     };
   }
 
+  function occupancyFromInputs() {
+    var roomsEl = document.getElementById('hb-occ-rooms');
+    var adultsEl = document.getElementById('hb-occ-adults');
+    var childrenEl = document.getElementById('hb-occ-children');
+    var babiesEl = document.getElementById('hb-occ-babies');
+    return {
+      rooms: parseIntSafe(roomsEl && roomsEl.value, 1),
+      adults: parseIntSafe(adultsEl && adultsEl.value, 1),
+      children: parseIntSafe(childrenEl && childrenEl.value, 0),
+      babies: parseIntSafe(babiesEl && babiesEl.value, 0)
+    };
+  }
+
+  function occupancyLabelFromValues(occ) {
+    var rooms = parseIntSafe(occ.rooms, 1);
+    var adults = parseIntSafe(occ.adults, 1);
+    var children = parseIntSafe(occ.children, 0);
+    var babies = parseIntSafe(occ.babies, 0);
+    var roomWord = rooms === 1 ? 'room' : 'rooms';
+    var parts = [];
+    parts.push(adults === 1 ? '1 adult' : adults + ' adults');
+    if (children > 0) {
+      parts.push(children === 1 ? '1 child' : children + ' children');
+    }
+    if (babies > 0) {
+      parts.push(babies === 1 ? '1 baby' : babies + ' babies');
+    }
+    return rooms + ' ' + roomWord + ' for ' + parts.join(' + ');
+  }
+
+  function updateStayBarLabel(label) {
+    var occBtn = document.getElementById('hb-stay-occupancy-trigger');
+    if (occBtn && label) {
+      occBtn.textContent = '\uD83D\uDC64 ' + label;
+    }
+  }
+
   function openModal(id) {
     var el = document.getElementById(id);
     if (el) {
@@ -64,6 +101,7 @@
     function setVal(value) {
       var next = Math.max(min, Math.min(max, value));
       input.value = String(next);
+      updateStayBarLabel(occupancyLabelFromValues(occupancyFromInputs()));
     }
     if (minus) {
       minus.addEventListener('click', function () {
@@ -91,18 +129,31 @@
     openModal('hb-occupancy-unavailable-modal');
   }
 
+  function navigateTo(url) {
+    if (!url) {
+      window.location.reload();
+      return;
+    }
+    if (url === window.location.href) {
+      window.location.reload();
+      return;
+    }
+    window.location.href = url;
+  }
+
   var applyBtn = document.getElementById('hb-occupancy-apply');
   if (!applyBtn) {
     return;
   }
 
   applyBtn.addEventListener('click', function () {
+    var occ = occupancyFromInputs();
     var payload = new FormData();
     payload.append('csrf_token', cfg.csrfToken || '');
-    payload.append('rooms', String(parseIntSafe(document.getElementById('hb-occ-rooms').value, 1)));
-    payload.append('adults', String(parseIntSafe(document.getElementById('hb-occ-adults').value, 1)));
-    payload.append('children', String(parseIntSafe(document.getElementById('hb-occ-children').value, 0)));
-    payload.append('babies', String(parseIntSafe(document.getElementById('hb-occ-babies').value, 0)));
+    payload.append('rooms', String(occ.rooms));
+    payload.append('adults', String(occ.adults));
+    payload.append('children', String(occ.children));
+    payload.append('babies', String(occ.babies));
     if (cfg.hotelId) {
       payload.append('hotel_id', String(cfg.hotelId));
     }
@@ -125,21 +176,23 @@
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
       .then(function (response) {
+        if (!response.ok) {
+          throw new Error('http_' + response.status);
+        }
         return response.json();
       })
       .then(function (data) {
         applyBtn.disabled = false;
         closeModal('hb-occupancy-modal');
+        if (data && data.occupancy_label) {
+          updateStayBarLabel(data.occupancy_label);
+        }
         if (data && data.ok) {
-          if (data.redirect_url) {
-            window.location.href = data.redirect_url;
-            return;
-          }
-          window.location.reload();
+          navigateTo(data.redirect_url || '');
           return;
         }
         if (data && data.restart && data.redirect_url) {
-          window.location.href = data.redirect_url;
+          navigateTo(data.redirect_url);
           return;
         }
         showUnavailable(data && data.error ? data.error : '');

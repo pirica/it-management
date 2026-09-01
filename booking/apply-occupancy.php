@@ -75,9 +75,11 @@ if (!empty($draft['nights'])) {
 }
 
 $redirectUrl = (string) ($_POST['redirect_url'] ?? '');
-if ($redirectUrl === '' || strpos($redirectUrl, APPURL) !== 0) {
+if (!itm_hotel_booking_portal_checkout_redirect_url_allowed($redirectUrl)) {
     $redirectUrl = '';
 }
+
+$effectiveRoomId = $roomId > 0 ? $roomId : (int) ($draft['room_id'] ?? 0);
 
 $result = itm_hotel_booking_portal_apply_checkout_occupancy_change(
     $conn,
@@ -85,7 +87,10 @@ $result = itm_hotel_booking_portal_apply_checkout_occupancy_change(
     $draft,
     $_POST,
     $settings,
-    ['redirect_url' => $redirectUrl]
+    [
+        'redirect_url' => $redirectUrl,
+        'room_id' => $effectiveRoomId,
+    ]
 );
 
 echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

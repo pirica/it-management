@@ -347,6 +347,14 @@ $breakfastInfo = hb_portal_ui_copy('portal_ui_step2_breakfast_disclaimer_templat
 $portalDefaultRateLabel = itm_hotel_booking_portal_default_rate_label_from_settings($settings);
 $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 2);
 $occupancyLimits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $company_id, $hotelId);
+$occupancy = itm_hotel_booking_portal_resolve_checkout_page_occupancy(
+    array_merge($_GET, is_array($occupancy) ? $occupancy : []),
+    is_array($activeDraft) ? $activeDraft : [],
+    $hotelId,
+    $checkInIso,
+    $nights,
+    $occupancyLimits
+);
 $occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy, $occupancyLimits);
 ?>
 <!DOCTYPE html>

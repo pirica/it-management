@@ -1900,6 +1900,114 @@ if (!function_exists('itm_hotel_booking_portal_occupancy_query_params')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_occupancy_query_strip_keys')) {
+  /**
+   * Query keys replaced when merging occupancy into a checkout redirect URL.
+   */
+  function itm_hotel_booking_portal_occupancy_query_strip_keys() {
+    return [
+      'rooms', 'adults', 'children', 'babies', 'rate',
+      'use_points', 'travel_agents', 'aaa_rate', 'senior_rate', 'gov_military',
+      'promo_code', 'group_code', 'corporate_account', 'member_account', 'internal_rate_code',
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_merge_occupancy_into_url')) {
+  /**
+   * Why: Checkout steps 2–4 must redirect with updated occupancy query params, not stale window.location.href values.
+   */
+  function itm_hotel_booking_portal_merge_occupancy_into_url($url, array $occupancy) {
+    $url = trim((string) $url);
+    if ($url === '') {
+      return '';
+    }
+    $occParams = itm_hotel_booking_portal_occupancy_query_params($occupancy);
+    $internalCode = itm_hotel_booking_normalize_internal_rate_code($occupancy['internal_rate_code'] ?? '');
+    if ($internalCode !== '') {
+      $occParams['internal_rate_code'] = $internalCode;
+    }
+    $parts = parse_url($url);
+    if ($parts === false || empty($parts['path'])) {
+      return '';
+    }
+    $query = [];
+    if (!empty($parts['query'])) {
+      parse_str($parts['query'], $query);
+    }
+    foreach (itm_hotel_booking_portal_occupancy_query_strip_keys() as $key) {
+      unset($query[$key]);
+    }
+    $query = array_merge($query, $occParams);
+    $scheme = !empty($parts['scheme']) ? $parts['scheme'] . '://' : '';
+    $host = (string) ($parts['host'] ?? '');
+    $port = isset($parts['port']) ? ':' . (int) $parts['port'] : '';
+    $path = (string) $parts['path'];
+    $fragment = isset($parts['fragment']) ? '#' . $parts['fragment'] : '';
+    return $scheme . $host . $port . $path . '?' . http_build_query($query) . $fragment;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_checkout_redirect_url_allowed')) {
+  /**
+   * Accept same booking portal path even when http/https scheme differs from APPURL.
+   */
+  function itm_hotel_booking_portal_checkout_redirect_url_allowed($url) {
+    $url = trim((string) $url);
+    if ($url === '' || !defined('APPURL')) {
+      return false;
+    }
+    if (strpos($url, APPURL) === 0) {
+      return true;
+    }
+    $appParts = parse_url(APPURL);
+    $urlParts = parse_url($url);
+    if ($appParts === false || $urlParts === false) {
+      return false;
+    }
+    $appHost = strtolower((string) ($appParts['host'] ?? ''));
+    $urlHost = strtolower((string) ($urlParts['host'] ?? ''));
+    if ($appHost === '' || $appHost !== $urlHost) {
+      return false;
+    }
+    $appPath = rtrim((string) ($appParts['path'] ?? ''), '/');
+    $urlPath = (string) ($urlParts['path'] ?? '');
+    if ($appPath !== '' && strpos($urlPath, $appPath) !== 0) {
+      return false;
+    }
+    return strpos($urlPath, '/rooms') !== false || strpos($urlPath, '/rooms.php') !== false;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_build_select_rate_redirect_url')) {
+  function itm_hotel_booking_portal_build_select_rate_redirect_url($roomId, $checkIn, $nights, array $occupancy) {
+    if (!defined('APPURL')) {
+      return '';
+    }
+    return APPURL . '/rooms/select-rate.php?' . http_build_query(array_merge(
+      ['id' => (int) $roomId, 'check_in' => (string) $checkIn, 'nights' => max(1, (int) $nights)],
+      itm_hotel_booking_portal_occupancy_query_params($occupancy)
+    ));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_resolve_checkout_page_occupancy')) {
+  /**
+   * Prefer draft occupancy on checkout steps 2–4 when stay context matches (after AJAX apply + reload).
+   */
+  function itm_hotel_booking_portal_resolve_checkout_page_occupancy(array $urlOccupancy, array $activeDraft, $hotelId, $checkInIso, $nights, array $limits) {
+    $occ = itm_hotel_booking_portal_parse_occupancy($urlOccupancy, $limits);
+    if ($activeDraft === []
+      || (int) ($activeDraft['hotel_id'] ?? 0) !== (int) $hotelId
+      || (string) ($activeDraft['check_in'] ?? '') !== (string) $checkInIso
+      || max(1, (int) ($activeDraft['nights'] ?? 1)) !== max(1, (int) $nights)
+      || empty($activeDraft['occupancy'])) {
+      return $occ;
+    }
+    return itm_hotel_booking_portal_parse_occupancy($activeDraft['occupancy'], $limits);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_occupancy_label')) {
   function itm_hotel_booking_portal_occupancy_label(array $occupancy) {
     $rooms = (int) ($occupancy['rooms'] ?? 1);
@@ -4754,7 +4862,23 @@ if (!function_exists('itm_hotel_booking_portal_apply_checkout_occupancy_change')
     $nights = max(1, (int) ($draft['nights'] ?? 1));
     $checkOut = (string) ($draft['check_out'] ?? '');
     if ($companyId < 1 || $hotelId < 1 || $checkIn === '' || $checkOut === '' || $checkOut <= $checkIn) {
-      return ['ok' => false, 'error' => 'Checkout session expired. Please start again.', 'restart' => true];
+      $limitsEarly = itm_hotel_booking_portal_default_occupancy_limits();
+      $occEarly = itm_hotel_booking_portal_parse_occupancy($source, $limitsEarly);
+      $restartEarly = itm_hotel_booking_portal_build_rooms_restart_url(max(1, $hotelId), $checkIn, $nights, $occEarly);
+      if ($restartEarly === '' && (int) ($options['room_id'] ?? 0) > 0) {
+        $restartEarly = itm_hotel_booking_portal_build_select_rate_redirect_url(
+          (int) $options['room_id'],
+          $checkIn !== '' ? $checkIn : date('Y-m-d'),
+          $nights,
+          $occEarly
+        );
+      }
+      return [
+        'ok' => false,
+        'error' => 'Checkout session expired. Please start again.',
+        'restart' => true,
+        'redirect_url' => $restartEarly,
+      ];
     }
 
     $limits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $companyId, $hotelId);
@@ -4859,10 +4983,24 @@ if (!function_exists('itm_hotel_booking_portal_apply_checkout_occupancy_change')
 
     itm_hotel_booking_portal_draft_save($draft);
 
+    $redirectOut = (string) ($options['redirect_url'] ?? '');
+    if ($redirectOut !== '' && itm_hotel_booking_portal_checkout_redirect_url_allowed($redirectOut)) {
+      $redirectOut = itm_hotel_booking_portal_merge_occupancy_into_url($redirectOut, $newOcc);
+    } elseif ((int) ($options['room_id'] ?? 0) > 0) {
+      $redirectOut = itm_hotel_booking_portal_build_select_rate_redirect_url(
+        (int) $options['room_id'],
+        $checkIn,
+        $nights,
+        $newOcc
+      );
+    } else {
+      $redirectOut = itm_hotel_booking_portal_build_rooms_restart_url($hotelId, $checkIn, $nights, $newOcc);
+    }
+
     return [
       'ok' => true,
       'occupancy_label' => itm_hotel_booking_portal_occupancy_label($newOcc),
-      'redirect_url' => (string) ($options['redirect_url'] ?? ''),
+      'redirect_url' => $redirectOut,
     ];
   }
 }

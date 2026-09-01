@@ -281,6 +281,14 @@ if ($upgradeOffer) {
 }
 $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 3);
 $occupancyLimits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $company_id, $hotelId);
+$occupancy = itm_hotel_booking_portal_resolve_checkout_page_occupancy(
+    array_merge($_GET, is_array($occupancy) ? $occupancy : []),
+    is_array($draft) ? $draft : [],
+    $hotelId,
+    $checkInIso,
+    $nights,
+    $occupancyLimits
+);
 $occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy, $occupancyLimits);
 ?>
 <!DOCTYPE html>
