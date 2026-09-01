@@ -40,17 +40,35 @@ if (!function_exists('itm_it_settings_save_chat_same_tenant')) {
             return false;
         }
 
-        $sql = 'UPDATE it_settings SET chat_same_tenant = ?, updated_by = ? WHERE company_id = ? AND deleted_at IS NULL LIMIT 1';
+        // Why: Settings saves even when only other UI fields change; MySQL reports 0 affected rows when the flag is unchanged.
+        $sql = 'UPDATE it_settings SET chat_same_tenant = ?, updated_by = ?, active = 1, deleted_at = NULL, deleted_by = NULL WHERE company_id = ? LIMIT 1';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             return false;
         }
         mysqli_stmt_bind_param($stmt, 'iii', $flag, $employeeId, $companyId);
-        mysqli_stmt_execute($stmt);
+        $ok = mysqli_stmt_execute($stmt);
+        $errno = mysqli_stmt_errno($stmt);
         $affected = mysqli_stmt_affected_rows($stmt);
         mysqli_stmt_close($stmt);
-
+        if (!$ok || $errno !== 0) {
+            return false;
+        }
         if ($affected > 0) {
+            return true;
+        }
+
+        $sqlChk = 'SELECT chat_same_tenant FROM it_settings WHERE company_id = ? AND deleted_at IS NULL LIMIT 1';
+        $stmtChk = mysqli_prepare($conn, $sqlChk);
+        if (!$stmtChk) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmtChk, 'i', $companyId);
+        mysqli_stmt_execute($stmtChk);
+        $resChk = mysqli_stmt_get_result($stmtChk);
+        $rowChk = $resChk ? mysqli_fetch_assoc($resChk) : null;
+        mysqli_stmt_close($stmtChk);
+        if (is_array($rowChk) && (int)($rowChk['chat_same_tenant'] ?? -1) === $flag) {
             return true;
         }
 
@@ -60,8 +78,9 @@ if (!function_exists('itm_it_settings_save_chat_same_tenant')) {
             return false;
         }
         mysqli_stmt_bind_param($stmtIns, 'iii', $companyId, $flag, $employeeId);
-        $ok = mysqli_stmt_execute($stmtIns);
+        $okIns = mysqli_stmt_execute($stmtIns);
+        $errnoIns = mysqli_stmt_errno($stmtIns);
         mysqli_stmt_close($stmtIns);
-        return $ok;
+        return $okIns && $errnoIns === 0;
     }
 }
