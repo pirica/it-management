@@ -67,7 +67,7 @@ if (!$draft || empty($draft['hotel_id'])) {
 if ($hotelId < 1) {
     $hotelId = (int) ($draft['hotel_id'] ?? 0);
 }
-if ($checkInParam === '' && !empty($draft['check_in'])) {
+    if ($checkInParam === '' && !empty($draft['check_in'])) {
     $checkInParam = (string) $draft['check_in'];
 }
 if (!empty($draft['nights'])) {
@@ -80,6 +80,14 @@ if (!itm_hotel_booking_portal_checkout_redirect_url_allowed($redirectUrl)) {
 }
 
 $effectiveRoomId = $roomId > 0 ? $roomId : (int) ($draft['room_id'] ?? 0);
+$checkoutStep = strtolower(trim((string) ($_POST['checkout_step'] ?? '')));
+if ($checkoutStep === '' && $redirectUrl !== '') {
+    if (strpos($redirectUrl, '/rooms/customize.php') !== false) {
+        $checkoutStep = 'customize';
+    } elseif (strpos($redirectUrl, '/rooms/room-single.php') !== false) {
+        $checkoutStep = 'room_single';
+    }
+}
 
 $result = itm_hotel_booking_portal_apply_checkout_occupancy_change(
     $conn,
@@ -90,6 +98,7 @@ $result = itm_hotel_booking_portal_apply_checkout_occupancy_change(
     [
         'redirect_url' => $redirectUrl,
         'room_id' => $effectiveRoomId,
+        'checkout_step' => $checkoutStep,
     ]
 );
 

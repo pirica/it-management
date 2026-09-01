@@ -56,10 +56,25 @@ $accessibilityPepUrl = itm_hotel_booking_portal_accessibility_pep_url_from_setti
 $accessibilityPepRequired = itm_hotel_booking_portal_accessibility_pep_required($accessibilityNeed);
 $customizeErrors = [];
 $roomTypeId = (int) ($room['room_type_id'] ?? 0);
-$discountPercent = (float) ($draft['discount_percent'] ?? 0);
-$surchargePercent = (float) ($draft['surcharge_percent'] ?? 0);
-$basePerNight = (float) ($draft['base_price_per_night'] ?? $room['price_per_night']);
 $touristTaxPerPerson = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
+// Why: Reservation summary and stay bar must share resolved occupancy and refreshed draft pricing before breakdown.
+$summaryPrepared = itm_hotel_booking_portal_prepare_checkout_summary(
+    $conn,
+    $company_id,
+    $room,
+    $draft,
+    array_merge($_GET, is_array($occupancy) ? $occupancy : []),
+    $checkInIso,
+    $nights,
+    $settings
+);
+$occupancy = $summaryPrepared['occupancy'];
+$draft = $summaryPrepared['draft'];
+$discountPercent = (float) $summaryPrepared['discount_percent'];
+$surchargePercent = (float) $summaryPrepared['surcharge_percent'];
+$basePerNight = (float) $summaryPrepared['base_per_night'];
+$occupancyLimits = $summaryPrepared['occupancy_limits'];
+itm_hotel_booking_portal_draft_save($draft);
 
 $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
 $roomLinesContext = itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkInIso, $nights, $occupancy);
@@ -280,16 +295,6 @@ if ($upgradeOffer) {
     }
 }
 $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 3);
-$occupancyLimits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $company_id, $hotelId);
-$occupancy = itm_hotel_booking_portal_resolve_checkout_page_occupancy(
-    array_merge($_GET, is_array($occupancy) ? $occupancy : []),
-    is_array($draft) ? $draft : [],
-    $hotelId,
-    $checkInIso,
-    $nights,
-    $occupancyLimits
-);
-$occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy, $occupancyLimits);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -446,6 +451,7 @@ window.HB_CUSTOMIZE_ROOM_DETAIL = <?php echo json_encode([
     'occupancy' => $occupancy,
     'occupancyLimits' => $occupancyLimits,
     'settings' => $settings,
+    'checkoutStep' => 'customize',
 ]); ?>
 </body>
 </html>

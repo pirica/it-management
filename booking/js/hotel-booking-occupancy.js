@@ -163,8 +163,11 @@
     if (cfg.checkInIso) {
       payload.append('check_in', cfg.checkInIso);
     }
-    if (cfg.nights) {
+    if ($cfg.nights) {
       payload.append('nights', String(cfg.nights));
+    }
+    if (cfg.checkoutStep) {
+      payload.append('checkout_step', String(cfg.checkoutStep));
     }
     payload.append('redirect_url', window.location.href);
 

@@ -126,4 +126,74 @@ final class HotelBookingCheckoutOccupancyTest extends TestCase
         $this->assertStringContainsString('rooms.php', (string) $result['redirect_url']);
         $this->assertStringContainsString('rooms=2', (string) $result['redirect_url']);
     }
+
+    public function testPrepareCheckoutSummaryLowersTouristTaxWhenAdultsDecrease(): void
+    {
+        global $conn;
+        if (!$conn) {
+            $this->markTestSkipped('Database connection unavailable');
+        }
+        $draft = [
+            'company_id' => 1,
+            'hotel_id' => 1,
+            'check_in' => '2026-09-30',
+            'check_out' => '2026-10-01',
+            'nights' => 1,
+            'occupancy' => ['rooms' => 2, 'adults' => 2, 'children' => 0, 'babies' => 0],
+            'rate_plan' => 'room_only',
+        ];
+        $room = ['hotel_id' => 1, 'price_per_night' => 100.0];
+        $settings = [];
+        $preparedTwo = itm_hotel_booking_portal_prepare_checkout_summary(
+            $conn,
+            1,
+            $room,
+            $draft,
+            ['rooms' => 2, 'adults' => 2, 'children' => 0, 'babies' => 0],
+            '2026-09-30',
+            1,
+            $settings
+        );
+        $preparedOne = itm_hotel_booking_portal_prepare_checkout_summary(
+            $conn,
+            1,
+            $room,
+            $draft,
+            ['rooms' => 2, 'adults' => 1, 'children' => 0, 'babies' => 0],
+            '2026-09-30',
+            1,
+            $settings
+        );
+        $breakdownTwo = itm_hotel_booking_portal_checkout_breakdown(
+            (float) $preparedTwo['base_per_night'],
+            '2026-09-30',
+            '2026-10-01',
+            $preparedTwo['occupancy'],
+            (float) $preparedTwo['discount_percent'],
+            $preparedTwo['draft'],
+            2.0
+        );
+        $breakdownOne = itm_hotel_booking_portal_checkout_breakdown(
+            (float) $preparedOne['base_per_night'],
+            '2026-09-30',
+            '2026-10-01',
+            $preparedOne['occupancy'],
+            (float) $preparedOne['discount_percent'],
+            $preparedOne['draft'],
+            2.0
+        );
+        $this->assertSame(2, (int) ($preparedTwo['occupancy']['adults'] ?? 0));
+        $this->assertSame(1, (int) ($preparedOne['occupancy']['adults'] ?? 0));
+        $this->assertGreaterThan((float) ($breakdownOne['tourist_tax'] ?? 0), (float) ($breakdownTwo['tourist_tax'] ?? 0));
+    }
+
+    public function testBuildCustomizeRedirectUrlIncludesOccupancy(): void
+    {
+        $url = itm_hotel_booking_portal_build_customize_redirect_url(
+            ['rooms' => 2, 'adults' => 1, 'children' => 0, 'babies' => 0]
+        );
+        $this->assertStringContainsString('customize.php', $url);
+        $this->assertStringContainsString('rooms=2', $url);
+        $this->assertStringContainsString('adults=1', $url);
+    }
 }
