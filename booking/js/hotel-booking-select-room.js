@@ -574,11 +574,16 @@
   var occApply = document.getElementById('hb-occupancy-apply');
   if (occApply) {
     occApply.addEventListener('click', function () {
+      var roomsEl = document.getElementById('hb-occ-rooms');
+      var adultsEl = document.getElementById('hb-occ-adults');
+      var childrenEl = document.getElementById('hb-occ-children');
+      var babiesEl = document.getElementById('hb-occ-babies');
+      closeModal('hb-occupancy-modal');
       reloadWith({
-        rooms: parseIntSafe(document.getElementById('hb-occ-rooms').value, 1),
-        adults: parseIntSafe(document.getElementById('hb-occ-adults').value, 1),
-        children: parseIntSafe(document.getElementById('hb-occ-children').value, 0),
-        babies: parseIntSafe(document.getElementById('hb-occ-babies').value, 0)
+        rooms: parseIntSafe(roomsEl && roomsEl.value, 1),
+        adults: parseIntSafe(adultsEl && adultsEl.value, 1),
+        children: parseIntSafe(childrenEl && childrenEl.value, 0),
+        babies: parseIntSafe(babiesEl && babiesEl.value, 0)
       });
     });
   }

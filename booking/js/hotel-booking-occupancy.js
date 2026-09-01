@@ -163,7 +163,7 @@
     if (cfg.checkInIso) {
       payload.append('check_in', cfg.checkInIso);
     }
-    if ($cfg.nights) {
+    if (cfg.nights) {
       payload.append('nights', String(cfg.nights));
     }
     if (cfg.checkoutStep) {
