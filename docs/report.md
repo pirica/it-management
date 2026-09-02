@@ -2,6 +2,7 @@
 
 **Application:** IT Management System (multi-tenant PHP/MySQL)  
 **Assessment date:** 2026-08-31  
+**Report revision:** 2026-09-02 (post-assessment remediations reflected in finding **Date updated** fields and regression verifier labels)  
 **Assessment type:** Read-only static analysis and configuration review (no destructive testing, no code or data modifications)  
 **Repository scope:** Full project tree (`config/`, `includes/`, `modules/`, `scripts/`, `booking/`, `js/`, `db/`, root entry points)
 
@@ -56,8 +57,8 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 | Label | Meaning | Findings |
 |-------|---------|----------|
-| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 009–010, 012–014, 016 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008, 011, 015 |
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–014, 016 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008, 015 |
 | **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
@@ -255,7 +256,7 @@ When `enable_all_error_reporting` is enabled, the application sets `display_erro
 
 **Evidence (current — remediated):**
 
-```650:655:config/config.php
+```647:652:config/config.php
 if (($ui_config['enable_all_error_reporting'] ?? 0) === 1) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -315,7 +316,7 @@ if (PHP_SAPI !== 'cli') {
 ### ITM-PENTEST-008 Maintenance / localhost authentication bypass for QA scripts
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — localhost / maintenance-token skip at `config/config.php` lines **543–547** (`$itmIsLocalhost`, `hash_equals($itmMaintToken, …)`); browser QA allowlist in `scripts/lib/itm_script_bootstrap.php` includes `module_browser_qa_runner.php` and `run_tests.php`. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Confirmed** — expect **`[OPEN]`** in `php scripts/verify_pentest_report.php`. `itm_script_browser_maintenance_skip_web_auth_applies()` in `scripts/lib/itm_script_bootstrap.php` (localhost `REMOTE_ADDR` or `hash_equals` on `ITM_MAINTENANCE_TOKEN`); `config/config.php` sets `$itmSkipWebAuth` when that helper returns true (~543–546). Allowlist includes `module_browser_qa_runner.php` and `run_tests.php`.
 
 **Severity:** Medium  
 **OWASP Category:** A01:2021 – Broken Access Control  
@@ -329,10 +330,19 @@ if (PHP_SAPI !== 'cli') {
 
 **Evidence:**
 
-```541:547:config/config.php
-        if ($itmIsLocalhost || ($itmMaintToken !== '' && hash_equals($itmMaintToken, (string)$itmProvidedToken))) {
-            $itmSkipWebAuth = true;
-        }
+```364:370:scripts/lib/itm_script_bootstrap.php
+        return $isLocalhost
+            || ($maintToken !== '' && hash_equals($maintToken, $providedToken));
+```
+
+```541:546:config/config.php
+if (
+    !$itmSkipWebAuth
+    && function_exists('itm_script_browser_maintenance_skip_web_auth_applies')
+    && itm_script_browser_maintenance_skip_web_auth_applies()
+) {
+    $itmSkipWebAuth = true;
+}
 ```
 
 Allowlist: `scripts/lib/itm_script_bootstrap.php` → `module_browser_qa_runner.php`, `run_tests.php`.
