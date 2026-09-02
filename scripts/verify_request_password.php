@@ -115,10 +115,13 @@ if ($indexCode === '') {
     } else {
         rpw_verify_pass('index.php enforces RBAC via itm_require_crud_role_module_permission().');
     }
-    if (strpos($indexCode, 'hash_hmac') === false || strpos($indexCode, 'hash_equals') === false) {
+    if (
+        strpos($indexCode, 'itm_request_password_approval_verify_token') === false
+        && (strpos($indexCode, 'hash_hmac') === false || strpos($indexCode, 'hash_equals') === false)
+    ) {
         rpw_verify_fail('index.php missing HMAC approval token verification.');
     } else {
-        rpw_verify_pass('index.php uses HMAC + hash_equals for approval links.');
+        rpw_verify_pass('index.php uses HMAC approval token verification (helper or inline).');
     }
     if (strpos($indexCode, 'data-itm-db-import-endpoint="index.php"') === false) {
         rpw_verify_fail('index.php list table missing data-itm-db-import-endpoint="index.php".');
@@ -160,11 +163,27 @@ if ($secret === '') {
     rpw_verify_fail('ITM_REQUEST_PASSWORD_APPROVAL_SECRET is not set (see .env.example).');
 }
 $recordId = 42;
-$token = hash_hmac('sha256', $recordId . 'hr' . 'approve', $secret);
-if (!hash_equals($token, hash_hmac('sha256', (string)$recordId . 'hr' . 'approve', $secret))) {
-    rpw_verify_fail('HMAC approval token contract mismatch.');
+$approverEmployeeId = 99;
+$token = itm_request_password_approval_sign_token($recordId, 'hr', 'approve', $approverEmployeeId);
+if ($token === '' || !itm_request_password_approval_verify_token($recordId, 'hr', 'approve', $approverEmployeeId, $token)) {
+    rpw_verify_fail('HMAC approval token contract mismatch (approver-bound).');
 } else {
-    rpw_verify_pass('HMAC approval token contract OK.');
+    rpw_verify_pass('HMAC approval token contract OK (approver employee id bound).');
+}
+if (strpos($indexCode, 'approval_api') !== false) {
+    rpw_verify_fail('index.php must not use state-changing approval_api GET links.');
+} else {
+    rpw_verify_pass('index.php has no approval_api GET handler.');
+}
+if (strpos($indexCode, 'approval_confirm') === false || strpos($indexCode, 'approval_submit') === false) {
+    rpw_verify_fail('index.php missing approval_confirm GET or approval_submit POST flow.');
+} else {
+    rpw_verify_pass('index.php uses approval_confirm + approval_submit flow.');
+}
+if (strpos($indexCode, 'itm_request_password_approval_employee_may_act') === false) {
+    rpw_verify_fail('index.php missing designated approver employee gate.');
+} else {
+    rpw_verify_pass('index.php enforces designated approver employee gate.');
 }
 
 if (!rpw_verify_can_delete_request(['created_by' => 10, 'employee_id' => 11], 10)) {

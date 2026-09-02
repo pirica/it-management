@@ -46,45 +46,177 @@ function cr_format_date($date) {
 }
 
 /**
- * Handle Approval API from Email
+ * Apply HR/HOD approval decision (POST + CSRF; designated approver only).
+ *
+ * @return bool true when response was sent
  */
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
-    $recordId = (int)$_GET['id'];
-    $target = $_GET['target']; // hr, hod
-    $decision = $_GET['decision']; // approve, decline
-    $token = $_GET['token'];
-
-    // Verify token
-    $secret = itm_request_password_approval_secret();
-    if ($secret === '') {
-        header('Content-Type: text/html; charset=utf-8');
-        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Authorization link</title></head><body><p>Approval links are not configured. Contact your administrator.</p></body></html>';
-        exit;
-    }
-    $expectedToken = hash_hmac('sha256', $recordId . $target . $decision, $secret);
-
-    if (!hash_equals($expectedToken, $token)) {
-        header('Content-Type: text/html; charset=utf-8');
-        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Authorization link</title></head><body><p>Invalid or expired authorization link.</p></body></html>';
-        exit;
+function rp_process_approval_decision(mysqli $conn, $companyId, $sessionEmployeeId, $recordId, $target, $decision, $approverEmployeeId, $token)
+{
+    if (itm_request_password_approval_secret() === '') {
+        itm_request_password_approval_render_message_page(
+            'Authorization link',
+            '<p>Approval links are not configured. Contact your administrator.</p>'
+        );
+        return true;
     }
 
-    $statusField = ($target == 'hr') ? 'hr_approval_status' : 'hod_approval_status';
-    $dateField = ($target == 'hr') ? 'hr_signature_date' : 'hod_signature_date';
-    $statusValue = ($decision == 'approve') ? 'Approved' : 'Declined';
+    if (!itm_request_password_approval_verify_token($recordId, $target, $decision, $approverEmployeeId, $token)) {
+        itm_request_password_approval_render_message_page(
+            'Authorization link',
+            '<p>Invalid or expired authorization link.</p>'
+        );
+        return true;
+    }
 
-    // Why: Use prepared statements to prevent SQL injection and enforce multi-tenancy.
-    $sql = "UPDATE request_password SET $statusField = ?, $dateField = CURDATE() WHERE id = ? AND company_id = ?";
+    if (!itm_request_password_approval_employee_may_act($conn, (int) $companyId, (int) $sessionEmployeeId, $target, (int) $approverEmployeeId)) {
+        itm_request_password_approval_render_message_page(
+            'Authorization link',
+            '<p>You are not authorized to approve this request. Sign in as the designated '
+            . htmlspecialchars(itm_request_password_approver_type_description($target), ENT_QUOTES, 'UTF-8')
+            . ' approver.</p>'
+        );
+        return true;
+    }
+
+    $statusField = ($target === 'hr') ? 'hr_approval_status' : 'hod_approval_status';
+    $dateField = ($target === 'hr') ? 'hr_signature_date' : 'hod_signature_date';
+    $statusValue = ($decision === 'approve') ? 'Approved' : 'Declined';
+
+    $sql = "UPDATE request_password SET $statusField = ?, $dateField = CURDATE() WHERE id = ? AND company_id = ? AND deleted_at IS NULL";
     $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, 'sii', $statusValue, $recordId, $company_id);
-
-    if (mysqli_stmt_execute($stmt)) {
-        itm_approval_inbox_sync_module_record($conn, $company_id, 'request_password', $recordId);
-        echo "<h2>Request " . htmlspecialchars($statusValue) . "</h2>";
-        echo "<p>The password request has been updated. You may close this window.</p>";
-    } else {
-        echo "Error updating status: " . mysqli_error($conn);
+    if (!$stmt) {
+        itm_request_password_approval_render_message_page(
+            'Authorization link',
+            '<p>Unable to save approval decision.</p>'
+        );
+        return true;
     }
+    mysqli_stmt_bind_param($stmt, 'sii', $statusValue, $recordId, $companyId);
+    if (mysqli_stmt_execute($stmt)) {
+        itm_approval_inbox_sync_module_record($conn, (int) $companyId, 'request_password', (int) $recordId);
+        itm_request_password_approval_render_message_page(
+            'Request ' . $statusValue,
+            '<h2>Request ' . htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8') . '</h2>'
+            . '<p>The password request has been updated. You may close this window.</p>'
+        );
+    } else {
+        itm_request_password_approval_render_message_page(
+            'Authorization link',
+            '<p>Error updating status.</p>'
+        );
+    }
+    mysqli_stmt_close($stmt);
+
+    return true;
+}
+
+/**
+ * Handle approval POST from email confirmation form (CSRF + approver binding).
+ */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approval_submit'])) {
+    itm_require_post_csrf();
+    $recordId = (int) ($_POST['id'] ?? 0);
+    $target = strtolower(trim((string) ($_POST['target'] ?? '')));
+    $decision = strtolower(trim((string) ($_POST['decision'] ?? '')));
+    $approverEmployeeId = (int) ($_POST['approver'] ?? 0);
+    $token = trim((string) ($_POST['token'] ?? ''));
+
+    if (
+        rp_process_approval_decision(
+            $conn,
+            (int) $company_id,
+            (int) ($_SESSION['employee_id'] ?? 0),
+            $recordId,
+            $target,
+            $decision,
+            $approverEmployeeId,
+            $token
+        )
+    ) {
+        exit;
+    }
+}
+
+/**
+ * Handle approval link landing from email (GET confirm only — no state change).
+ */
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_confirm'])) {
+    $recordId = (int) ($_GET['id'] ?? 0);
+    $target = strtolower(trim((string) ($_GET['target'] ?? '')));
+    $decision = strtolower(trim((string) ($_GET['decision'] ?? '')));
+    $approverEmployeeId = (int) ($_GET['approver'] ?? 0);
+    $token = trim((string) ($_GET['token'] ?? ''));
+
+    if (itm_request_password_approval_secret() === '') {
+        itm_request_password_approval_render_message_page(
+            'Authorization link',
+            '<p>Approval links are not configured. Contact your administrator.</p>'
+        );
+        exit;
+    }
+
+    if (
+        $recordId <= 0
+        || !itm_request_password_approval_target_is_valid($target)
+        || !itm_request_password_approval_decision_is_valid($decision)
+        || $approverEmployeeId <= 0
+        || $token === ''
+        || !itm_request_password_approval_verify_token($recordId, $target, $decision, $approverEmployeeId, $token)
+    ) {
+        itm_request_password_approval_render_message_page(
+            'Authorization link',
+            '<p>Invalid or expired authorization link.</p>'
+        );
+        exit;
+    }
+
+    if (!itm_request_password_approval_employee_may_act(
+        $conn,
+        (int) $company_id,
+        (int) ($_SESSION['employee_id'] ?? 0),
+        $target,
+        $approverEmployeeId
+    )) {
+        itm_request_password_approval_render_message_page(
+            'Authorization link',
+            '<p>You are not authorized to approve this request. Sign in as the designated '
+            . htmlspecialchars(itm_request_password_approver_type_description($target), ENT_QUOTES, 'UTF-8')
+            . ' approver.</p>'
+        );
+        exit;
+    }
+
+    $applicantName = '';
+    $application = '';
+    $detailStmt = mysqli_prepare(
+        $conn,
+        'SELECT rp.application, e.first_name, e.last_name
+         FROM request_password rp
+         JOIN employees e ON rp.employee_id = e.id
+         WHERE rp.id = ? AND rp.company_id = ? AND rp.deleted_at IS NULL
+         LIMIT 1'
+    );
+    if ($detailStmt) {
+        mysqli_stmt_bind_param($detailStmt, 'ii', $recordId, $company_id);
+        mysqli_stmt_execute($detailStmt);
+        $detailRow = mysqli_fetch_assoc(mysqli_stmt_get_result($detailStmt));
+        mysqli_stmt_close($detailStmt);
+        if (is_array($detailRow)) {
+            $application = (string) ($detailRow['application'] ?? '');
+            $applicantName = trim((string) ($detailRow['first_name'] ?? '') . ' ' . (string) ($detailRow['last_name'] ?? ''));
+        }
+    }
+
+    itm_request_password_approval_render_confirm_form([
+        'record_id' => $recordId,
+        'target' => $target,
+        'decision' => $decision,
+        'approver_employee_id' => $approverEmployeeId,
+        'token' => $token,
+        'applicant_name' => $applicantName,
+        'application' => $application,
+        'csrf_token' => itm_get_csrf_token(),
+    ]);
     exit;
 }
 
@@ -124,11 +256,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email_action']))
     }
 
     if ($action == 'hr' || $action == 'hod') {
-        $approveToken = hash_hmac('sha256', $recordId . $action . 'approve', $secret);
-        $declineToken = hash_hmac('sha256', $recordId . $action . 'decline', $secret);
+        // Find approver email and employee id from approvers table
+        $approverTypeDesc = ($action == 'hr') ? 'HRD Approval' : 'HOD Approval';
+        $approverSql = "SELECT a.employee_id, e.work_email, e.personal_email FROM approvers a
+                        JOIN employees e ON a.employee_id = e.id
+                        JOIN approver_type at ON a.approver_type_id = at.id
+                        WHERE a.company_id = ? AND at.approver_type_description = ? LIMIT 1";
+        $aStmt = mysqli_prepare($conn, $approverSql);
+        mysqli_stmt_bind_param($aStmt, 'is', $company_id, $approverTypeDesc);
+        mysqli_stmt_execute($aStmt);
+        $approver = mysqli_fetch_assoc(mysqli_stmt_get_result($aStmt));
+        mysqli_stmt_close($aStmt);
+        $approverEmployeeId = (int) ($approver['employee_id'] ?? 0);
+        $toEmail = $approver ? ($approver['work_email'] ?: $approver['personal_email']) : '';
 
-        $approveUrl = BASE_URL . "modules/request_password/index.php?approval_api=1&id=$recordId&target=$action&decision=approve&token=$approveToken";
-        $declineUrl = BASE_URL . "modules/request_password/index.php?approval_api=1&id=$recordId&target=$action&decision=decline&token=$declineToken";
+        if ($approverEmployeeId <= 0 || $toEmail === '') {
+            $_SESSION['crud_error'] = "No approver found for $approverTypeDesc. Please check 'Approvers' settings.";
+            header("Location: view.php?id=$recordId");
+            exit;
+        }
+
+        $approveToken = itm_request_password_approval_sign_token($recordId, $action, 'approve', $approverEmployeeId);
+        $declineToken = itm_request_password_approval_sign_token($recordId, $action, 'decline', $approverEmployeeId);
+
+        $approveUrl = BASE_URL . 'modules/request_password/index.php?approval_confirm=1'
+            . '&id=' . (int) $recordId
+            . '&target=' . rawurlencode($action)
+            . '&decision=approve'
+            . '&approver=' . $approverEmployeeId
+            . '&token=' . rawurlencode($approveToken);
+        $declineUrl = BASE_URL . 'modules/request_password/index.php?approval_confirm=1'
+            . '&id=' . (int) $recordId
+            . '&target=' . rawurlencode($action)
+            . '&decision=decline'
+            . '&approver=' . $approverEmployeeId
+            . '&token=' . rawurlencode($declineToken);
 
         $message = "<h2>Password Change Request</h2>";
         $message .= "<p>A password change request has been submitted by <strong>$applicantName</strong> for the application: <strong>" . htmlspecialchars($record['application']) . "</strong>.</p>";
@@ -137,24 +299,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email_action']))
         $message .= "<p><a href='$approveUrl' style='background-color: #2da44e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Authorize Request</a></p>";
         $message .= "<p><a href='$declineUrl' style='background-color: #cf222e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Decline Request</a></p>";
 
-        // Find approver email from approvers table
-        $approverTypeDesc = ($action == 'hr') ? 'HRD Approval' : 'HOD Approval';
-        $approverSql = "SELECT e.work_email, e.personal_email FROM approvers a
-                        JOIN employees e ON a.employee_id = e.id
-                        JOIN approver_type at ON a.approver_type_id = at.id
-                        WHERE a.company_id = ? AND at.approver_type_description = ? LIMIT 1";
-        $aStmt = mysqli_prepare($conn, $approverSql);
-        mysqli_stmt_bind_param($aStmt, 'is', $company_id, $approverTypeDesc);
-        mysqli_stmt_execute($aStmt);
-        $approver = mysqli_fetch_assoc(mysqli_stmt_get_result($aStmt));
-        $toEmail = $approver ? ($approver['work_email'] ?: $approver['personal_email']) : '';
-
         if ($toEmail) {
             itm_send_email($toEmail, $subject, $message, $company_id);
             itm_approval_inbox_sync_module_record($conn, $company_id, 'request_password', $recordId);
             $_SESSION['crud_success'] = "Email sent to $approverTypeDesc for authorization.";
-        } else {
-            $_SESSION['crud_error'] = "No approver found for $approverTypeDesc. Please check 'Approvers' settings.";
         }
     } elseif ($action == 'ism') {
         $message = "<h2>Password Request Processed</h2>";
