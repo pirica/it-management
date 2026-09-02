@@ -56,8 +56,8 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 | Label | Meaning | Findings |
 |-------|---------|----------|
-| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 007–016 |
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–016 |
 | **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
@@ -75,7 +75,7 @@ Examples:
 | ------------- | ----- |
 | Critical      | 0     |
 | High          | 1     |
-| Medium        | 8     |
+| Medium        | 7     |
 | Low           | 5     |
 | Informational | 6     |
 
@@ -278,28 +278,37 @@ if (($ui_config['enable_all_error_reporting'] ?? 0) === 1) {
 
 ### ITM-PENTEST-007 Missing standard HTTP security headers
 
+**Status:** **Remediated** — `itm_send_security_headers()` in `includes/itm_security_headers.php`, invoked from `config/config.php` on every web request before `session_start()`.  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — repository-wide grep of `includes/*.php` finds no `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, or `Referrer-Policy`; no central helper in `config/config.php` or `includes/header.php`. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. Headers: `Content-Security-Policy` (pragmatic: `'self'`, `'unsafe-inline'`, `https://cdn.jsdelivr.net`), `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security: max-age=31536000` when the request is HTTPS (including `X-Forwarded-Proto=https`).
 
-**Severity:** Medium  
+**Severity:** Medium (was open; remediated in application bootstrap)  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
 **Affected Component:** Global HTTP responses  
-**Affected File:** `config/config.php`, `includes/header.php` (no central security header helper found)  
-**Affected Function:** N/A  
+**Affected File:** `includes/itm_security_headers.php`, `config/config.php`  
+**Affected Function:** `itm_send_security_headers()`, `itm_build_content_security_policy()`  
 **Affected Parameter:** N/A
 
 **Description:**  
-Repository-wide search found **no** implementation of `Content-Security-Policy`, `X-Frame-Options` / `frame-ancestors`, `X-Content-Type-Options`, `Referrer-Policy`, or `Strict-Transport-Security` in PHP bootstrap or shared headers. The application relies on same-origin framing and browser defaults.
+Browser-facing responses now receive centralized security headers from bootstrap. CSP allows inline scripts/styles required by legacy module UI and scripts hosted on `cdn.jsdelivr.net` (Quill, html2canvas, jsPDF, Bootstrap bundle). Tighten CSP with nonces in a follow-up if inline handlers are reduced.
 
-**Evidence:** Grep across `includes/*.php` for `Content-Security`, `X-Frame-Options`, `X-Content-Type`, `Strict-Transport` returned no matches.
+**Evidence (current — remediated):**
 
-**Proof of Concept (safe):** Inspect any authenticated page response headers — security headers absent unless added by Apache/nginx externally.
+```php
+// config/config.php — after bootstrap_helpers.php
+require_once ROOT_PATH . 'includes/itm_security_headers.php';
+if (PHP_SAPI !== 'cli') {
+    itm_send_security_headers();
+}
+```
 
-**Impact:** Increased clickjacking risk, MIME sniffing issues, weaker XSS containment, no HSTS on HTTPS deployments without reverse-proxy headers.
+**Proof of Concept (safe):** `curl -sI http://localhost/it-management/login.php` — response includes `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Content-Security-Policy`. On HTTPS deployments, `Strict-Transport-Security` is also sent.
 
-**Attack Scenario:** Attacker embeds ITM pages in iframe for clickjacking of privileged actions (mitigated partially by SameSite cookies and CSRF on POST).
+**Impact:** Reduced clickjacking, MIME sniffing, and referrer leakage; baseline XSS containment via CSP (inline scripts still permitted).
 
-**Recommendation:** Add centralized `itm_send_security_headers()` in bootstrap; configure CSP compatible with inline UI scripts or refactor to nonces. *(Documentation only.)*
+**Attack Scenario:** External sites cannot frame ITM in an iframe (`SAMEORIGIN` / `frame-ancestors 'self'`). Full XSS containment still depends on output encoding and CSRF — CSP is not strict nonce-only yet.
+
+**Recommendation:** Keep headers in bootstrap; tighten CSP when modules drop inline `onclick` / `<script>` blocks. Reverse proxies may still add complementary headers — avoid duplicate/conflicting values.
 
 ---
 
@@ -715,7 +724,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 | Stripe webhook signatures | Effective | `itm_stripe_verify_webhook_signature()` |
 | LDAP filter escaping | Effective | `ldap_escape()` in `itm_ldap_apply_user_filter()` |
 | Chatbot XSS | Effective | `escapeHtml()` before `innerHTML` in `js/chatbot.js` |
-| Security headers (CSP, XFO, HSTS) | **Not implemented** in app layer | ITM-PENTEST-007 |
+| Security headers (CSP, XFO, HSTS) | **Effective** (bootstrap) | ITM-PENTEST-007 remediated via `itm_send_security_headers()` |
 | Email approval workflow | **Improved** | ITM-PENTEST-001–003 remediated (env secret, POST+CSRF confirm, approver binding) |
 | Secrets at rest (integration) | **Moderate** | DB_PASS-derived keys — ITM-PENTEST-005 |
 | Error display defaults | **Effective** (default off) | ITM-PENTEST-006 remediated; admins may re-enable in Settings |

@@ -288,6 +288,10 @@ define('EXPLORER_MAX_FILE_SIZE', 20971520); // 20MB
 
 // Load helpers needed before upload directory bootstrap
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+require_once ROOT_PATH . 'includes/itm_security_headers.php';
+if (PHP_SAPI !== 'cli') {
+    itm_send_security_headers();
+}
 require_once ROOT_PATH . 'includes/itm_crud_schema_helpers.php';
 require_once ROOT_PATH . 'includes/itm_database_sql_source.php';
 require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
