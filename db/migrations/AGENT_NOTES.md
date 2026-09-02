@@ -39,6 +39,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 | `budget_categories_category_kind_dml.sql` | Non-destructive UPDATE backfill: Revenue→`revenue`, Operating Expense→`opex`, Capital Expense→`capex`. Safe to re-run; also applied on CAPEX/OPEX report page load. |
 | `job_queue.sql` | `job_queue` — generic background job queue (`includes/itm_job_queue.php`, `scripts/run_job_queue.php`). |
 | `ui_configuration_error_reporting_default_off_dml.sql` | Non-destructive UPDATE: sets `ui_configuration.enable_all_error_reporting = 0` where still `1`. Pairs with `db/01_schema.sql` default `0` and `itm_ui_config_defaults()`; admins may re-enable in Settings. Safe to re-run. |
+| `employees_must_change_password.sql` | Additive `employees.must_change_password` + backfill seed Admin/demo flags (ITM-PENTEST-004 mitigation). Regression: `php scripts/verify_force_password_change.php`. |
 
 ## 12. Module Owner Notes
 

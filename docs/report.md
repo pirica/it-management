@@ -64,7 +64,7 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 Examples:
 
-- `[OPEN] ITM-PENTEST-004: seed Admin bcrypt…` — default `Admin` password still in `db/02_data.sql` (expected until seeds change).
+- `[OPEN] ITM-PENTEST-004: seed Admin bcrypt…` — default `Admin` password still in `db/02_data.sql` (expected until seeds change); **`[INFO] ITM-PENTEST-004-mitigation`** when `must_change_password` gate is wired.
 - `[OPEN] ITM-PENTEST-005: DB_PASS-derived encryption keys…` — integration secrets still keyed from `DB_PASS` (documented, not remediated).
 - `[INFO] ITM-PENTEST-017: check_sql_injection_coverage.php passes` — static SQLi gate is effective.
 
@@ -198,7 +198,7 @@ Fresh imports seed administrator accounts (`Admin`, `Admin2`–`Admin5`) with a 
 
 **Attack Scenario:** External attacker scans internet-facing install, attempts default `Admin`/`Admin`.
 
-**Recommendation:** Force password change on first login, remove demo accounts from production bundles, and document secure provisioning. *(Documentation only.)*
+**Recommendation:** Force password change on first login (**implemented** — `employees.must_change_password`, `force-password-change.php`, migration `db/migrations/employees_must_change_password.sql`), remove demo accounts from production bundles, and document secure provisioning.
 
 ---
 

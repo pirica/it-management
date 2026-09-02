@@ -668,6 +668,8 @@ if (!function_exists('itm_sso_finalize_employee_login_session')) {
             session_regenerate_id(true);
         }
 
+        $_SESSION['itm_auth_via_sso'] = 1;
+
         $resolvedEmail = trim((string)($employeeRow['work_email'] ?? ''));
         if ($resolvedEmail === '') {
             $resolvedEmail = trim((string)($employeeRow['personal_email'] ?? ''));
