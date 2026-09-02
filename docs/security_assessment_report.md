@@ -1,5 +1,11 @@
 # Defensive Security Assessment Report: IT Management System
 
+> **Scope:** Defensive architecture review and deployment hardening guidance — **not** the live penetration-test finding register.
+>
+> **Tracked findings / regression:** [`docs/report.md`](report.md) and `php scripts/verify_pentest_report.php` ([verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1), Administrator session).
+>
+> **Last reviewed:** 2026-09-02 (checklist and **Live:** mitigation notes synced to repository).
+
 ## 1. Executive Summary
 
 This defensive security assessment report provides a deep technical review of the IT Management System's security posture, architecture, configurations, and potential attack surfaces. Executed under strict ethical and defensive boundaries, the objective is to locate design weaknesses, evaluate data protection mechanisms, identify potential vulnerability patterns, and deliver concrete, actionable remediation advice for hardening.
@@ -68,8 +74,8 @@ The primary attack surfaces identified across the application are:
 - **Risk**: An attacker uploading a `.htaccess` file can overwrite the system's defensive rules, exposing the directory to direct HTTP requests or enabling script execution.
 - **Theoretical Abuse Scenario**: An attacker uploads a file named `.htaccess` containing directives to allow CGI execution or override rewrites. They then upload a malicious script to the same directory and invoke it over HTTP, bypassing the application bootstrap.
 - **Mitigation**:
-  1. The system's upload helpers (`itm_ensure_upload_directory()`) must force-overwrite `.htaccess` on *every* ensure call and folder access. This prevents user-controlled configurations from persisting.
-  2. Implement an upload filter in the Explorer and general upload handlers that explicitly rejects dotfiles, particularly `.htaccess` and any file starting with `.`.
+  1. The system's upload helpers (`itm_ensure_upload_directory()`, `itm_ensure_files_storage_directory()`) must force-overwrite managed `.htaccess` on *every* ensure call and folder access. This prevents user-controlled configurations from persisting. **Live:** canonical bodies from `itm_upload_directory_policy_body()` in `includes/bootstrap_helpers.php`.
+  2. **Live:** Explorer upload rejects dotfiles (including `.htaccess`); managed `.htaccess` / `index.html` are hidden from listings (`explorer_is_hidden_system_entry()` in `modules/explorer/api.php`). Regressions: `php scripts/verify_explorer_rce_htaccess.php`, `php scripts/verify_explorer_rce_marker.php`.
   3. Ensure that the web server configuration (`httpd.conf` or `apache2.conf`) restricts overrides using `AllowOverride None` where possible for upload folders, or enforces `AllowOverride List` only.
 
 ---
@@ -106,9 +112,9 @@ The primary attack surfaces identified across the application are:
 - **Risk**: Deploying the system to production without forcing a password change leaves administrative panels open to brute-force attacks.
 - **Theoretical Abuse Scenario**: An attacker scans the internet for public-facing IT Management System instances, finds a login portal, and attempts to authenticate with `Admin` / `Admin`. If successful, they gain complete tenant administrative control.
 - **Mitigation**:
-  1. Implement a first-time login wizard that forces users to change default passwords.
+  1. **Live:** First password login for seed admins and demo users is gated by `employees.must_change_password` → `force-password-change.php` (`includes/itm_force_password_change.php`, `config/config.php`). SSO logins skip the gate. Regression: `php scripts/verify_force_password_change.php` ([verify_force_password_change.php?run=1](http://localhost/it-management/scripts/verify_force_password_change.php?run=1)). Documented posture: ITM-PENTEST-004-mitigation in `docs/report.md`.
   2. Block the use of overly simple passwords (such as matching the username) via backend password-strength checks.
-  3. Move default credential configurations and environment secrets out of source code entirely, relying exclusively on project-root `.env` files.
+  3. **Live:** Database credentials and API keys load from project-root `.env` via `itm_load_dotenv_file()` in `config/config.php` (not hardcoded in source).
 
 ---
 
@@ -120,7 +126,7 @@ The primary attack surfaces identified across the application are:
 - **Theoretical Abuse Scenario**: If an admin-only feature allows querying a specific drive using a parameters like `shell_exec("powershell.exe -File disk_usage.ps1 -Drive " . $_GET['drive'])`, an attacker can pass `C; whoami` or use malicious arguments to execute arbitrary shell commands.
 - **Mitigation**:
   1. Maintain hardware diagnostic parameters as hardcoded values. Avoid passing raw user input to `shell_exec` or command scripts.
-  2. If arguments are necessary, validate them against a strict whitelist (e.g., allowing only letters from A to Z for drives).
+  2. **Live:** `itm_system_status_run_powershell_action()` in `includes/itm_system_status_powershell.php` allowlists hardware actions only and requires `[a-z0-9_]+` before loading `includes/{action}.ps1`. Regression: `php scripts/verify_system_status.php`.
   3. Use `escapeshellarg()` on any parameters passed to shell processes.
 
 ---
@@ -186,7 +192,7 @@ Deploying legacy procedural systems with multiple entry points requires robust s
 
 #### Mitigation
 1. Block access to administrative folders or internal scripts at the web server layer (e.g. in Apache `<Directory>` blocks) for non-VPN IP ranges.
-2. Remove development utilities, diagnostic tests, and database schema files (`db/`) from production servers. Keep `scripts/debug.php` exclusively in local development environments.
+2. Omit the `db/` schema bundle from production docroots where possible. **Live:** browser access to `scripts/debug.php` requires an **Administrator** session via `itm_script_require_admin_script_or_exit()` — non-admins receive “Access denied.” CLI (`php scripts/debug.php`) has no web gate; restrict shell access on production hosts. Deleting the script alone is not sufficient; combine app-level admin gate with network/docroot hardening.
 
 ### 6.2 Secrets Management
 Standard development patterns often result in database credentials or API keys being hardcoded into `config/config.php` or other library files.
@@ -235,6 +241,9 @@ To assist defensive teams in visualizing threats, this section outlines theoreti
 - In Javascript, avoid direct insertion of user strings into the DOM via `.innerHTML`. Always use `.textContent` or run a robust HTML escaping helper like `escapeHtml()`.
 
 ### 8.2 Directory Protection Rules (Apache Hardening)
+
+Canonical managed `.htaccess` bodies are defined in `includes/bootstrap_helpers.php` (`itm_upload_directory_policy_body()`). Upload helpers force-overwrite policy files on every ensure — do not hand-edit upload-tree `.htaccess` files. The snippets below are human-readable reference only.
+
 Enforce the following `.htaccess` rules in writable upload directories:
 
 #### For `images/`, `tickets_photos/`, `floor_plans/`:
@@ -271,17 +280,20 @@ Options -Indexes -ExecCGI
 
 ## 9. Final Hardening Checklist
 
-| Domain | Hardening Action | Status |
-|--------|------------------|--------|
-| **Secrets** | Move database credentials and API tokens out of source files to `.env`. | [ ] |
-| **Secrets** | Deny HTTP access to `.env` files in root `.htaccess`. | [ ] |
-| **Filesystem** | Place an empty `index.html` file in *every* directory under the repository. | [ ] |
-| **Filesystem** | Implement the `upload` policy `.htaccess` in `images/` and `tickets_photos/`. | [ ] |
-| **Filesystem** | Implement the `deny_all` policy `.htaccess` in `backups/`. | [ ] |
-| **Filesystem** | Implement the `deny_http` policy `.htaccess` in `files/`. | [ ] |
-| **Database** | Ensure every single SQL query enforces `company_id` multi-tenant boundaries. | [ ] |
-| **Database** | Implement parameterized queries for all user inputs; avoid query concatenation. | [ ] |
-| **Authentication** | Enforce strong password complexity rules for administrative and user accounts. | [ ] |
-| **Authorization** | Validate CSRF tokens (`itm_require_post_csrf()`) on all state-changing POST requests. | [ ] |
-| **XSS** | Wrap all echoed variables in HTML output in `sanitize()`. | [ ] |
-| **Operations** | Block or remove `scripts/debug.php` and schema files in production environments. | [ ] |
+Status key: `[x]` implemented in repository · `[~]` partial / ongoing discipline · `[ ]` deployment or policy gap.
+
+| Domain | Hardening Action | Status | Evidence |
+|--------|------------------|--------|----------|
+| **Secrets** | Move database credentials and API tokens out of source files to `.env`. | [x] | `config/config.php` — `itm_load_dotenv_file()` |
+| **Secrets** | Deny HTTP access to `.env` files in root `.htaccess`. | [ ] | Root `.htaccess` has no `<Files ".env">` — deployment task |
+| **Filesystem** | Place an empty `index.html` file in *every* directory under the repository. | [x] | `itm_upload_directory_empty_index_html()`, `php scripts/empty_folders.php` |
+| **Filesystem** | Implement the `upload` policy `.htaccess` in `images/` and `tickets_photos/`. | [x] | `itm_ensure_upload_directory()` / `itm_upload_directory_policy_body('upload')` |
+| **Filesystem** | Implement the `deny_all` policy `.htaccess` in `backups/`. | [x] | `itm_upload_directory_policy_body('deny_all')` |
+| **Filesystem** | Implement the `deny_http` policy `.htaccess` in `files/`. | [x] | `itm_ensure_files_storage_directory()` / Explorer ensure chain |
+| **Database** | Ensure every single SQL query enforces `company_id` multi-tenant boundaries. | [~] | Central bootstrap + module discipline; `docs/report.md`, `repro_bac.php`, `check_multi_tenant_leaks.php` |
+| **Database** | Implement parameterized queries for all user inputs; avoid query concatenation. | [x] | `php scripts/check_sql_injection_coverage.php` (smoke) |
+| **Authentication** | Force password change on first login for seeded default accounts. | [x] | `employees.must_change_password`, `force-password-change.php`, `verify_force_password_change.php` |
+| **Authentication** | Enforce strong password complexity rules for administrative and user accounts. | [~] | Rotation gate exists; universal complexity rules not enforced everywhere |
+| **Authorization** | Validate CSRF tokens (`itm_require_post_csrf()`) on all state-changing POST requests. | [x] | `php scripts/check_csrf_coverage.php` |
+| **XSS** | Wrap all echoed variables in HTML output in `sanitize()`. | [~] | Convention across modules; `escapeHtml()` in `js/chatbot.js`; not 100% automated |
+| **Operations** | Restrict diagnostic scripts and schema files on production deployments. | [~] | **Browser:** `scripts/debug.php` — `itm_script_require_admin_script_or_exit()` (Admin only). **CLI:** no web gate — restrict shell. Omit `db/` from prod docroots; network/VPN Apache rules (§6.1). |
