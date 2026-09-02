@@ -237,7 +237,11 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 |--------|---------|
 | `itm_script_is_cli()` | `PHP_SAPI === 'cli'` or `phpdbg` |
 | `itm_script_running_under_scripts_dir()` | True when `SCRIPT_FILENAME` is `scripts/*.php` |
+| `itm_script_browser_no_auth_script_basenames()` | `count_db_tables.php`, `test_chatbot.php`, `openapi.php` — no employee login from any host (`ITM_SCRIPT_NO_AUTH`) |
 | `itm_script_browser_skip_web_auth_allowlist()` | `module_browser_qa_runner.php`, `run_tests.php` — may skip web auth on localhost / `ITM_MAINTENANCE_TOKEN` |
+| `itm_script_browser_maintenance_skip_web_auth_applies()` | True for allowlisted `ITM_CLI_SCRIPT` browser requests from `127.0.0.1`/`::1` or valid `ITM_MAINTENANCE_TOKEN` |
+| `itm_script_browser_maintenance_skip_admin_basenames()` | `run_tests.php` only — may skip Admin browser gate when maintenance web-auth bypass applies |
+| `itm_script_browser_maintenance_skip_admin_applies()` | True when `run_tests.php` may run without Administrator on localhost / maintenance token |
 | `itm_script_browser_isolation_exempt_basenames()` | Catalog/API/MBQA scripts that keep the signed-in browser session |
 | `itm_script_begin_browser_isolated_session($conn, $skipWebAuth)` | Browser `scripts/*`: swap to disposable test Admin/employee; copies `csrf_token` into isolated session when present; shutdown restores real session and merges isolated `csrf_token` back |
 | `itm_script_finish_browser_isolated_session()` | Shutdown hook: delete disposable employee, merge isolated `csrf_token` into pre-swap backup, restore real `$_SESSION` |
@@ -258,7 +262,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 
 **CLI-only scripts** — bash wrappers (`smoke_test.sh`, `import_database_split.sh`, …), session hijack helpers (`bypass_login.php`, `bypass_v2.php`), catalog listing-only repro tools, or `itm_script_prepare_cli_entry()` before `config.php`. Repo/DB writers that previously blocked the browser now use **`itm_apply_script_bootstrap.php`** (dry-run default) instead of a hard CLI-only guard.
 
-**Skip-web-auth allowlist** (localhost / `ITM_MAINTENANCE_TOKEN`): `module_browser_qa_runner.php`, `run_tests.php`. Regression: `php scripts/verify_script_localhost_maintenance_auth.php`.
+**Skip-web-auth allowlist** (localhost / `ITM_MAINTENANCE_TOKEN`): `module_browser_qa_runner.php`, `run_tests.php`. **Administrator still required in the browser for MBQA** (`itm_enforce_maintenance_script_admin_browser()`). **No Admin** when bypass applies: `run_tests.php` only (`itm_script_browser_maintenance_skip_admin_basenames()`). **No-auth from any host** (digits/plain output only): `count_db_tables.php` via `ITM_SCRIPT_NO_AUTH` + `itm_script_browser_no_auth_script_basenames()`. Regression: `php scripts/verify_script_localhost_maintenance_auth.php`.
 
 **Recovery:** if the dashboard shows company info but **No companies available** and `scripts.php` returns admin 403, the browser cookie was likely replaced by a script test user — sign out and log in again as Admin.
 

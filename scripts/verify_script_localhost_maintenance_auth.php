@@ -58,25 +58,52 @@ if ($allowlist !== $expectedSorted) {
 }
 
 $configSource = (string) file_get_contents(dirname(__DIR__) . '/config/config.php');
-if (strpos($configSource, 'ITM_MAINTENANCE_TOKEN') === false
-    || strpos($configSource, '$itmIsLocalhost') === false
-    || strpos($configSource, 'hash_equals($itmMaintToken') === false) {
-    vsl_fail('config.php must gate skip-web-auth on localhost OR valid ITM_MAINTENANCE_TOKEN');
+$bootstrapSource = (string) file_get_contents(__DIR__ . '/lib/itm_script_bootstrap.php');
+if (strpos($configSource, 'itm_script_browser_maintenance_skip_web_auth_applies') === false) {
+    vsl_fail('config.php must delegate maintenance skip-web-auth to itm_script_bootstrap.php');
 } else {
-    vsl_pass('config.php documents localhost + maintenance token gate');
+    vsl_pass('config.php calls itm_script_browser_maintenance_skip_web_auth_applies()');
 }
 
-if (strpos($configSource, 'PHP_SAPI !== \'cli\'') === false
-    || !preg_match('/Browser:\s*MBQA runner[\s\S]*PHP_SAPI !== \'cli\'/', $configSource)) {
-    vsl_fail('Maintenance localhost bypass must be browser-only (PHP_SAPI !== cli guard)');
+if (strpos($bootstrapSource, 'ITM_MAINTENANCE_TOKEN') === false
+    || strpos($bootstrapSource, '127.0.0.1') === false
+    || strpos($bootstrapSource, '::1') === false
+    || strpos($bootstrapSource, 'hash_equals($maintToken') === false) {
+    vsl_fail('itm_script_bootstrap.php must gate skip-web-auth on localhost OR valid ITM_MAINTENANCE_TOKEN');
 } else {
-    vsl_pass('Maintenance bypass block is browser-only, not CLI');
+    vsl_pass('Bootstrap helper documents localhost + maintenance token gate');
 }
 
-if (strpos($configSource, '127.0.0.1') === false || strpos($configSource, '::1') === false) {
-    vsl_fail('config.php must treat 127.0.0.1 and ::1 as localhost for maintenance scripts');
+if (strpos($bootstrapSource, 'itm_script_is_cli()') === false
+    || strpos($bootstrapSource, 'function itm_script_browser_maintenance_skip_web_auth_applies') === false) {
+    vsl_fail('Maintenance localhost bypass must be browser-only (itm_script_is_cli guard in bootstrap)');
 } else {
-    vsl_pass('Localhost detection includes IPv4 loopback and ::1');
+    vsl_pass('Maintenance bypass helper is browser-only, not CLI');
+}
+
+$gateSource = (string) file_get_contents(dirname(__DIR__) . '/includes/itm_maintenance_script_admin_gate.php');
+if (strpos($gateSource, 'itm_script_browser_maintenance_skip_admin_applies') === false) {
+    vsl_fail('Maintenance admin gate must use skip-admin helper (run_tests.php only)');
+} else {
+    vsl_pass('Maintenance admin gate skips Admin only for run_tests.php on localhost/token bypass');
+}
+
+$skipAdminList = function_exists('itm_script_browser_maintenance_skip_admin_basenames')
+    ? itm_script_browser_maintenance_skip_admin_basenames()
+    : [];
+if ($skipAdminList !== ['run_tests.php']) {
+    vsl_fail('Maintenance skip-admin list must be run_tests.php only (MBQA keeps Admin gate)');
+} else {
+    vsl_pass('MBQA runner excluded from maintenance skip-admin list');
+}
+
+$noAuthList = function_exists('itm_script_browser_no_auth_script_basenames')
+    ? itm_script_browser_no_auth_script_basenames()
+    : [];
+if (!in_array('count_db_tables.php', $noAuthList, true)) {
+    vsl_fail('count_db_tables.php must remain on no-auth script list');
+} else {
+    vsl_pass('count_db_tables.php listed for ITM_SCRIPT_NO_AUTH (no login, no Admin)');
 }
 
 if (in_array('verify_attempts_view_rbac.php', $allowlist, true)

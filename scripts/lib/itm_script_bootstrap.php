@@ -27,6 +27,22 @@ if (!function_exists('itm_script_running_under_scripts_dir')) {
     }
 }
 
+if (!function_exists('itm_script_browser_no_auth_script_basenames')) {
+    /**
+     * Read-only browser scripts that skip employee login from any host (ITM_SCRIPT_NO_AUTH).
+     *
+     * @return string[]
+     */
+    function itm_script_browser_no_auth_script_basenames()
+    {
+        return [
+            'count_db_tables.php',
+            'test_chatbot.php',
+            'openapi.php',
+        ];
+    }
+}
+
 if (!function_exists('itm_script_browser_skip_web_auth_allowlist')) {
     /**
      * scripts/* that may skip normal web auth in the browser (localhost or ITM_MAINTENANCE_TOKEN).
@@ -39,6 +55,76 @@ if (!function_exists('itm_script_browser_skip_web_auth_allowlist')) {
             'module_browser_qa_runner.php',
             'run_tests.php',
         ];
+    }
+}
+
+if (!function_exists('itm_script_browser_maintenance_skip_admin_basenames')) {
+    /**
+     * Subset of the maintenance allowlist that may skip the Admin browser gate when bypass applies.
+     * MBQA runner still requires Administrator even on localhost / maintenance token.
+     *
+     * @return string[]
+     */
+    function itm_script_browser_maintenance_skip_admin_basenames()
+    {
+        return [
+            'run_tests.php',
+        ];
+    }
+}
+
+if (!function_exists('itm_script_browser_maintenance_skip_web_auth_applies')) {
+    /**
+     * True when an allowlisted ITM_CLI_SCRIPT may skip employee login in the browser.
+     */
+    function itm_script_browser_maintenance_skip_web_auth_applies()
+    {
+        if (itm_script_is_cli()) {
+            return false;
+        }
+
+        if (!defined('ITM_CLI_SCRIPT') || !ITM_CLI_SCRIPT) {
+            return false;
+        }
+
+        $script = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
+        if (!in_array($script, itm_script_browser_skip_web_auth_allowlist(), true)) {
+            return false;
+        }
+
+        $isLocalhost = (($_SERVER['REMOTE_ADDR'] ?? '') === '127.0.0.1'
+            || ($_SERVER['REMOTE_ADDR'] ?? '') === '::1');
+        $maintToken = trim((string)getenv('ITM_MAINTENANCE_TOKEN'));
+        $providedToken = (string)($_GET['token'] ?? $_SERVER['HTTP_X_ITM_MAINTENANCE_TOKEN'] ?? '');
+
+        return $isLocalhost
+            || ($maintToken !== '' && hash_equals($maintToken, $providedToken));
+    }
+}
+
+if (!function_exists('itm_script_browser_maintenance_skip_admin_applies')) {
+    /**
+     * True when maintenance bypass may skip the Admin browser gate (run_tests.php only).
+     */
+    function itm_script_browser_maintenance_skip_admin_applies()
+    {
+        if (!itm_script_browser_maintenance_skip_web_auth_applies()) {
+            return false;
+        }
+
+        $script = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
+
+        return in_array($script, itm_script_browser_maintenance_skip_admin_basenames(), true);
+    }
+}
+
+if (!function_exists('itm_script_browser_maintenance_auth_bypass_applies')) {
+    /**
+     * @deprecated Use itm_script_browser_maintenance_skip_web_auth_applies()
+     */
+    function itm_script_browser_maintenance_auth_bypass_applies()
+    {
+        return itm_script_browser_maintenance_skip_web_auth_applies();
     }
 }
 

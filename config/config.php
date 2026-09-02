@@ -507,11 +507,13 @@ if (
     && defined('ITM_SCRIPT_NO_AUTH')
     && ITM_SCRIPT_NO_AUTH
 ) {
-    $itmNoAuthScripts = [
-        'count_db_tables.php',
-        'test_chatbot.php',
-        'openapi.php',
-    ];
+    $itmNoAuthScripts = function_exists('itm_script_browser_no_auth_script_basenames')
+        ? itm_script_browser_no_auth_script_basenames()
+        : [
+            'count_db_tables.php',
+            'test_chatbot.php',
+            'openapi.php',
+        ];
     $itmNoAuthScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
 
     if (in_array($itmNoAuthScript, $itmNoAuthScripts, true)) {
@@ -522,29 +524,10 @@ if (
 // Browser: MBQA runner and PHPUnit menu may skip web auth on localhost or with ITM_MAINTENANCE_TOKEN.
 if (
     !$itmSkipWebAuth
-    && PHP_SAPI !== 'cli'
-    && defined('ITM_CLI_SCRIPT')
-    && ITM_CLI_SCRIPT
+    && function_exists('itm_script_browser_maintenance_skip_web_auth_applies')
+    && itm_script_browser_maintenance_skip_web_auth_applies()
 ) {
-    $itmBrowserMaintenanceAuthAllowlist = function_exists('itm_script_browser_skip_web_auth_allowlist')
-        ? itm_script_browser_skip_web_auth_allowlist()
-        : (function_exists('itm_script_browser_cli_maintenance_allowlist')
-            ? itm_script_browser_cli_maintenance_allowlist()
-            : [
-                'module_browser_qa_runner.php',
-                'run_tests.php',
-            ]);
-    $itmMaintenanceScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
-
-    if (in_array($itmMaintenanceScript, $itmBrowserMaintenanceAuthAllowlist, true)) {
-        $itmIsLocalhost = (($_SERVER['REMOTE_ADDR'] ?? '') === '127.0.0.1' || ($_SERVER['REMOTE_ADDR'] ?? '') === '::1');
-        $itmMaintToken = trim((string)getenv('ITM_MAINTENANCE_TOKEN'));
-        $itmProvidedToken = $_GET['token'] ?? $_SERVER['HTTP_X_ITM_MAINTENANCE_TOKEN'] ?? '';
-
-        if ($itmIsLocalhost || ($itmMaintToken !== '' && hash_equals($itmMaintToken, (string)$itmProvidedToken))) {
-            $itmSkipWebAuth = true;
-        }
-    }
+    $itmSkipWebAuth = true;
 }
 
 if (defined('ITM_TICKET_CSAT_PUBLIC') && ITM_TICKET_CSAT_PUBLIC) {
