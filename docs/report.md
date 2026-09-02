@@ -57,8 +57,8 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 | Label | Meaning | Findings |
 |-------|---------|----------|
-| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 009–016 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008 |
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–008, 009–016 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005 |
 | **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
@@ -315,45 +315,31 @@ if (PHP_SAPI !== 'cli') {
 
 ### ITM-PENTEST-008 Maintenance / localhost authentication bypass for QA scripts
 
+**Status:** **Remediated** — browser access to `module_browser_qa_runner.php` and `run_tests.php` requires a signed-in **Administrator** session; no localhost or `ITM_MAINTENANCE_TOKEN` web-auth skip.  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — expect **`[OPEN]`** in `php scripts/verify_pentest_report.php`. `itm_script_browser_maintenance_skip_web_auth_applies()` in `scripts/lib/itm_script_bootstrap.php` (localhost `REMOTE_ADDR` or `hash_equals` on `ITM_MAINTENANCE_TOKEN`); `config/config.php` sets `$itmSkipWebAuth` when that helper returns true (~543–546). Allowlist includes `module_browser_qa_runner.php` and `run_tests.php`.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. Regression: `php scripts/verify_script_localhost_maintenance_auth.php`.
 
-**Severity:** Medium  
+**Severity:** Medium (was open; remediated)  
 **OWASP Category:** A01:2021 – Broken Access Control  
 **Affected Component:** Browser-accessible QA runners  
-**Affected File:** `config/config.php`, `scripts/lib/itm_script_bootstrap.php`  
-**Affected Function:** Maintenance auth gate (`ITM_MAINTENANCE_TOKEN`, localhost check)  
-**Affected Parameter:** `token` query param, `HTTP_X_ITM_MAINTENANCE_TOKEN`
+**Affected File:** `config/config.php`, `scripts/lib/itm_script_bootstrap.php`, `scripts/run_tests.php`, `includes/itm_maintenance_script_admin_gate.php`  
+**Affected Function:** `itm_script_browser_maintenance_skip_web_auth_applies()` (disabled), `itm_enforce_maintenance_script_admin_browser()`  
+**Affected Parameter:** N/A (former `token` / `HTTP_X_ITM_MAINTENANCE_TOKEN` bypass removed for QA scripts)
 
 **Description:**  
-`module_browser_qa_runner.php` and `run_tests.php` skip normal web authentication when the request originates from `127.0.0.1`/`::1` **or** when `ITM_MAINTENANCE_TOKEN` matches a supplied token. A leaked token on an internet-exposed host grants unauthenticated access to powerful QA tooling.
+Previously, MBQA and the PHPUnit browser menu could skip portal login when the request came from loopback or presented a valid `ITM_MAINTENANCE_TOKEN`. `run_tests.php` could also skip the Administrator gate on that path. That allowed unauthenticated or non-admin access to powerful QA tooling when a token leaked on an internet-exposed host.
 
-**Evidence:**
+**Remediation:**  
+- Removed `config/config.php` hook that set `$itmSkipWebAuth` from `itm_script_browser_maintenance_skip_web_auth_applies()`.  
+- `itm_script_browser_maintenance_skip_web_auth_applies()` and `itm_script_browser_maintenance_skip_admin_applies()` now always return **false**.  
+- `run_tests.php` calls `itm_enforce_maintenance_script_admin_browser()` in the browser (same as MBQA).  
+- CLI regressions unchanged (`ITM_CLI_SCRIPT` + `PHP_SAPI === 'cli'`).
 
-```364:370:scripts/lib/itm_script_bootstrap.php
-        return $isLocalhost
-            || ($maintToken !== '' && hash_equals($maintToken, $providedToken));
-```
+**Evidence:** `itm_script_browser_maintenance_skip_web_auth_applies()` returns `false`; config no longer sets `$itmSkipWebAuth` for maintenance QA; `run_tests.php` and `module_browser_qa_runner.php` enforce Admin in browser.
 
-```541:546:config/config.php
-if (
-    !$itmSkipWebAuth
-    && function_exists('itm_script_browser_maintenance_skip_web_auth_applies')
-    && itm_script_browser_maintenance_skip_web_auth_applies()
-) {
-    $itmSkipWebAuth = true;
-}
-```
+**Impact:** Reduced risk of unauthenticated remote QA execution when maintenance tokens or localhost assumptions are abused.
 
-Allowlist: `scripts/lib/itm_script_bootstrap.php` → `module_browser_qa_runner.php`, `run_tests.php`.
-
-**Proof of Concept (safe):** `GET http://localhost/it-management/scripts/run_tests.php?run=1` without session (localhost only).
-
-**Impact:** Unauthenticated administrative QA, potential data mutation in test flows, information disclosure.
-
-**Attack Scenario:** Production deploy exposes app to internet; `.env` or config leak reveals `ITM_MAINTENANCE_TOKEN`; attacker runs MBQA runner remotely.
-
-**Recommendation:** Disable maintenance bypass in production builds; require admin session even on localhost for browser QA; use network ACLs. *(Documentation only.)*
+**Recommendation:** Keep QA scripts off public URLs; rotate `ITM_MAINTENANCE_TOKEN` if it was ever exposed. `ITM_MAINTENANCE_TOKEN` remains valid only for **no-auth** read-only scripts (`openapi.php`, `count_db_tables.php`) via `itm_script_browser_no_auth_client_allowed()`. *(Remediated.)*
 
 ---
 

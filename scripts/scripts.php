@@ -200,7 +200,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         <details class="scripts-intro-details">
             <summary>Access, badges, and new-script checklist</summary>
             <p class="scripts-muted">
-                <strong>Browser</strong> = open the script URL (HTML UI or plain-text report). Login or authorized source (IP <code>127.0.0.1</code> / <code>::1</code>, or <code>ITM_MAINTENANCE_TOKEN</code>).
+                <strong>Browser</strong> = open the script URL (HTML UI or plain-text report). Most scripts require Administrator login; no-auth probes allow loopback / <code>ITM_MAINTENANCE_TOKEN</code> only when documented.
                 Every browser script shows <strong>← Scripts index</strong> (<code>scripts/lib/script_browser_nav.php</code>).
                 <strong>CLI</strong> = project root, PHP 7.4+.
                 <strong>CLI-only</strong> = bash/Python/session helpers — badge <span class="scripts-badge scripts-badge-cli-only">CLI-only</span>.
@@ -2423,7 +2423,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_pentest_report.php" target="_blank" rel="nofollow noreferrer">verify_pentest_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Static regression for <code>docs/report.md</code> pentest ITM-PENTEST-001–022. Labels: <code>[PASS]</code> remediated (001–003, 006–007, 009–016), <code>[OPEN]</code> documented gap (004–005, 008), <code>[INFO]</code> positive control (017–022), <code>[FAIL]</code> drift. Invokes <code>check_sql_injection_coverage.php</code> and <code>check_csrf_coverage.php</code>. PHPUnit: <code>--filter PentestReport</code>.</td>
+                    <td>Static regression for <code>docs/report.md</code> pentest ITM-PENTEST-001–022. Labels: <code>[PASS]</code> remediated (001–003, 006–008, 009–016), <code>[OPEN]</code> documented gap (004–005), <code>[INFO]</code> positive control (017–022), <code>[FAIL]</code> drift. Invokes <code>check_sql_injection_coverage.php</code> and <code>check_csrf_coverage.php</code>. PHPUnit: <code>--filter PentestReport</code>.</td>
                     <td><code>php scripts/verify_pentest_report.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
@@ -3315,7 +3315,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_script_localhost_maintenance_auth.php" target="_blank" rel="nofollow noreferrer">verify_script_localhost_maintenance_auth.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Accepted-risk regression: browser-only localhost / <code>ITM_MAINTENANCE_TOKEN</code> skip-web-auth allowlist (<code>run_tests.php</code>, MBQA runner).</td>
+                    <td>ITM-PENTEST-008 regression: browser QA scripts (<code>run_tests.php</code>, MBQA runner) require signed-in Administrator — no localhost / <code>ITM_MAINTENANCE_TOKEN</code> portal-login skip.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">

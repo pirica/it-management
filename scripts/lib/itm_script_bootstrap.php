@@ -4,8 +4,8 @@
  *
  * Why: CLI regressions must use disposable test-user sessions (never the signed-in Admin
  * browser session). Browser access to scripts/* is the default — individual scripts gate
- * CLI-only or Admin-only behaviour. MBQA runner and PHPUnit browser menu may skip web auth
- * on localhost or with ITM_MAINTENANCE_TOKEN.
+ * CLI-only or Admin-only behaviour. Browser access to MBQA runner and PHPUnit menu requires
+ * a signed-in Administrator session (no localhost / ITM_MAINTENANCE_TOKEN web-auth skip).
  */
 
 if (!function_exists('itm_script_is_cli')) {
@@ -314,76 +314,45 @@ if (!function_exists('itm_script_browser_no_auth_client_allowed')) {
 
 if (!function_exists('itm_script_browser_skip_web_auth_allowlist')) {
     /**
-     * scripts/* that may skip normal web auth in the browser (localhost or ITM_MAINTENANCE_TOKEN).
+     * Former maintenance QA allowlist (ITM-PENTEST-008 remediated — always empty).
      *
      * @return string[]
      */
     function itm_script_browser_skip_web_auth_allowlist()
     {
-        return [
-            'module_browser_qa_runner.php',
-            'run_tests.php',
-        ];
+        return [];
     }
 }
 
 if (!function_exists('itm_script_browser_maintenance_skip_admin_basenames')) {
     /**
-     * Subset of the maintenance allowlist that may skip the Admin browser gate when bypass applies.
-     * MBQA runner still requires Administrator even on localhost / maintenance token.
+     * Former skip-admin list (ITM-PENTEST-008 remediated — always empty).
      *
      * @return string[]
      */
     function itm_script_browser_maintenance_skip_admin_basenames()
     {
-        return [
-            'run_tests.php',
-        ];
+        return [];
     }
 }
 
 if (!function_exists('itm_script_browser_maintenance_skip_web_auth_applies')) {
     /**
-     * True when an allowlisted ITM_CLI_SCRIPT may skip employee login in the browser.
+     * Why: Browser QA tools must use a real Admin session — no localhost/token login bypass.
      */
     function itm_script_browser_maintenance_skip_web_auth_applies()
     {
-        if (itm_script_is_cli()) {
-            return false;
-        }
-
-        if (!defined('ITM_CLI_SCRIPT') || !ITM_CLI_SCRIPT) {
-            return false;
-        }
-
-        $script = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
-        if (!in_array($script, itm_script_browser_skip_web_auth_allowlist(), true)) {
-            return false;
-        }
-
-        $isLocalhost = (($_SERVER['REMOTE_ADDR'] ?? '') === '127.0.0.1'
-            || ($_SERVER['REMOTE_ADDR'] ?? '') === '::1');
-        $maintToken = trim((string)getenv('ITM_MAINTENANCE_TOKEN'));
-        $providedToken = (string)($_GET['token'] ?? $_SERVER['HTTP_X_ITM_MAINTENANCE_TOKEN'] ?? '');
-
-        return $isLocalhost
-            || ($maintToken !== '' && hash_equals($maintToken, $providedToken));
+        return false;
     }
 }
 
 if (!function_exists('itm_script_browser_maintenance_skip_admin_applies')) {
     /**
-     * True when maintenance bypass may skip the Admin browser gate (run_tests.php only).
+     * Why: Browser QA tools always require Administrator (see itm_enforce_maintenance_script_admin_browser).
      */
     function itm_script_browser_maintenance_skip_admin_applies()
     {
-        if (!itm_script_browser_maintenance_skip_web_auth_applies()) {
-            return false;
-        }
-
-        $script = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
-
-        return in_array($script, itm_script_browser_maintenance_skip_admin_basenames(), true);
+        return false;
     }
 }
 

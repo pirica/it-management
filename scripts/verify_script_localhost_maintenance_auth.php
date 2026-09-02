@@ -1,9 +1,6 @@
 <?php
 /**
- * Regression: maintenance script localhost / ITM_MAINTENANCE_TOKEN bypass contract.
- *
- * Deployment-dependent: only allowlisted scripts may skip browser auth from
- * 127.0.0.1/::1 or with a valid maintenance token.
+ * Regression: browser QA scripts require Administrator session (ITM-PENTEST-008 remediated).
  *
  * CLI: php scripts/verify_script_localhost_maintenance_auth.php
  * Browser: scripts/verify_script_localhost_maintenance_auth.php?run=1 (Administrator).
@@ -14,7 +11,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/verify_script_localhost_maintenance_auth.php</code> — exit <code>1</code> on failure. Run when changing <code>config/config.php</code> script auth or <code>scripts/lib/itm_script_bootstrap.php</code> maintenance allowlist.
+<code>php scripts/verify_script_localhost_maintenance_auth.php</code> — exit <code>1</code> on failure. Confirms MBQA runner and PHPUnit browser menu do not skip portal login via localhost or <code>ITM_MAINTENANCE_TOKEN</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -41,96 +38,88 @@ function vsl_pass($message)
     echo colorText('[PASS] ' . $message, 'pass') . $nl;
 }
 
-$allowlist = function_exists('itm_script_browser_skip_web_auth_allowlist')
-    ? itm_script_browser_skip_web_auth_allowlist()
-    : [];
-$expectedAllowlist = [
-    'module_browser_qa_runner.php',
-    'run_tests.php',
-];
-sort($allowlist);
-$expectedSorted = $expectedAllowlist;
-sort($expectedSorted);
-if ($allowlist !== $expectedSorted) {
-    vsl_fail('Maintenance allowlist must remain module_browser_qa_runner.php + run_tests.php only');
-} else {
-    vsl_pass('Maintenance allowlist limited to MBQA runner and PHPUnit menu');
-}
-
 $configSource = (string) file_get_contents(dirname(__DIR__) . '/config/config.php');
 $bootstrapSource = (string) file_get_contents(__DIR__ . '/lib/itm_script_bootstrap.php');
-if (strpos($configSource, 'itm_script_browser_maintenance_skip_web_auth_applies') === false) {
-    vsl_fail('config.php must delegate maintenance skip-web-auth to itm_script_bootstrap.php');
-} else {
-    vsl_pass('config.php calls itm_script_browser_maintenance_skip_web_auth_applies()');
-}
-
-if (strpos($bootstrapSource, 'ITM_MAINTENANCE_TOKEN') === false
-    || strpos($bootstrapSource, '127.0.0.1') === false
-    || strpos($bootstrapSource, '::1') === false
-    || strpos($bootstrapSource, 'hash_equals($maintToken') === false) {
-    vsl_fail('itm_script_bootstrap.php must gate skip-web-auth on localhost OR valid ITM_MAINTENANCE_TOKEN');
-} else {
-    vsl_pass('Bootstrap helper documents localhost + maintenance token gate');
-}
-
-if (strpos($bootstrapSource, 'itm_script_is_cli()') === false
-    || strpos($bootstrapSource, 'function itm_script_browser_maintenance_skip_web_auth_applies') === false) {
-    vsl_fail('Maintenance localhost bypass must be browser-only (itm_script_is_cli guard in bootstrap)');
-} else {
-    vsl_pass('Maintenance bypass helper is browser-only, not CLI');
-}
-
 $gateSource = (string) file_get_contents(dirname(__DIR__) . '/includes/itm_maintenance_script_admin_gate.php');
-if (strpos($gateSource, 'itm_script_browser_maintenance_skip_admin_applies') === false) {
-    vsl_fail('Maintenance admin gate must use skip-admin helper (run_tests.php only)');
+
+if (preg_match(
+    '/itm_script_browser_maintenance_skip_web_auth_applies\(\)[\s\S]{0,120}\$itmSkipWebAuth\s*=\s*true/s',
+    $configSource
+) === 1) {
+    vsl_fail('config.php must not set $itmSkipWebAuth from maintenance localhost/token bypass');
 } else {
-    vsl_pass('Maintenance admin gate skips Admin only for run_tests.php on localhost/token bypass');
+    vsl_pass('config.php does not wire maintenance web-auth skip for browser QA scripts');
+}
+
+if (!function_exists('itm_script_browser_maintenance_skip_web_auth_applies')
+    || itm_script_browser_maintenance_skip_web_auth_applies() !== false) {
+    vsl_fail('itm_script_browser_maintenance_skip_web_auth_applies() must always return false');
+} else {
+    vsl_pass('Maintenance web-auth bypass helper disabled');
+}
+
+if (!function_exists('itm_script_browser_maintenance_skip_admin_applies')
+    || itm_script_browser_maintenance_skip_admin_applies() !== false) {
+    vsl_fail('itm_script_browser_maintenance_skip_admin_applies() must always return false');
+} else {
+    vsl_pass('Maintenance skip-admin helper disabled');
+}
+
+$allowlist = function_exists('itm_script_browser_skip_web_auth_allowlist')
+    ? itm_script_browser_skip_web_auth_allowlist()
+    : null;
+if ($allowlist !== []) {
+    vsl_fail('Maintenance skip-web-auth allowlist must be empty');
+} else {
+    vsl_pass('Maintenance skip-web-auth allowlist is empty');
 }
 
 $skipAdminList = function_exists('itm_script_browser_maintenance_skip_admin_basenames')
     ? itm_script_browser_maintenance_skip_admin_basenames()
-    : [];
-if ($skipAdminList !== ['run_tests.php']) {
-    vsl_fail('Maintenance skip-admin list must be run_tests.php only (MBQA keeps Admin gate)');
+    : null;
+if ($skipAdminList !== []) {
+    vsl_fail('Maintenance skip-admin list must be empty');
 } else {
-    vsl_pass('MBQA runner excluded from maintenance skip-admin list');
+    vsl_pass('Maintenance skip-admin list is empty');
 }
 
-$noAuthList = function_exists('itm_script_browser_no_auth_script_basenames')
-    ? itm_script_browser_no_auth_script_basenames()
-    : [];
-if (!in_array('count_db_tables.php', $noAuthList, true)) {
-    vsl_fail('count_db_tables.php must remain on no-auth script list');
+if (strpos($gateSource, 'itm_script_browser_maintenance_skip_admin_applies') !== false) {
+    vsl_fail('Maintenance admin gate must not skip Administrator for run_tests.php');
 } else {
-    vsl_pass('count_db_tables.php listed for ITM_SCRIPT_NO_AUTH (no login, no Admin)');
+    vsl_pass('Maintenance admin gate always requires Administrator in browser');
+}
+
+$runTestsSource = (string) file_get_contents(__DIR__ . '/run_tests.php');
+if (strpos($runTestsSource, 'itm_enforce_maintenance_script_admin_browser') === false) {
+    vsl_fail('run_tests.php must call itm_enforce_maintenance_script_admin_browser() for browser access');
+} else {
+    vsl_pass('run_tests.php enforces Administrator browser gate');
+}
+
+$mbqaSource = (string) file_get_contents(__DIR__ . '/module_browser_qa_runner.php');
+if (strpos($mbqaSource, 'itm_enforce_maintenance_script_admin_browser') === false) {
+    vsl_fail('module_browser_qa_runner.php must call itm_enforce_maintenance_script_admin_browser()');
+} else {
+    vsl_pass('MBQA runner enforces Administrator browser gate');
 }
 
 if (strpos($bootstrapSource, 'itm_script_browser_no_auth_client_allowed') === false
-    || strpos($bootstrapSource, 'ITM_SCRIPT_NO_AUTH_ALLOWED_IPS') === false
-    || strpos($bootstrapSource, 'myhome.dynip.sapo.pt') === false) {
-    vsl_fail('No-auth scripts must be gated by itm_script_browser_no_auth_client_allowed() + host/IP allowlist');
+    || strpos($bootstrapSource, 'ITM_SCRIPT_NO_AUTH_ALLOWED_IPS') === false) {
+    vsl_fail('No-auth scripts must remain gated by itm_script_browser_no_auth_client_allowed()');
 } else {
-    vsl_pass('No-auth browser scripts gated by loopback, host/IP allowlist, or maintenance token');
+    vsl_pass('No-auth browser scripts still use loopback/host/IP/maintenance-token gate');
 }
 
 if (strpos($configSource, 'itm_script_browser_no_auth_client_allowed') === false) {
-    vsl_fail('config.php must call itm_script_browser_no_auth_client_allowed() before skipping web auth for ITM_SCRIPT_NO_AUTH');
+    vsl_fail('config.php must call itm_script_browser_no_auth_client_allowed() for ITM_SCRIPT_NO_AUTH');
 } else {
     vsl_pass('config.php enforces no-auth IP / maintenance-token gate');
 }
 
-if (in_array('verify_attempts_view_rbac.php', $allowlist, true)
-    || in_array('scripts.php', $allowlist, true)) {
-    vsl_fail('General verify scripts and catalog must not be on maintenance allowlist');
-} else {
-    vsl_pass('Maintenance allowlist excludes general verify scripts');
-}
-
 if (strpos($configSource, '$itmSkipWebAuth = PHP_SAPI === \'cli\' && defined(\'ITM_CLI_SCRIPT\')') === false) {
-    vsl_fail('CLI verify scripts must use ITM_CLI_SCRIPT skip (separate from browser localhost bypass)');
+    vsl_fail('CLI verify scripts must use ITM_CLI_SCRIPT skip (separate from browser maintenance bypass)');
 } else {
-    vsl_pass('CLI ITM_CLI_SCRIPT auth skip documented separately from browser maintenance bypass');
+    vsl_pass('CLI ITM_CLI_SCRIPT auth skip documented separately from browser QA');
 }
 
 if ($failures > 0) {
@@ -139,6 +128,6 @@ if ($failures > 0) {
     exit(1);
 }
 
-echo colorText('SUMMARY: Script maintenance auth checks passed (deployment still must not expose scripts publicly).', 'pass') . $nl;
+echo colorText('SUMMARY: Browser QA scripts require Admin session; maintenance bypass removed.', 'pass') . $nl;
 itm_script_output_end();
 exit(0);

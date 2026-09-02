@@ -537,15 +537,6 @@ if (
     }
 }
 
-// Browser: MBQA runner and PHPUnit menu may skip web auth on localhost or with ITM_MAINTENANCE_TOKEN.
-if (
-    !$itmSkipWebAuth
-    && function_exists('itm_script_browser_maintenance_skip_web_auth_applies')
-    && itm_script_browser_maintenance_skip_web_auth_applies()
-) {
-    $itmSkipWebAuth = true;
-}
-
 if (defined('ITM_TICKET_CSAT_PUBLIC') && ITM_TICKET_CSAT_PUBLIC) {
     $itmSkipWebAuth = true;
 }
