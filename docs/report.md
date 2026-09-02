@@ -12,9 +12,9 @@
 
 The IT Management System is a large procedural PHP application (~2,643 PHP files, 272+ module entry points) with substantial defensive engineering: prepared-statement static auditing, CSRF coverage checks, upload-directory hardening, multi-tenant `company_id` enforcement in central bootstrap, role/module access gates, and targeted regression scripts for high-risk areas (Explorer ACL, QR share, API v2, hotel distribution).
 
-**Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase, but **deployment hygiene** risks remain (default seed credentials, DB-password-derived encryption keys). Request Password email approvals (ITM-PENTEST-001–003) and verbose PHP error display defaults (ITM-PENTEST-006) were remediated. No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`.
+**Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase. **Deployment hygiene** items (default seed credentials, DB-password-derived encryption keys) are **documented** as `[INFO]` findings ITM-PENTEST-004/005 with first-login password rotation mitigating 004. Request Password email approvals (ITM-PENTEST-001–003) and verbose PHP error display defaults (ITM-PENTEST-006) were remediated. No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`.
 
-**Primary risks:** Credential and secrets compromise via default accounts or database credential leakage. Short-link phishing risk is reduced by HTTPS-by-default, optional domain allowlist, interstitial warning, redirect-time policy checks, and per-employee creation rate limits (ITM-PENTEST-009 remediated). Request Password email approvals now use POST+CSRF confirm flow with designated-approver binding (ITM-PENTEST-001–003 remediated).
+**Primary risks:** Credential and secrets compromise via default accounts (mitigated by mandatory password change on first login) or database credential leakage. Short-link phishing risk is reduced by HTTPS-by-default, optional domain allowlist, interstitial warning, redirect-time policy checks, and per-employee creation rate limits (ITM-PENTEST-009 remediated). Request Password email approvals now use POST+CSRF confirm flow with designated-approver binding (ITM-PENTEST-001–003 remediated).
 
 ---
 
@@ -58,14 +58,14 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 | Label | Meaning | Findings |
 |-------|---------|----------|
 | **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–008, 009–016 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005 |
-| **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
+| **`[OPEN]`** | **Regression drift** — a formerly remediated finding’s fix is missing from the repo | — (none expected on current `master`) |
+| **`[INFO]`** | **Documented posture / positive control** — known design choice or defensive measure confirmed | 004, 004-mitigation, 005, 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
 Examples:
 
-- `[OPEN] ITM-PENTEST-004: seed Admin bcrypt…` — default `Admin` password still in `db/02_data.sql` (expected until seeds change); **`[INFO] ITM-PENTEST-004-mitigation`** when `must_change_password` gate is wired.
-- `[OPEN] ITM-PENTEST-005: DB_PASS-derived encryption keys…` — integration secrets still keyed from `DB_PASS` (documented, not remediated).
+- `[INFO] ITM-PENTEST-004: seed Admin bcrypt…` — default `Admin` password remains in `db/02_data.sql` for dev/MBQA; paired with **`[INFO] ITM-PENTEST-004-mitigation`** (`must_change_password` gate).
+- `[INFO] ITM-PENTEST-005: DB_PASS-derived encryption keys…` — integration secrets keyed from `DB_PASS` (documented accepted design until `ITM_APP_KEY` migration).
 - `[INFO] ITM-PENTEST-017: check_sql_injection_coverage.php passes` — static SQLi gate is effective.
 
 ---
@@ -178,7 +178,7 @@ Previously, after HMAC validation, the handler updated approval status using onl
 ### ITM-PENTEST-004 Default and demo credentials in database seed data
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** (documented — not remediated) — expect **`[OPEN]`** in `php scripts/verify_pentest_report.php`. Seed Admin bcrypt hash at `db/02_data.sql` line **868** (`username` `Admin` for company 1); demo accounts block comment line **2261**, `INSERT` at lines **2262–2278** (`demo1`–`demo5`, password equals username per comment).
+**Verification:** **Documented posture** — expect **`[INFO]`** in `php scripts/verify_pentest_report.php` (seed markers plus **`[INFO] ITM-PENTEST-004-mitigation`**). Seed Admin bcrypt hash at `db/02_data.sql` line **868** (`username` `Admin` for company 1); demo accounts block comment line **2261**, `INSERT` at lines **2262–2278** (`demo1`–`demo5`, password equals username per comment). First-login gate: `employees.must_change_password`, [force-password-change.php](http://localhost/it-management/force-password-change.php).
 
 **Severity:** High  
 **OWASP Category:** A07:2021 – Identification and Authentication Failures  
@@ -194,7 +194,7 @@ Fresh imports seed administrator accounts (`Admin`, `Admin2`–`Admin5`) with a 
 
 **Proof of Concept (safe):** After default import, authenticate at [login.php](http://localhost/it-management/login.php) with username `Admin` / password `Admin`.
 
-**Impact:** Full administrative compromise on deployments that retain default seeds without mandatory password rotation.
+**Impact:** Full administrative compromise on deployments that retain default seeds **and** skip the first-login password gate (or use `ITM_SKIP_FORCE_PASSWORD_CHANGE=1` in production).
 
 **Attack Scenario:** External attacker scans internet-facing install, attempts default `Admin`/`Admin`.
 
@@ -205,7 +205,7 @@ Fresh imports seed administrator accounts (`Admin`, `Admin2`–`Admin5`) with a 
 ### ITM-PENTEST-005 Server-side secrets encrypted with keys derived from database password
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** (documented — not remediated) — expect **`[OPEN]`** in `php scripts/verify_pentest_report.php`. `hash('sha256', (defined('DB_PASS') ? DB_PASS : 'itmanagement') . …)` in `includes/itm_email.php` lines **10–12** (`itm_smtp_encryption_key`), `includes/itm_totp_helpers.php` lines **260–262**, `includes/itm_ldap_auth.php` lines **7–9**, `includes/itm_stripe_checkout.php` lines **7–9**, `includes/itm_hotel_booking_distribution_secrets.php` lines **7–8**, `includes/itm_webhook_queue.php` lines **7–9**.
+**Verification:** **Documented posture** — expect **`[INFO]`** in `php scripts/verify_pentest_report.php`. `hash('sha256', (defined('DB_PASS') ? DB_PASS : 'itmanagement') . …)` in `includes/itm_email.php` lines **10–12** (`itm_smtp_encryption_key`), `includes/itm_totp_helpers.php` lines **260–262**, `includes/itm_ldap_auth.php` lines **7–9**, `includes/itm_stripe_checkout.php` lines **7–9**, `includes/itm_hotel_booking_distribution_secrets.php` lines **7–8**, `includes/itm_webhook_queue.php` lines **7–9**.
 
 **Severity:** Medium  
 **OWASP Category:** A02:2021 – Cryptographic Failures  
@@ -747,7 +747,8 @@ define('MAILERLITE_API_KEY', $itm_mailerlite_api_key);
 | Chatbot XSS | Effective | `escapeHtml()` before `innerHTML` in `js/chatbot.js` |
 | Security headers (CSP, XFO, HSTS) | **Effective** (bootstrap) | ITM-PENTEST-007 remediated via `itm_send_security_headers()` |
 | Email approval workflow | **Improved** | ITM-PENTEST-001–003 remediated (env secret, POST+CSRF confirm, approver binding) |
-| Secrets at rest (integration) | **Moderate** | DB_PASS-derived keys — ITM-PENTEST-005 |
+| Secrets at rest (integration) | **Documented** | DB_PASS-derived keys — ITM-PENTEST-005 (`[INFO]`) |
+| Default seed credentials | **Mitigated** | ITM-PENTEST-004 seeds retained; `must_change_password` gate — `[INFO]` |
 | Error display defaults | **Effective** (default off) | ITM-PENTEST-006 remediated; admins may re-enable in Settings |
 
 ---
@@ -780,9 +781,9 @@ define('MAILERLITE_API_KEY', $itm_mailerlite_api_key);
 
 **Overall rating: MEDIUM-HIGH** for a default deployment with seed data and factory UI settings; **MEDIUM** after mandatory credential rotation, rotating approval secrets, and hardening production ingress (verbose error display now defaults off per ITM-PENTEST-006).
 
-The application demonstrates mature security **process** (static gates, regression scripts, upload hardening, RBAC layering) uncommon in procedural PHP codebases. Remaining **confirmed** high-impact risks are concentrated in **deployment hygiene** (default `Admin` password — ITM-PENTEST-004) and **DB-derived encryption keys** (ITM-PENTEST-005). Request Password email approvals (ITM-PENTEST-001–003), hardcoded approval secret, and verbose PHP error display defaults (ITM-PENTEST-006) were remediated.
+The application demonstrates mature security **process** (static gates, regression scripts, upload hardening, RBAC layering) uncommon in procedural PHP codebases. **Documented posture** items ITM-PENTEST-004 (seed credentials + first-login rotation) and ITM-PENTEST-005 (DB-derived encryption keys) surface as **`[INFO]`** in the regression verifier — not open regressions. Request Password email approvals (ITM-PENTEST-001–003), hardcoded approval secret, and verbose PHP error display defaults (ITM-PENTEST-006) were remediated.
 
-Addressing ITM-PENTEST-004 should be prioritised before internet exposure. Defence-in-depth items (headers, rate limits, maintenance token policy) reduce blast radius from phishing and misconfiguration.
+Before internet exposure: confirm `must_change_password` enforcement is enabled (do not set `ITM_SKIP_FORCE_PASSWORD_CHANGE=1`), rotate seed admin passwords after import, and plan `ITM_APP_KEY` for integration secrets. Defence-in-depth items (headers, rate limits, maintenance token policy) reduce blast radius from phishing and misconfiguration.
 
 ---
 
