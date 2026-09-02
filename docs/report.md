@@ -13,7 +13,7 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 
 **Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase, but **deployment hygiene** risks remain (default seed credentials, DB-password-derived encryption keys). Request Password email approvals (ITM-PENTEST-001–003) and verbose PHP error display defaults (ITM-PENTEST-006) were remediated. No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`.
 
-**Primary risks:** Credential and secrets compromise via default accounts or database credential leakage; phishing via intentional short-link redirects. Request Password email approvals now use POST+CSRF confirm flow with designated-approver binding (ITM-PENTEST-001–003 remediated).
+**Primary risks:** Credential and secrets compromise via default accounts or database credential leakage. Short-link phishing risk is reduced by HTTPS-by-default, optional domain allowlist, interstitial warning, redirect-time policy checks, and per-employee creation rate limits (ITM-PENTEST-009 remediated). Request Password email approvals now use POST+CSRF confirm flow with designated-approver binding (ITM-PENTEST-001–003 remediated).
 
 ---
 
@@ -56,8 +56,8 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 | Label | Meaning | Findings |
 |-------|---------|----------|
-| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 010, 012–014, 016 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–011, 015 |
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 009–010, 012–014, 016 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008, 011, 015 |
 | **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
@@ -349,43 +349,35 @@ Allowlist: `scripts/lib/itm_script_bootstrap.php` → `module_browser_qa_runner.
 
 ### ITM-PENTEST-009 Short URL service enables open redirects (phishing risk)
 
+**Status:** **Remediated** — HTTPS destinations on by default; redirect-time policy via `itm_short_url_resolve_public_redirect()`; optional domain allowlist; interstitial warning page; per-employee creation rate limit (Configuration tab).  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `itm_short_url_normalize_destination()` at `includes/itm_short_url.php` line **112** (allows `http://` / `https://`); 302 redirect at `modules/short-url/go.php` line **62**; `'require_https_destination' => 0` default at `includes/itm_short_url.php` line **129**. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. Defaults: `require_https_destination = 1`, `interstitial_warning_enabled = 1`, `creation_rate_limit_per_hour = 30`. Regression: `php scripts/verify_short_url.php`.
 
-**Severity:** Medium  
+**Severity:** Medium (was open; mitigated — residual phishing risk when allowlist is off)  
 **OWASP Category:** A10:2021 – Server-Side Request Forgery (redirect variant) / social engineering  
 **Affected Component:** Short URL module  
-**Affected File:** `modules/short-url/go.php`, `includes/itm_short_url.php`  
-**Affected Function:** `itm_short_url_normalize_destination()`  
+**Affected File:** `modules/short-url/go.php`, `includes/itm_short_url.php`, `modules/short-url/includes/partials/tab_configuration.php`  
+**Affected Function:** `itm_short_url_resolve_public_redirect()`, `itm_short_url_destination_passes_policy()`  
 **Affected Parameter:** `destination_url` (stored), `c` / `t` (public)
 
-**Description:**  
-Authenticated users can create short links that 302 redirect to arbitrary `http://` or `https://` destinations. `require_https_destination` exists in settings but defaults to off. Attackers with link-creation rights can abuse trusted domain for phishing.
+**Description (original):**  
+Authenticated users could create short links that 302 redirect to arbitrary `http://` or `https://` destinations with no interstitial or allowlist.
 
-**Evidence:**
+**Remediation:**  
+- **HTTPS default on** — `require_https_destination` defaults to `1` in schema and `itm_short_url_default_settings()`; enforced on save and at redirect via `itm_short_url_resolve_public_redirect()`.  
+- **Domain allowlist** — optional `enforce_domain_allowlist` + `allowed_destination_domains` (Configuration tab); host/subdomain match on save and redirect.  
+- **Interstitial warning** — `interstitial_warning_enabled` (default on) shows external-link confirmation before 302.  
+- **Creation rate limit** — `creation_rate_limit_per_hour` per employee (default 30; `0` = unlimited).  
+- **Normalization** — rejects URL userinfo (`user@host`) and non-http(s) schemes.
 
-```112:121:includes/itm_short_url.php
-function itm_short_url_normalize_destination($url)
-{
-    ...
-    if (!preg_match('#^https?://#i', $url)) {
-        $url = 'https://' . $url;
-    }
-    return $url;
-}
+**Regression:**
+
+```bash
+php scripts/verify_short_url.php
+php scripts/verify_pentest_report.php
 ```
 
-```62:63:modules/short-url/go.php
-header('Location: ' . $destination, true, 302);
-```
-
-**Proof of Concept (safe):** Create short link to `https://evil.example` → public [go.php](http://localhost/it-management/go.php) redirect.
-
-**Impact:** Phishing, reputation abuse; not arbitrary internal SSRF (external URL only).
-
-**Attack Scenario:** Compromised or malicious employee publishes `go.php?c=abc` in ticket email; victims trust `localhost/it-management` domain.
-
-**Recommendation:** Enforce HTTPS destinations, allowlist domains, interstitial warning page, rate limits on creation. *(Documentation only.)*
+**Residual risk:** When allowlist enforcement is disabled, employees with link-creation rights can still point short links at arbitrary HTTPS hosts — interstitial and HTTPS policy reduce blind phishing but do not eliminate social engineering.
 
 ---
 

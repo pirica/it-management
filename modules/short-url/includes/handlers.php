@@ -25,6 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_short_url_settin
         header('Location: index.php?tab=configuration');
         exit;
     }
+    if (!empty($_POST['enforce_domain_allowlist']) && trim((string) ($_POST['allowed_destination_domains'] ?? '')) === '') {
+        $_SESSION['su_flash_error'] = 'Add at least one allowed domain when enforcement is enabled.';
+        header('Location: index.php?tab=configuration');
+        exit;
+    }
     if (itm_short_url_save_settings($conn, $suCompanyId, $suEmployeeId, $_POST)) {
         $_SESSION['su_flash_success'] = 'Short URL settings saved.';
     } else {
@@ -104,6 +109,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['short_url_action']) &
     if ((string) ($validated['password'] ?? '') !== '') {
         $passwordHash = password_hash((string) $validated['password'], PASSWORD_DEFAULT);
     }
+
+    if ($id <= 0) {
+        $settings = itm_short_url_load_settings($conn, $suCompanyId);
+        $createLimit = itm_short_url_creation_rate_limit_check($suCompanyId, $suEmployeeId, $settings, true);
+        if (empty($createLimit['ok'])) {
+            $_SESSION['su_flash_error'] = (string) ($createLimit['error'] ?? 'Link creation limit reached.');
+            header('Location: index.php');
+            exit;
+        }
+    }
+
     $newId = itm_short_url_insert_row($conn, $suCompanyId, $suEmployeeId, $validated, $passwordHash);
     if ($newId <= 0) {
         $_SESSION['su_flash_error'] = 'Could not create short link.';

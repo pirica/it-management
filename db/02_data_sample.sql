@@ -1005,8 +1005,8 @@ INSERT INTO `scheduled_reports` (`company_id`, `report_slug`, `saved_view_id`, `
 INSERT INTO `short_url_clicks` (`short_url_id`, `company_id`, `clicked_at`, `ip_hash`, `user_agent`, `referrer`) VALUES
 (1, 1, '2026-08-27 23:35:48', 'Sample e93f8b4a', 'Sample ad6d0048', 'Sample f3a0d316');
 
-INSERT INTO `short_url_settings` (`company_id`, `default_expiry_days`, `custom_code_min_length`, `require_https_destination`, `analytics_enabled`, `allow_password_protect`, `active`, `created_at`) VALUES
-(1, NULL, 4, 0, 1, 1, 1, '2026-01-01 00:00:01');
+INSERT INTO `short_url_settings` (`company_id`, `default_expiry_days`, `custom_code_min_length`, `require_https_destination`, `enforce_domain_allowlist`, `interstitial_warning_enabled`, `creation_rate_limit_per_hour`, `analytics_enabled`, `allow_password_protect`, `active`, `created_at`) VALUES
+(1, NULL, 4, 1, 0, 1, 30, 1, 1, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `short_urls` (`company_id`, `employee_id`, `title`, `destination_url`, `short_code`, `access_token`, `password_hash`, `expires_at`, `click_count`, `qr_code_id`, `active`) VALUES
 (1, 1, 'Sample 964202f3', 'Sample e233b514', 'Sample 5e170978', 'Sample 439512a7', 'Sample 56cbb4c6', '2026-08-27 23:35:48', 1, 1, 1);

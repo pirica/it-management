@@ -78,12 +78,74 @@ if (!$colPublicBase || mysqli_num_rows($colPublicBase) === 0) {
 }
 su_verify_pass('short_url_settings.public_base_url column exists.');
 
+foreach (['enforce_domain_allowlist', 'allowed_destination_domains', 'interstitial_warning_enabled', 'creation_rate_limit_per_hour'] as $col) {
+    $colRes = mysqli_query($conn, "SHOW COLUMNS FROM short_url_settings LIKE '" . mysqli_real_escape_string($conn, $col) . "'");
+    if (!$colRes || mysqli_num_rows($colRes) === 0) {
+        su_verify_fail('short_url_settings.' . $col . ' column missing — apply db/migrations/short_url_security_hardening.sql.');
+        exit(1);
+    }
+    su_verify_pass('short_url_settings.' . $col . ' column exists.');
+}
+
 $customBase = 'https://short.example.test/it-management/go.php?c=';
+$defaults = itm_short_url_default_settings();
+if ((int) ($defaults['require_https_destination'] ?? 0) !== 1) {
+    su_verify_fail('Default require_https_destination should be 1.');
+} else {
+    su_verify_pass('Default require_https_destination is on.');
+}
+
+if ((int) ($defaults['interstitial_warning_enabled'] ?? 0) !== 1) {
+    su_verify_fail('Default interstitial_warning_enabled should be 1.');
+} else {
+    su_verify_pass('Default interstitial warning is on.');
+}
+
+$httpPolicy = itm_short_url_destination_passes_policy('http://example.com/insecure', ['require_https_destination' => 1]);
+if (!empty($httpPolicy['ok'])) {
+    su_verify_fail('HTTP destination should fail when HTTPS is required.');
+} else {
+    su_verify_pass('HTTPS policy blocks http:// destinations.');
+}
+
+$allowPolicy = itm_short_url_destination_passes_policy('https://evil.example/phish', [
+    'require_https_destination' => 1,
+    'enforce_domain_allowlist' => 1,
+    'allowed_destination_domains' => "example.com\npartner.test",
+]);
+if (!empty($allowPolicy['ok'])) {
+    su_verify_fail('Allowlist should block unlisted host.');
+} else {
+    su_verify_pass('Domain allowlist blocks unlisted hosts.');
+}
+
+$allowOk = itm_short_url_destination_passes_policy('https://www.example.com/safe', [
+    'require_https_destination' => 1,
+    'enforce_domain_allowlist' => 1,
+    'allowed_destination_domains' => 'example.com',
+]);
+if (empty($allowOk['ok'])) {
+    su_verify_fail('Allowlist should permit subdomain of listed domain.');
+} else {
+    su_verify_pass('Domain allowlist permits subdomains.');
+}
+
+$userInfoNorm = itm_short_url_normalize_destination('https://user@evil.example/path');
+if ($userInfoNorm !== '') {
+    su_verify_fail('URL userinfo in destination should be rejected.');
+} else {
+    su_verify_pass('Destination normalization rejects userinfo URLs.');
+}
+
 if (empty(itm_short_url_load_settings($conn, $companyId)['id'])) {
     itm_short_url_save_settings($conn, $companyId, 1, [
         'default_expiry_days' => '',
         'custom_code_min_length' => 4,
-        'require_https_destination' => '',
+        'require_https_destination' => '1',
+        'enforce_domain_allowlist' => '',
+        'allowed_destination_domains' => '',
+        'interstitial_warning_enabled' => '1',
+        'creation_rate_limit_per_hour' => 30,
         'analytics_enabled' => '1',
         'allow_password_protect' => '1',
         'public_base_url' => '',
