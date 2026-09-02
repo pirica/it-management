@@ -57,8 +57,8 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 | Label | Meaning | Findings |
 |-------|---------|----------|
-| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–014, 016 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008, 015 |
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 009–016 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008 |
 | **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
@@ -540,24 +540,25 @@ Previously `secure` was set only from inline HTTPS / `X-Forwarded-Proto` detecti
 
 ### ITM-PENTEST-015 Explorer API lacks application-level rate limiting
 
+**Status:** **Remediated** — per-employee rolling-hour cap via `itm_explorer_api_enforce_rate_limit_or_exit()` in `modules/explorer/api.php`; limit stored on `ui_configuration.explorer_api_rate_limit_per_hour` (Settings → API Access, default **1200**; **0** = unlimited). Optional platform override: `.env` `ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR`.  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — no `itm_api_enforce_rate_limit_or_exit()` call in `modules/explorer/api.php` (CSRF enforced on POST at lines **262–266** only). Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. Regression: `php scripts/verify_explorer_api_rate_limit.php`.
 
-**Severity:** Low  
+**Severity:** Low (was open; remediated)  
 **OWASP Category:** A04:2021 – Insecure Design  
 **Affected Component:** File Explorer AJAX API  
-**Affected File:** `modules/explorer/api.php`  
-**Affected Function:** Entire router  
-**Affected Parameter:** N/A
+**Affected File:** `modules/explorer/api.php`, `includes/itm_explorer_api_rate_limit.php`, `modules/settings/index.php`  
+**Affected Function:** `itm_explorer_api_enforce_rate_limit_or_exit()`  
+**Affected Parameter:** `explorer_api_rate_limit_per_hour` (`ui_configuration`)
 
 **Description:**  
-Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `api.php` does not call `itm_api_enforce_rate_limit_or_exit()`. Authenticated users could abuse upload/list operations for DoS or storage exhaustion (partially mitigated by auth and upload validation).
+Authenticated Explorer `api.php` requests (POST actions and `downloadZip` GET) now consume one slot per call against a per-employee rolling-hour counter (`files/rate_limits/explorer_api/`). Over-cap responses return HTTP **429** JSON. CSRF on POST and path ACL remain unchanged.
 
-**Evidence:** Grep for `itm_api_enforce_rate_limit` in `modules/explorer/api.php` — no matches; CSRF enforced on POST (lines 262–266).
+**Evidence:** `modules/explorer/api.php` calls `itm_explorer_api_enforce_rate_limit_or_exit($company_id, $user_id)` after session auth (and after CSRF on POST). Settings → **API Access** exposes **Explorer API hourly limit** plus read-only usage counters.
 
-**Impact:** Resource exhaustion within tenant storage quotas.
+**Impact:** Reduced resource exhaustion / storage abuse from compromised or scripted sessions.
 
-**Recommendation:** Per-user rate limits on upload/list; storage quotas per employee. *(Documentation only.)*
+**Recommendation:** Tune per-user limits in Settings → API Access; set `ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR` on production when a global cap is required. *(Remediated.)*
 
 ---
 

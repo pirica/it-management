@@ -143,7 +143,7 @@ if ($settingsUserId > 0 && function_exists('itm_api_resolve_configuration_employ
     $apiAccessEmployeeId = itm_api_resolve_configuration_employee_id($conn, (int) $company_id, $settingsUserId);
     $apiAccessRow = itm_api_lookup_configuration_by_user($conn, (int) $company_id, $apiAccessEmployeeId);
     if (is_array($apiAccessRow)) {
-        foreach (['id', 'api_key', 'api_key_is_active', 'api_key_last_used_at', 'rate_limit_window_start', 'rate_limit_request_count', 'rate_limit_enabled', 'tier'] as $apiAccessField) {
+        foreach (['id', 'api_key', 'api_key_is_active', 'api_key_last_used_at', 'rate_limit_window_start', 'rate_limit_request_count', 'rate_limit_enabled', 'tier', 'explorer_api_rate_limit_per_hour'] as $apiAccessField) {
             if (array_key_exists($apiAccessField, $apiAccessRow)) {
                 $currentUiConfig[$apiAccessField] = $apiAccessRow[$apiAccessField];
             }
@@ -614,6 +614,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($action === 'save_explorer_api_rate_limit') {
+        if ((int) $company_id <= 0 || $settingsUserId <= 0) {
+            $error = 'Unable to save Explorer API rate limit: missing company or session user.';
+        } else {
+            if (!function_exists('itm_explorer_api_save_rate_limit_per_hour')) {
+                require_once ROOT_PATH . 'includes/itm_explorer_api_rate_limit.php';
+            }
+            if (!itm_explorer_api_save_rate_limit_per_hour(
+                $conn,
+                (int) $company_id,
+                $settingsUserId,
+                $_POST['explorer_api_rate_limit_per_hour'] ?? itm_explorer_api_rate_limit_default_per_hour()
+            )) {
+                $error = 'Unable to save Explorer API rate limit.';
+            } else {
+                $_SESSION['settings_flash_message'] = 'Explorer API rate limit saved successfully.';
+                header('Location: index.php?explorer_api_rate_saved=1');
+                exit;
+            }
+        }
+    }
+
     if ($action === 'generate_api_key') {
         $settingsApiTier = function_exists('itm_api_normalize_tier')
             ? itm_api_normalize_tier($currentUiConfig['tier'] ?? 'Free')
@@ -796,6 +818,23 @@ $currentRateLimitWindowLabel = $currentRateLimitWindowStart > 0
 $currentApiResetLabel = !empty($currentApiRateStatus['reset_at'])
     ? gmdate('Y-m-d H:i:s', (int)$currentApiRateStatus['reset_at']) . ' UTC'
     : '—';
+if (!function_exists('itm_explorer_api_rate_limit_per_hour')) {
+    require_once ROOT_PATH . 'includes/itm_explorer_api_rate_limit.php';
+}
+$currentExplorerApiRateLimitPerHour = itm_explorer_api_rate_limit_per_hour($currentUiConfig);
+$currentExplorerApiRateStatus = itm_explorer_api_rate_limit_check((int) $company_id, $settingsUserId, false);
+$currentExplorerApiRateLimitLabel = $currentExplorerApiRateLimitPerHour <= 0
+    ? 'No limit'
+    : (string) $currentExplorerApiRateLimitPerHour;
+$currentExplorerApiRateUsedLabel = $currentExplorerApiRateLimitPerHour <= 0
+    ? '—'
+    : (string) max(
+        0,
+        $currentExplorerApiRateLimitPerHour - (int) ($currentExplorerApiRateStatus['remaining'] ?? 0)
+    );
+$currentExplorerApiRateRemainingLabel = $currentExplorerApiRateLimitPerHour <= 0
+    ? 'No limit'
+    : (string) max(0, (int) ($currentExplorerApiRateStatus['remaining'] ?? 0));
 $currentApiV2ScopeCatalog = function_exists('itm_api_v2_scope_catalog') ? itm_api_v2_scope_catalog() : [];
 $currentApiV2Scopes = [];
 if (function_exists('itm_api_v2_list_scopes_for_configuration') && (int)($currentUiConfig['id'] ?? 0) > 0) {
@@ -1314,6 +1353,32 @@ if (!isset($crud_title)) {
                             <input id="rate_limit_reset_display" type="text" value="<?php echo sanitize($currentApiResetLabel); ?>" readonly disabled>
                         </div>
                     </div>
+
+                    <hr style="margin:20px 0;border:none;border-top:1px solid var(--border-color,#ddd);">
+
+                    <p class="form-hint" style="margin-top:0;">Explorer file manager AJAX (<code>modules/explorer/api.php</code>) is rate-limited per signed-in employee per hour. Set <strong>0</strong> for no cap (not recommended on production). Platform override: <code>ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR</code> in <code>.env</code>.</p>
+                    <form method="post" style="margin-top:12px;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <input type="hidden" name="action" value="save_explorer_api_rate_limit">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+                            <div class="form-group">
+                                <label for="explorer_api_rate_limit_per_hour">Explorer API hourly limit</label>
+                                <input id="explorer_api_rate_limit_per_hour" name="explorer_api_rate_limit_per_hour" type="number" min="0" max="5000" step="1" value="<?php echo sanitize((string) $currentExplorerApiRateLimitPerHour); ?>">
+                                <p class="form-hint" style="margin-top:6px;">Requests per rolling hour (list, upload, trash, ZIP download, etc.). Default 1200.</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="explorer_api_rate_used_display">Explorer requests this hour</label>
+                                <input id="explorer_api_rate_used_display" type="text" value="<?php echo sanitize($currentExplorerApiRateUsedLabel); ?>" readonly disabled>
+                            </div>
+                            <div class="form-group">
+                                <label for="explorer_api_rate_remaining_display">Explorer remaining this hour</label>
+                                <input id="explorer_api_rate_remaining_display" type="text" value="<?php echo sanitize($currentExplorerApiRateRemainingLabel); ?>" readonly disabled>
+                            </div>
+                        </div>
+                        <div class="itm-form-actions itm-align-left" style="margin-top:8px;">
+                            <button class="btn btn-primary" type="submit" title="Save Explorer API rate limit">💾</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 

@@ -1562,6 +1562,7 @@ function itm_ui_config_defaults() {
         'sidebar_main_order' => itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
         'sidebar_collapsed' => [],
+        'explorer_api_rate_limit_per_hour' => 1200,
     ];
 }
 
@@ -1701,6 +1702,7 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `rate_limit_request_count` INT NOT NULL DEFAULT 0,
         `rate_limit_enabled` TINYINT(1) NOT NULL DEFAULT 1,
         `tier` ENUM('Free','Basic','Pro','Enterprise') NOT NULL DEFAULT 'Free',
+        `explorer_api_rate_limit_per_hour` INT NOT NULL DEFAULT 1200,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -1761,6 +1763,7 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         'rate_limit_request_count' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_request_count` INT NOT NULL DEFAULT 0 AFTER `rate_limit_window_start`",
         'rate_limit_enabled' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_enabled` TINYINT(1) NOT NULL DEFAULT 1 AFTER `rate_limit_request_count`",
         'tier' => "ALTER TABLE `ui_configuration` ADD COLUMN `tier` ENUM('Free','Basic','Pro','Enterprise') NOT NULL DEFAULT 'Free' AFTER `rate_limit_enabled`",
+        'explorer_api_rate_limit_per_hour' => "ALTER TABLE `ui_configuration` ADD COLUMN `explorer_api_rate_limit_per_hour` INT NOT NULL DEFAULT 1200 AFTER `tier`",
     ];
 
     foreach ($columns as $column => $alterSql) {
@@ -1908,7 +1911,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null, $clearCac
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_sidebar_section_collapse, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, dashboard_widget_prefs, ui_money_symbol, ui_money_symbol_suffix, ui_money_symbol_prefix, ui_date_format, ui_time_format, ui_datetime_european1_enabled, ui_datetime_european2_enabled, ui_datetime_iso_enabled, ui_datetime_readable_enabled, ui_datetime_format_default, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_sidebar_section_collapse, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, dashboard_widget_prefs, ui_money_symbol, ui_money_symbol_suffix, ui_money_symbol_prefix, ui_date_format, ui_time_format, ui_datetime_european1_enabled, ui_datetime_european2_enabled, ui_datetime_iso_enabled, ui_datetime_readable_enabled, ui_datetime_format_default, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier, explorer_api_rate_limit_per_hour FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -2011,6 +2014,13 @@ function itm_normalize_ui_configuration($values) {
     $values['tier'] = function_exists('itm_api_normalize_tier')
         ? itm_api_normalize_tier($values['tier'] ?? 'Free')
         : 'Free';
+
+    if (!function_exists('itm_explorer_api_normalize_rate_limit_per_hour')) {
+        require_once __DIR__ . '/itm_explorer_api_rate_limit.php';
+    }
+    $values['explorer_api_rate_limit_per_hour'] = itm_explorer_api_normalize_rate_limit_per_hour(
+        $values['explorer_api_rate_limit_per_hour'] ?? itm_explorer_api_rate_limit_default_per_hour()
+    );
 
     if (!function_exists('itm_ui_locale_normalize_post_values')) {
         require_once __DIR__ . '/itm_ui_locale_format.php';
