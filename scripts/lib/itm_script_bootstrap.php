@@ -54,6 +54,7 @@ if (!function_exists('itm_script_no_auth_builtin_allowed_hosts')) {
     {
         return [
             'localhost',
+            '127.0.0.1',
             'myhome.dynip.sapo.pt',
         ];
     }
