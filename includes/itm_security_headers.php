@@ -54,6 +54,55 @@ if (!function_exists('itm_request_is_https')) {
     }
 }
 
+if (!function_exists('itm_session_cookie_secure_from_config')) {
+    /**
+     * Resolve Secure cookie flag from env + request TLS (testable without web SAPI).
+     *
+     * @param string|null $forceEnv Raw ITM_SESSION_COOKIE_SECURE value, or null to skip override.
+     */
+    function itm_session_cookie_secure_from_config(?string $appUrl, ?string $forceEnv, bool $requestIsHttps): bool
+    {
+        if ($forceEnv !== null && $forceEnv !== '') {
+            return filter_var($forceEnv, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        $appUrl = trim((string)$appUrl);
+        if ($appUrl !== '') {
+            $parsed = parse_url($appUrl);
+            if (is_array($parsed) && isset($parsed['scheme'])
+                && strtolower((string)$parsed['scheme']) === 'https') {
+                return true;
+            }
+        }
+
+        return $requestIsHttps;
+    }
+}
+
+if (!function_exists('itm_session_cookie_secure')) {
+    /**
+     * Whether session/CSRF cookies should set the Secure attribute.
+     *
+     * Why: Production installs set ITM_APP_URL to https://… so cookies stay Secure even when
+     * a reverse proxy omits HTTPS / X-Forwarded-Proto on the PHP hop (ITM-PENTEST-014).
+     */
+    function itm_session_cookie_secure(): bool
+    {
+        if (PHP_SAPI === 'cli') {
+            return false;
+        }
+
+        $forceEnv = getenv('ITM_SESSION_COOKIE_SECURE');
+        $force = ($forceEnv !== false && $forceEnv !== '') ? (string)$forceEnv : null;
+
+        return itm_session_cookie_secure_from_config(
+            (string)getenv('ITM_APP_URL'),
+            $force,
+            itm_request_is_https()
+        );
+    }
+}
+
 if (!function_exists('itm_build_content_security_policy')) {
     /**
      * CSP compatible with inline module UI and known CDN script/style hosts.

@@ -27,4 +27,23 @@ class SecurityHeadersTest extends TestCase
             'HTTP_X_FORWARDED_PROTO' => 'https',
         ]));
     }
+
+    public function testSessionCookieSecureForcesWhenAppUrlIsHttps(): void
+    {
+        require_once dirname(__DIR__, 4) . '/includes/itm_security_headers.php';
+
+        $this->assertTrue(itm_session_cookie_secure_from_config(
+            'https://itm.example.com/app/',
+            null,
+            false
+        ));
+    }
+
+    public function testSessionCookieSecureFalseOnPlainHttpWithoutAppUrl(): void
+    {
+        require_once dirname(__DIR__, 4) . '/includes/itm_security_headers.php';
+
+        $this->assertFalse(itm_session_cookie_secure_from_config('', null, false));
+        $this->assertTrue(itm_session_cookie_secure_from_config('', null, true));
+    }
 }
