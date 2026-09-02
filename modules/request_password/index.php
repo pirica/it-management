@@ -516,7 +516,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         header("Location: view.php?id=$last_id");
         exit;
     } else {
-        $error = "Error saving record: " . mysqli_error($conn);
+        // Why: Do not expose mysqli_stmt_error() to the browser (ITM-PENTEST-012).
+        error_log(
+            'request_password save failed (company_id=' . (int)$company_id
+            . ', action=' . (string)$crud_action . '): ' . mysqli_stmt_error($stmt)
+        );
+        $error = 'Error saving record. Please try again or contact support.';
     }
 }
 

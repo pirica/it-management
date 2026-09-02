@@ -2423,7 +2423,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_pentest_report.php" target="_blank" rel="nofollow noreferrer">verify_pentest_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Static regression for <code>docs/report.md</code> pentest ITM-PENTEST-001–022. Labels: <code>[PASS]</code> remediated (001–003, 006–007), <code>[OPEN]</code> documented gap (004–005, 008–016), <code>[INFO]</code> positive control, <code>[FAIL]</code> drift. Invokes <code>check_sql_injection_coverage.php</code> and <code>check_csrf_coverage.php</code>. PHPUnit: <code>--filter PentestReport</code>.</td>
+                    <td>Static regression for <code>docs/report.md</code> pentest ITM-PENTEST-001–022. Labels: <code>[PASS]</code> remediated (001–003, 006–007, 012), <code>[OPEN]</code> documented gap (004–005, 008–011, 013–016), <code>[INFO]</code> positive control, <code>[FAIL]</code> drift. Invokes <code>check_sql_injection_coverage.php</code> and <code>check_csrf_coverage.php</code>. PHPUnit: <code>--filter PentestReport</code>.</td>
                     <td><code>php scripts/verify_pentest_report.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">

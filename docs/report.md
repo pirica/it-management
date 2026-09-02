@@ -56,8 +56,8 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 | Label | Meaning | Findings |
 |-------|---------|----------|
-| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–016 |
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 012 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–011, 013–016 |
 | **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
@@ -76,7 +76,7 @@ Examples:
 | Critical      | 0     |
 | High          | 1     |
 | Medium        | 7     |
-| Low           | 5     |
+| Low           | 4     |
 | Informational | 6     |
 
 ---
@@ -446,26 +446,35 @@ Token validation accepts **either** `reset_token_hash` **or** legacy plaintext `
 
 ---
 
-### ITM-PENTEST-012 MySQL error message echoed on approval failure
+### ITM-PENTEST-012 MySQL error message echoed to users on save failure
 
+**Status:** **Remediated** — create/edit save failures show a generic message; `mysqli_stmt_error()` is written to `error_log()` only. Email approval failures already used a generic message (no `mysqli_error` in the browser).  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `echo "Error updating status: " . mysqli_error($conn)` at `modules/request_password/index.php` line **81**. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. No `$error = … mysqli_error($conn)` or approval `echo … mysqli_error` in `modules/request_password/index.php`.
 
-**Severity:** Low  
+**Severity:** Low (was open; remediated)  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
-**Affected Component:** Request Password approval handler  
+**Affected Component:** Request Password create/edit save handler (formerly also approval handler in report text)  
 **Affected File:** `modules/request_password/index.php`  
-**Affected Function:** Approval handler error branch  
+**Affected Function:** Create/edit POST save branch  
 **Affected Parameter:** N/A
 
 **Description:**  
-On failed `UPDATE`, the handler echoes `mysqli_error($conn)` to the browser.
+On failed `INSERT`/`UPDATE` during create or edit, the module previously set `$error` from `mysqli_error($conn)`, which rendered in the form alert. Approval POST failures were already generic after the POST+CSRF approval refactor.
 
-**Evidence:** Line 81: `echo "Error updating status: " . mysqli_error($conn);`
+**Evidence (current — remediated):**
 
-**Impact:** Minor information disclosure (DB error text).
+```php
+error_log(
+    'request_password save failed (company_id=' . (int)$company_id
+    . ', action=' . (string)$crud_action . '): ' . mysqli_stmt_error($stmt)
+);
+$error = 'Error saving record. Please try again or contact support.';
+```
 
-**Recommendation:** Log internally; show generic message to users. *(Documentation only.)*
+**Impact:** Reduced minor information disclosure (schema/constraint text no longer shown to end users).
+
+**Recommendation:** Keep generic user copy; retain server-side `error_log()` for operators. *(Remediated.)*
 
 ---
 

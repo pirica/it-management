@@ -31,6 +31,7 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - Authorize/Decline email links: GET `approval_confirm` (read-only) then POST `approval_submit` with CSRF — no state change on GET. Helpers in `includes/itm_request_password_approval.php`.
 - HMAC-SHA256 tokens bind `recordId|target|decision|approverEmployeeId`. Signing key: **`ITM_REQUEST_PASSWORD_APPROVAL_SECRET`** in `.env` via `itm_request_password_approval_secret()`.
 - `itm_request_password_approval_employee_may_act()` — session employee must match designated HR/HOD approver from `approvers` / `approver_type` before confirm or UPDATE.
+- Approval POST failures and create/edit save failures must not expose `mysqli_error()` / `mysqli_stmt_error()` in HTML or `$error` alerts — log details with `error_log()` only (ITM-PENTEST-012). User copy: `Error saving record. Please try again or contact support.`
 - Multi-tenancy strictly enforced via `company_id`.
 - Soft delete pattern implemented: deleting a request password record updates `active = 0`, sets `deleted_by` and `deleted_at`, rather than hard-deleting the database row.
 - Audit triggers are defined in `db/03_triggers.sql` for INSERT, UPDATE, and DELETE actions on `request_password`, which capture both old and new states in the `audit_logs` table.
