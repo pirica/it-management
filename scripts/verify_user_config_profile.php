@@ -229,7 +229,7 @@ if ($userConfig === false) {
     } else {
         ucp_pass('user-config.php uses shared personalized sidebar save helper.');
     }
-    if (!preg_match('/update_sidebar[\s\S]{0,400}\$ui_config\s*=\s*itm_get_ui_configuration/', $userConfig)) {
+    if (!preg_match("/elseif \(\$action === 'update_sidebar'\)[\s\S]{0,1200}\\\$ui_config\\s*=\\s*itm_get_ui_configuration/", $userConfig)) {
         ucp_fail('user-config.php must reload $ui_config after successful update_sidebar.');
     } else {
         ucp_pass('user-config.php reloads $ui_config after sidebar save.');
@@ -244,7 +244,7 @@ if ($userConfig === false) {
     } else {
         ucp_pass('user-config.php smart dashboard widget prefs section present.');
     }
-    if (!preg_match('/update_dashboard_widgets[\s\S]{0,400}\$ui_config\s*=\s*itm_get_ui_configuration/', $userConfig)) {
+    if (!preg_match("/elseif \(\$action === 'update_dashboard_widgets'\)[\s\S]{0,800}\\\$ui_config\\s*=\\s*itm_get_ui_configuration/", $userConfig)) {
         ucp_fail('user-config.php must reload $ui_config after successful update_dashboard_widgets.');
     } else {
         ucp_pass('user-config.php reloads $ui_config after dashboard widget save.');
