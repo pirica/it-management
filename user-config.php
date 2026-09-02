@@ -583,6 +583,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sidebarSaved = itm_user_config_save_personalized_sidebar_items($conn, $company_id, $user_id, $items);
         $collapseSaved = itm_user_config_save_sidebar_section_collapse_enabled($conn, $company_id, $user_id, $collapseEnabled);
         if ($sidebarSaved && $collapseSaved) {
+            // Why: Bust static ui_configuration cache after save helpers so same-request checkbox state matches DB.
+            itm_get_ui_configuration($conn, $company_id, $user_id, true);
             $ui_config = itm_get_ui_configuration($conn, $company_id, $user_id);
             itm_log_audit($conn, 'employee_sidebar_preferences', $user_id, 'UPDATE', ['action' => 'sidebar_preferences_change'], ['action' => 'sidebar_preferences_change_success']);
             $message = 'Sidebar updated!';
@@ -594,6 +596,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'update_dashboard_widgets') {
         $widgetSlugs = is_array($_POST['dashboard_widgets'] ?? null) ? $_POST['dashboard_widgets'] : [];
         if (itm_user_config_save_dashboard_widget_prefs($conn, $company_id, $user_id, $widgetSlugs)) {
+            itm_get_ui_configuration($conn, $company_id, $user_id, true);
             $ui_config = itm_get_ui_configuration($conn, $company_id, $user_id);
             itm_log_audit($conn, 'ui_configuration', $user_id, 'UPDATE', ['action' => 'dashboard_widget_prefs_change'], ['action' => 'dashboard_widget_prefs_change_success']);
             $message = 'Dashboard widgets updated!';
