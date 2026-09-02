@@ -30,7 +30,7 @@ if (!function_exists('itm_script_running_under_scripts_dir')) {
 if (!function_exists('itm_script_browser_no_auth_script_basenames')) {
     /**
      * Read-only browser scripts that skip employee login when ITM_SCRIPT_NO_AUTH is set
-     * and the client passes itm_script_browser_no_auth_client_allowed() (loopback, IP allowlist, or maintenance token).
+     * and the client passes itm_script_browser_no_auth_client_allowed() (loopback, host/IP allowlist, or maintenance token).
      *
      * @return string[]
      */
@@ -44,9 +44,116 @@ if (!function_exists('itm_script_browser_no_auth_script_basenames')) {
     }
 }
 
+if (!function_exists('itm_script_no_auth_builtin_allowed_hosts')) {
+    /**
+     * Default HTTP Host values for no-auth browser scripts (merged with ITM_SCRIPT_NO_AUTH_ALLOWED_HOSTS).
+     *
+     * @return string[]
+     */
+    function itm_script_no_auth_builtin_allowed_hosts()
+    {
+        return [
+            'localhost',
+            '127.0.0.1',
+            'myhome.dynip.sapo.pt',
+        ];
+    }
+}
+
+if (!function_exists('itm_script_no_auth_builtin_allowed_ips')) {
+    /**
+     * Default client IPs for no-auth browser scripts (merged with ITM_SCRIPT_NO_AUTH_ALLOWED_IPS).
+     *
+     * @return string[]
+     */
+    function itm_script_no_auth_builtin_allowed_ips()
+    {
+        return [
+            '127.0.0.1',
+        ];
+    }
+}
+
+if (!function_exists('itm_script_no_auth_allowed_hosts_from_env')) {
+    /**
+     * Extra HTTP Host values from ITM_SCRIPT_NO_AUTH_ALLOWED_HOSTS (comma-separated).
+     *
+     * @return string[]
+     */
+    function itm_script_no_auth_allowed_hosts_from_env()
+    {
+        $raw = trim((string)getenv('ITM_SCRIPT_NO_AUTH_ALLOWED_HOSTS'));
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $raw)), 'strlen'));
+    }
+}
+
+if (!function_exists('itm_script_no_auth_allowed_hosts_resolved')) {
+    /**
+     * Built-in + env HTTP Host allowlist for ITM_SCRIPT_NO_AUTH browser scripts.
+     *
+     * @return string[]
+     */
+    function itm_script_no_auth_allowed_hosts_resolved()
+    {
+        $hosts = array_merge(
+            itm_script_no_auth_builtin_allowed_hosts(),
+            itm_script_no_auth_allowed_hosts_from_env()
+        );
+        $normalized = [];
+        foreach ($hosts as $host) {
+            $host = strtolower(trim((string)$host));
+            if ($host === '') {
+                continue;
+            }
+            if (strpos($host, ':') !== false) {
+                $hostParts = explode(':', $host, 2);
+                $host = trim((string)($hostParts[0] ?? ''));
+            }
+            if ($host !== '' && !in_array($host, $normalized, true)) {
+                $normalized[] = $host;
+            }
+        }
+
+        return $normalized;
+    }
+}
+
+if (!function_exists('itm_script_request_host_for_no_auth_allowlist')) {
+    function itm_script_request_host_for_no_auth_allowlist()
+    {
+        $hostHeader = (string)($_SERVER['HTTP_HOST'] ?? '');
+        $hostParts = explode(':', $hostHeader, 2);
+        $host = strtolower(trim($hostParts[0]));
+
+        return $host;
+    }
+}
+
+if (!function_exists('itm_script_request_host_matches_no_auth_allowlist')) {
+    function itm_script_request_host_matches_no_auth_allowlist()
+    {
+        $host = itm_script_request_host_for_no_auth_allowlist();
+        if ($host === '') {
+            return false;
+        }
+
+        foreach (itm_script_no_auth_allowed_hosts_resolved() as $allowedHost) {
+            if (hash_equals($allowedHost, $host)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('itm_script_no_auth_allowed_ips_from_env')) {
     /**
-     * Client IPs/CIDRs permitted to reach ITM_SCRIPT_NO_AUTH browser scripts (production monitors).
+     * Extra client IPs/CIDRs from ITM_SCRIPT_NO_AUTH_ALLOWED_IPS (comma-separated).
      *
      * @return string[]
      */
@@ -58,6 +165,30 @@ if (!function_exists('itm_script_no_auth_allowed_ips_from_env')) {
         }
 
         return array_values(array_filter(array_map('trim', explode(',', $raw)), 'strlen'));
+    }
+}
+
+if (!function_exists('itm_script_no_auth_allowed_ips_resolved')) {
+    /**
+     * Built-in + env client IP allowlist for ITM_SCRIPT_NO_AUTH browser scripts.
+     *
+     * @return string[]
+     */
+    function itm_script_no_auth_allowed_ips_resolved()
+    {
+        $ips = array_merge(
+            itm_script_no_auth_builtin_allowed_ips(),
+            itm_script_no_auth_allowed_ips_from_env()
+        );
+        $normalized = [];
+        foreach ($ips as $ip) {
+            $ip = trim((string)$ip);
+            if ($ip !== '' && !in_array($ip, $normalized, true)) {
+                $normalized[] = $ip;
+            }
+        }
+
+        return $normalized;
     }
 }
 
@@ -150,7 +281,7 @@ if (!function_exists('itm_script_maintenance_token_request_is_valid')) {
 
 if (!function_exists('itm_script_browser_no_auth_client_allowed')) {
     /**
-     * True when a no-auth browser script may skip employee login (loopback, IP allowlist, or maintenance token).
+     * True when a no-auth browser script may skip employee login (loopback, host/IP allowlist, or maintenance token).
      */
     function itm_script_browser_no_auth_client_allowed()
     {
@@ -170,12 +301,14 @@ if (!function_exists('itm_script_browser_no_auth_client_allowed')) {
             return true;
         }
 
-        $allowedIps = itm_script_no_auth_allowed_ips_from_env();
-        if ($allowedIps === []) {
-            return false;
+        if (itm_script_request_host_matches_no_auth_allowlist()) {
+            return true;
         }
 
-        return itm_script_client_ip_matches_no_auth_allowlist($clientIp, $allowedIps);
+        return itm_script_client_ip_matches_no_auth_allowlist(
+            $clientIp,
+            itm_script_no_auth_allowed_ips_resolved()
+        );
     }
 }
 

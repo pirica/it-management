@@ -107,10 +107,11 @@ if (!in_array('count_db_tables.php', $noAuthList, true)) {
 }
 
 if (strpos($bootstrapSource, 'itm_script_browser_no_auth_client_allowed') === false
-    || strpos($bootstrapSource, 'ITM_SCRIPT_NO_AUTH_ALLOWED_IPS') === false) {
-    vsl_fail('No-auth scripts must be gated by itm_script_browser_no_auth_client_allowed() + ITM_SCRIPT_NO_AUTH_ALLOWED_IPS');
+    || strpos($bootstrapSource, 'ITM_SCRIPT_NO_AUTH_ALLOWED_IPS') === false
+    || strpos($bootstrapSource, 'myhome.dynip.sapo.pt') === false) {
+    vsl_fail('No-auth scripts must be gated by itm_script_browser_no_auth_client_allowed() + host/IP allowlist');
 } else {
-    vsl_pass('No-auth browser scripts gated by loopback, IP allowlist, or maintenance token');
+    vsl_pass('No-auth browser scripts gated by loopback, host/IP allowlist, or maintenance token');
 }
 
 if (strpos($configSource, 'itm_script_browser_no_auth_client_allowed') === false) {

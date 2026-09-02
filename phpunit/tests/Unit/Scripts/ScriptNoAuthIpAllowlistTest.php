@@ -31,4 +31,33 @@ class ScriptNoAuthIpAllowlistTest extends TestCase
         $this->assertTrue(itm_script_client_ip_matches_no_auth_allowlist('198.51.100.99', $allowed));
         $this->assertFalse(itm_script_client_ip_matches_no_auth_allowlist('192.0.2.1', $allowed));
     }
+
+    public function testBuiltinHostAllowlistIncludesMyhomeLocalhostAndLoopbackHost(): void
+    {
+        $hosts = itm_script_no_auth_allowed_hosts_resolved();
+        $this->assertContains('localhost', $hosts);
+        $this->assertContains('127.0.0.1', $hosts);
+        $this->assertContains('myhome.dynip.sapo.pt', $hosts);
+    }
+
+    public function testRequestHostMatchesBuiltinAllowlist(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'myhome.dynip.sapo.pt';
+        $this->assertTrue(itm_script_request_host_matches_no_auth_allowlist());
+
+        $_SERVER['HTTP_HOST'] = 'localhost:8080';
+        $this->assertTrue(itm_script_request_host_matches_no_auth_allowlist());
+
+        $_SERVER['HTTP_HOST'] = '127.0.0.1';
+        $this->assertTrue(itm_script_request_host_matches_no_auth_allowlist());
+
+        $_SERVER['HTTP_HOST'] = 'evil.example.com';
+        $this->assertFalse(itm_script_request_host_matches_no_auth_allowlist());
+    }
+
+    public function testBuiltinIpAllowlistIncludesLoopbackIpv4(): void
+    {
+        $ips = itm_script_no_auth_allowed_ips_resolved();
+        $this->assertContains('127.0.0.1', $ips);
+    }
 }
