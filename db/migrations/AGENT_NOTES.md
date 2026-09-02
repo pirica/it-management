@@ -1,0 +1,48 @@
+# AGENT_NOTES.md - db/migrations/
+
+## 1. Module Purpose
+
+Incremental DDL/DML scripts for **existing** databases that predate the current `db/01_schema.sql` bundle. **Fresh installs** import `db/01_schema.sql` → `db/02_data.sql` → `db/03_triggers.sql` only (`bash scripts/import_database_split.sh`).
+
+Historical migration SQL files were **pruned** once live databases matched canonical schema and rows were recorded in `schema_migrations`. Upgrade history remains in the `schema_migrations` audit table and git history; new schema changes ship in `db/01_schema.sql` (+ optional new migration file until the next prune).
+
+## 4. Business Rules (Critical for Agents)
+
+- **Naming:** `db/migrations/{module}_{subject}.sql` (lowercase module slug, underscore subject).
+- **No `ALTER TABLE` in migrations (hard rule):** copy the current table definition from `db/01_schema.sql`, apply the change in the migration file, ship **full `CREATE TABLE`** via `DROP TABLE IF EXISTS` + `CREATE TABLE`.
+- **Pair every migration with canonical schema:** mirror the final shape in `db/01_schema.sql` (and `db/02_data.sql` when seeds change) in the **same PR**.
+- **Runner:** `php scripts/migrate.php --status` probes the **live database** for every `*.sql` file (except bootstrap). `php scripts/migrate.php --apply` runs SQL only when the probe fails; satisfied migrations are **recorded** without re-executing destructive files. **`schema_migrations`** table is audit/history only.
+- **Prune applied migrations:** when all environments show **0 Pending** and canonical `db/` matches live schema, delete obsolete `db/migrations/*.sql` files (keep `schema_migrations.sql` bootstrap). Record applied files with `--apply` before delete. Browser Admin 🗑️ on [migrate.php?run=1](http://localhost/it-management/scripts/migrate.php?run=1) deletes one file at a time.
+- **No audit triggers** on private-data tables listed in `AGENTS.md` → Private data — no audit trail.
+
+## 7. File Structure
+
+| File | Role |
+|------|------|
+| `ticket_settings.sql` | `ticket_settings` — tenant survey auto-issue (default off), survey email on issue, SLA on create |
+| `appointment_settings_booking_enabled.sql` | `appointment_settings.booking_enabled` — tenant booking on/off (migrates prior `active` into `booking_enabled`) |
+| `api_v2_scopes.sql` | Scoped integration keys (`api_key_scopes` per `ui_configuration_id` + `scope_slug`); pairs with `includes/itm_api_v2_scopes.php` and Settings API v2 scope checkboxes. |
+| `hotel_booking_last_rooms.sql` | Last-room snapshot table (`booking_id` + room/hotel/type/floor fields) |
+| `problem_management.sql` | `problems`, `problem_ticket_links`, `known_errors` — Problem Management + Known Error DB (destructive DROP+CREATE; audit triggers in `db/03_triggers.sql`) |
+| `problem_master_ticket.sql` | `master_tickets`, `master_ticket_updates`, `problems.master_ticket_id` — cross-company master ticket rollup (destructive DROP+CREATE for problem tables + new master tables) |
+| `saved_report_views.sql` | `saved_report_views` + `scheduled_reports.saved_view_id` — saved list views for custom report builder |
+| `qr_design_templates.sql` | `qr_design_templates` — employee-scoped QR design presets (wizard Design step save/load) |
+| `short_url_public_base_url.sql` | Adds `public_base_url` on `short_url_settings` (destructive to settings rows only) |
+| `short_url_security_hardening.sql` | HTTPS default on, domain allowlist, interstitial, creation rate limit columns (destructive to `short_url_settings` rows only) |
+| `short_url.sql` | `short_urls`, `short_url_clicks`, `short_url_settings`, `qr_codes.short_url_id` — Short URLs module + QR back-link (destructive to `qr_codes` / `qr_code_scans`) |
+| `employee_sidebar_preferences_is_collapsed.sql` | `employee_sidebar_preferences.is_collapsed` — per-section fold for double-click sidebar collapse (destructive DROP+CREATE) |
+| `hotel_booking_portal_date_ddmmmyyyy.sql` | `hotel_booking_settings.portal_date_format` adds `european_ddmmmyyyy` (DD/MMM/YYYY) |
+| `ui_configuration_locale_format.sql` | `ui_configuration` locale display columns (money symbol + suffix/prefix, date/time, combined datetime toggles + default) — destructive DROP+CREATE; Settings UI Configuration; helpers in `includes/itm_ui_locale_format.php` |
+| `software_eol.sql` | `software`, `equipment_software`, plus `workstation_office` / `workstation_os_versions` / `equipment` date columns — destructive DROP+CREATE (backs up required). Helper `includes/itm_software_eol.php`. Doc: `docs/SOFTWARE_EOL.md`. |
+| `software_license_links.sql` | `software_license_links` junction between `software` and `license_management` — destructive DROP+CREATE. Helper `includes/itm_software_license_link.php`. |
+| `budget_categories_category_kind.sql` | `budget_categories.category_kind` enum column (destructive DROP+CREATE when present). |
+| `budget_categories_category_kind_dml.sql` | Non-destructive UPDATE backfill: Revenue→`revenue`, Operating Expense→`opex`, Capital Expense→`capex`. Safe to re-run; also applied on CAPEX/OPEX report page load. |
+| `job_queue.sql` | `job_queue` — generic background job queue (`includes/itm_job_queue.php`, `scripts/run_job_queue.php`). |
+| `ui_configuration_error_reporting_default_off_dml.sql` | Non-destructive UPDATE: sets `ui_configuration.enable_all_error_reporting = 0` where still `1`. Pairs with `db/01_schema.sql` default `0` and `itm_ui_config_defaults()`; admins may re-enable in Settings. Safe to re-run. |
+| `employees_must_change_password.sql` | Additive `employees.must_change_password` + backfill seed Admin/demo flags (ITM-PENTEST-004 mitigation). Regression: `php scripts/verify_force_password_change.php`. |
+
+## 12. Module Owner Notes
+
+- Operator UI: [migrate.php?run=1](http://localhost/it-management/scripts/migrate.php?run=1) (Admin) · verify: [verify_db_migrations.php?run=1](http://localhost/it-management/scripts/verify_db_migrations.php?run=1)
+- Module CRUD (audit history): [schema_migrations/index.php](http://localhost/it-management/modules/schema_migrations/index.php)
+- Catalog pointer: `AGENTS.md` → Database & Schema Rules → **Incremental migrations (`db/migrations/`)**
