@@ -45,7 +45,7 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
    - `php scripts/check_sql_injection_coverage.php` → **PASS** (2,643 files, 0 high-confidence findings)
    - `php scripts/check_csrf_coverage.php` → **PASS** (documented exemptions for CLI/QA scripts only)
 3. **Manual source review** — authentication, approval workflows, encryption key derivation, upload validation, public join/share tokens, webhook signature verification, security headers, error-handling defaults.
-4. **Cross-reference** — prior internal notes (`docs/security-validated-findings.md`, `docs/security_assessment_report.md`) verified against current code; stale/theoretical items re-validated or excluded.
+4. **Cross-reference** — prior internal notes (`docs/security_assessment_report.md`) and Explorer profile-photo regressions (`verify_explorer_profile_photo_acl.php`, `verify_user_config_profile.php`) verified against current code; stale/theoretical items re-validated or excluded.
 5. **Safe proof-of-concept** — logical PoCs derived from code (token forgery formulas, header absence, config flags); no live exploitation or data modification.
 6. **Regression verifier** — `php scripts/verify_pentest_report.php` (static line-level checks for ITM-PENTEST-001–022; PHPUnit: `--filter PentestReport`). Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator session).
 
@@ -740,7 +740,7 @@ define('MAILERLITE_API_KEY', $itm_mailerlite_api_key);
 | RBAC (`role_module_permissions`) | Effective | Module-level enforcement helpers |
 | Company module access matrix | Effective | Opt-out per tenant |
 | Upload directory hardening | Effective | `deny_http` / `upload` policies, dotfile blocks |
-| Explorer path ACL | Effective | Prior cross-tenant profile photo issue remediated per `docs/security-validated-findings.md` |
+| Explorer path ACL | Effective | Cross-tenant profile photo read blocked by `emp_profile_photo_request_allowed_for_employee()` (`includes/employee_profile_photo.php`, `modules/explorer/file.php`); regression: `verify_explorer_profile_photo_acl.php`, `verify_user_config_profile.php` |
 | API v2 / distribution auth | Effective | Key required; scopes on v2 |
 | Stripe webhook signatures | Effective | `itm_stripe_verify_webhook_signature()` |
 | LDAP filter escaping | Effective | `ldap_escape()` in `itm_ldap_apply_user_filter()` |
