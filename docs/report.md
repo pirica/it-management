@@ -56,8 +56,8 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 | Label | Meaning | Findings |
 |-------|---------|----------|
-| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 012, 014 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–011, 013, 015–016 |
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 010, 012–014 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–011, 015–016 |
 | **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
@@ -75,8 +75,8 @@ Examples:
 | ------------- | ----- |
 | Critical      | 0     |
 | High          | 1     |
-| Medium        | 7     |
-| Low           | 4     |
+| Medium        | 6     |
+| Low           | 3     |
 | Informational | 6     |
 
 ---
@@ -391,33 +391,33 @@ header('Location: ' . $destination, true, 302);
 
 ### ITM-PENTEST-010 Legacy plaintext password-reset token column support
 
+**Status:** **Remediated** — new tokens store `reset_token_hash` only (`reset_token` cleared); lookup/complete use hash-only SQL; `itm_password_reset_backfill_legacy_plaintext_tokens()` migrates any remaining plaintext rows on lookup.  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — legacy `OR (reset_token = ?` branch at `includes/itm_password_reset.php` line **152** in `itm_password_reset_lookup_employee_by_token()`. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. No `OR (reset_token = ?` branch in `includes/itm_password_reset.php`. Regression: `php scripts/verify_password_reset_flow.php`.
 
-**Severity:** Medium  
+**Severity:** Medium (was open; remediated)  
 **OWASP Category:** A02:2021 – Cryptographic Failures  
 **Affected Component:** Password reset  
 **Affected File:** `includes/itm_password_reset.php`  
-**Affected Function:** `itm_password_reset_lookup_employee_by_token()`, `itm_password_reset_complete_for_employee()`  
+**Affected Function:** `itm_password_reset_store_token_for_employee()`, `itm_password_reset_lookup_employee_by_token()`, `itm_password_reset_complete_for_employee()`  
 **Affected Parameter:** `reset_token`, `reset_token_hash`
 
 **Description:**  
-Token validation accepts **either** `reset_token_hash` **or** legacy plaintext `reset_token` column match. If the database is read-compromised, active plaintext tokens grant account takeover without cracking bcrypt.
+Token validation previously accepted **either** `reset_token_hash` **or** legacy plaintext `reset_token` column match. New issuances store only the SHA-256 hash and null the plaintext column; pending legacy rows are backfilled before lookup.
 
-**Evidence:**
+**Evidence (current — remediated):**
 
-```149:153:includes/itm_password_reset.php
-             WHERE (
-                (reset_token_hash = ? AND reset_token_expires_at >= NOW())
-                OR (reset_token = ? AND (reset_token_expires_at IS NULL OR reset_token_expires_at >= NOW()))
-             )
+```php
+SET reset_token = NULL, reset_token_hash = ?, reset_token_expires_at = DATE_ADD(NOW(), INTERVAL … HOUR)
 ```
 
-**Proof of Concept (safe):** Inspect `employees.reset_token` for non-null values on legacy rows.
+```php
+WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW()
+```
 
-**Impact:** Account takeover given DB read access; weaker than hash-only storage.
+**Impact:** Database read access no longer exposes usable plaintext reset tokens for active invites.
 
-**Recommendation:** Migrate all rows to `reset_token_hash` only; null `reset_token`; remove OR branch after migration. *(Documentation only.)*
+**Recommendation:** Keep hash-only storage; run `php scripts/verify_password_reset_flow.php` after auth changes. *(Remediated.)*
 
 ---
 
@@ -480,24 +480,31 @@ $error = 'Error saving record. Please try again or contact support.';
 
 ### ITM-PENTEST-013 Public ticket survey form lacks CSRF token
 
+**Status:** **Remediated** — public survey POST validates `itm_validate_csrf_token()` and the form emits `csrf_token` from `itm_get_csrf_token()`.  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — POST handler `isset($_POST['submit_survey'])` at `ticket-survey.php` line **43** with no `itm_validate_csrf_token()` / `itm_require_post_csrf()` in file. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. `ticket-survey.php` POST handler calls `itm_validate_csrf_token()` before `itm_ticket_survey_submit()`.
 
-**Severity:** Low  
+**Severity:** Low (was open; remediated)  
 **OWASP Category:** A01:2021 – Broken Access Control (CSRF)  
 **Affected Component:** Ticket survey public page  
 **Affected File:** `ticket-survey.php`  
 **Affected Function:** POST submit handler  
-**Affected Parameter:** `submit_survey`, answer fields
+**Affected Parameter:** `submit_survey`, `csrf_token`, answer fields
 
 **Description:**  
-Public survey submission is gated by an unguessable token in the URL but POST requests do not include CSRF protection. A victim with a valid survey link could be tricked into submitting attacker-chosen answers.
+Public survey submission remains gated by the unguessable survey URL token; POST now also requires a session CSRF token so third-party sites cannot forge submissions for a victim who already opened the survey link.
 
-**Evidence:** Lines 43–59 process POST without `itm_validate_csrf_token()`.
+**Evidence (current — remediated):**
 
-**Impact:** Low integrity impact on CSAT data; no authentication bypass.
+```php
+if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+    $error = 'Invalid or expired form submission. Please refresh the page and try again.';
+}
+```
 
-**Recommendation:** Add CSRF or double-submit cookie tied to survey token. *(Documentation only.)*
+**Impact:** Reduced CSRF integrity risk on CSAT submissions; no authentication bypass.
+
+**Recommendation:** Keep CSRF on all state-changing public forms that use a session. *(Remediated.)*
 
 ---
 

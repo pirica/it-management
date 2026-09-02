@@ -81,9 +81,23 @@ if ($legacyStmt) {
 }
 $legacyLookup = itm_password_reset_lookup_employee_by_token($conn, $legacyToken);
 if ((int)($legacyLookup['id'] ?? 0) !== $employeeId) {
-    pr_verify_fail('Legacy plain reset_token fallback lookup failed.');
+    pr_verify_fail('Legacy plaintext reset_token backfill lookup failed.');
 } else {
-    pr_verify_pass('Legacy plain reset_token fallback lookup succeeded.');
+    pr_verify_pass('Legacy plaintext reset_token backfilled to hash-only lookup.');
+}
+
+$plainCheck = mysqli_prepare($conn, 'SELECT reset_token FROM employees WHERE id = ? LIMIT 1');
+if ($plainCheck) {
+    mysqli_stmt_bind_param($plainCheck, 'i', $employeeId);
+    mysqli_stmt_execute($plainCheck);
+    mysqli_stmt_bind_result($plainCheck, $storedPlain);
+    mysqli_stmt_fetch($plainCheck);
+    mysqli_stmt_close($plainCheck);
+    if ($storedPlain !== null && trim((string)$storedPlain) !== '') {
+        pr_verify_fail('reset_token column still holds plaintext after backfill.');
+    } else {
+        pr_verify_pass('reset_token column cleared after legacy backfill.');
+    }
 }
 
 $newPasswordHash = password_hash('VerifyResetFlow1', PASSWORD_DEFAULT);

@@ -3,7 +3,7 @@
  * Shared password-reset token helpers for forgot-password and reset-password flows.
  *
  * Why: One contract for identifier lookup (email or username), MySQL-backed expiry,
- * and legacy plain reset_token rows so public reset links work across tenants.
+ * and hash-only reset_token_hash storage (legacy plaintext reset_token backfilled on lookup).
  */
 
 if (!function_exists('itm_password_reset_token_ttl_hours')) {
@@ -104,6 +104,53 @@ if (!function_exists('itm_password_reset_find_user_by_identifier')) {
     }
 }
 
+if (!function_exists('itm_password_reset_backfill_legacy_plaintext_tokens')) {
+    /**
+     * Migrate legacy rows that still store plaintext reset_token into reset_token_hash only.
+     */
+    function itm_password_reset_backfill_legacy_plaintext_tokens(mysqli $conn): void
+    {
+        $select = mysqli_prepare(
+            $conn,
+            'SELECT id, reset_token FROM employees
+             WHERE reset_token IS NOT NULL AND TRIM(reset_token) <> ""
+               AND (reset_token_hash IS NULL OR TRIM(reset_token_hash) = "")
+             LIMIT 200'
+        );
+        if (!$select) {
+            return;
+        }
+
+        mysqli_stmt_execute($select);
+        mysqli_stmt_bind_result($select, $employeeId, $plainToken);
+        $rows = [];
+        while (mysqli_stmt_fetch($select)) {
+            $rows[] = [(int)$employeeId, (string)$plainToken];
+        }
+        mysqli_stmt_close($select);
+
+        $update = mysqli_prepare(
+            $conn,
+            'UPDATE employees SET reset_token = NULL, reset_token_hash = ? WHERE id = ? LIMIT 1'
+        );
+        if (!$update) {
+            return;
+        }
+
+        foreach ($rows as $row) {
+            $employeeId = (int)$row[0];
+            $plainToken = trim((string)$row[1]);
+            if ($employeeId <= 0 || $plainToken === '') {
+                continue;
+            }
+            $tokenHash = itm_password_reset_hash_token($plainToken);
+            mysqli_stmt_bind_param($update, 'si', $tokenHash, $employeeId);
+            mysqli_stmt_execute($update);
+        }
+        mysqli_stmt_close($update);
+    }
+}
+
 if (!function_exists('itm_password_reset_store_token_for_employee')) {
     function itm_password_reset_store_token_for_employee(mysqli $conn, int $employeeId, string $rawToken)
     {
@@ -118,14 +165,14 @@ if (!function_exists('itm_password_reset_store_token_for_employee')) {
         $stmt = mysqli_prepare(
             $conn,
             'UPDATE employees
-             SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = DATE_ADD(NOW(), INTERVAL ' . $ttlHours . ' HOUR)
+             SET reset_token = NULL, reset_token_hash = ?, reset_token_expires_at = DATE_ADD(NOW(), INTERVAL ' . $ttlHours . ' HOUR)
              WHERE id = ? LIMIT 1'
         );
         if (!$stmt) {
             return false;
         }
 
-        mysqli_stmt_bind_param($stmt, 'ssi', $rawToken, $tokenHash, $employeeId);
+        mysqli_stmt_bind_param($stmt, 'si', $tokenHash, $employeeId);
         mysqli_stmt_execute($stmt);
         $updated = mysqli_stmt_affected_rows($stmt) > 0;
         mysqli_stmt_close($stmt);
@@ -143,21 +190,21 @@ if (!function_exists('itm_password_reset_lookup_employee_by_token')) {
             return $user;
         }
 
+        itm_password_reset_backfill_legacy_plaintext_tokens($conn);
+
         $tokenHash = itm_password_reset_hash_token($rawToken);
         $stmt = mysqli_prepare(
             $conn,
             'SELECT id, COALESCE(work_email, personal_email) AS email FROM employees
-             WHERE (
-                (reset_token_hash = ? AND reset_token_expires_at >= NOW())
-                OR (reset_token = ? AND (reset_token_expires_at IS NULL OR reset_token_expires_at >= NOW()))
-             )
+             WHERE reset_token_hash = ?
+               AND reset_token_expires_at >= NOW()
              LIMIT 1'
         );
         if (!$stmt) {
             return $user;
         }
 
-        mysqli_stmt_bind_param($stmt, 'ss', $tokenHash, $rawToken);
+        mysqli_stmt_bind_param($stmt, 's', $tokenHash);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_bind_result($stmt, $foundId, $foundEmail);
         if (mysqli_stmt_fetch($stmt)) {
@@ -179,23 +226,23 @@ if (!function_exists('itm_password_reset_complete_for_employee')) {
             return false;
         }
 
+        itm_password_reset_backfill_legacy_plaintext_tokens($conn);
+
         $tokenHash = itm_password_reset_hash_token($rawToken);
         $stmt = mysqli_prepare(
             $conn,
             'UPDATE employees
              SET password = ?, reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL
              WHERE id = ?
-               AND (
-                    (reset_token_hash = ? AND reset_token_expires_at >= NOW())
-                    OR (reset_token = ? AND (reset_token_expires_at IS NULL OR reset_token_expires_at >= NOW()))
-               )
+               AND reset_token_hash = ?
+               AND reset_token_expires_at >= NOW()
              LIMIT 1'
         );
         if (!$stmt) {
             return false;
         }
 
-        mysqli_stmt_bind_param($stmt, 'siss', $passwordHash, $employeeId, $tokenHash, $rawToken);
+        mysqli_stmt_bind_param($stmt, 'sis', $passwordHash, $employeeId, $tokenHash);
         mysqli_stmt_execute($stmt);
         $updated = mysqli_stmt_affected_rows($stmt) > 0;
         mysqli_stmt_close($stmt);

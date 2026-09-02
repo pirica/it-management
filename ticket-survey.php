@@ -41,21 +41,25 @@ if ($payload && $conn) {
 }
 
 if ($payload && !$success && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_survey'])) {
-    $answers = [];
-    foreach ($questions as $q) {
-        $qid = (int)$q['id'];
-        $type = (string)($q['question_type'] ?? 'rating_1_5');
-        if ($type === 'text') {
-            $answers[$qid] = trim((string)($_POST['answer_text_' . $qid] ?? ''));
-        } else {
-            $answers[$qid] = (int)($_POST['answer_rating_' . $qid] ?? 0);
-        }
-    }
-    $acceptFeedback = isset($_POST['accept_feedback']) ? (int)$_POST['accept_feedback'] : null;
-    if (itm_ticket_survey_submit($conn, (int)$payload['survey_id'], $answers, $acceptFeedback)) {
-        $success = true;
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $error = 'Invalid or expired form submission. Please refresh the page and try again.';
     } else {
-        $error = 'Unable to save your feedback. Please complete all required questions.';
+        $answers = [];
+        foreach ($questions as $q) {
+            $qid = (int)$q['id'];
+            $type = (string)($q['question_type'] ?? 'rating_1_5');
+            if ($type === 'text') {
+                $answers[$qid] = trim((string)($_POST['answer_text_' . $qid] ?? ''));
+            } else {
+                $answers[$qid] = (int)($_POST['answer_rating_' . $qid] ?? 0);
+            }
+        }
+        $acceptFeedback = isset($_POST['accept_feedback']) ? (int)$_POST['accept_feedback'] : null;
+        if (itm_ticket_survey_submit($conn, (int)$payload['survey_id'], $answers, $acceptFeedback)) {
+            $success = true;
+        } else {
+            $error = 'Unable to save your feedback. Please complete all required questions.';
+        }
     }
 }
 
@@ -83,6 +87,7 @@ $appName = itm_ui_config_app_name($ui_config ?? []);
             <?php if ($error !== ''): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?>
             <form method="POST">
                 <input type="hidden" name="token" value="<?php echo sanitize($token); ?>">
+                <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
                 <?php foreach ($questions as $q): ?>
                     <?php
                     $qid = (int)$q['id'];
