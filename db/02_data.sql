@@ -1994,8 +1994,8 @@ INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES 
 INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `booking_enabled`, `active`, `created_at`) VALUES
 (1, 'US/Central', 60, '09:00:00', '14:00:00', 30, 1, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `short_url_settings` (`company_id`, `default_expiry_days`, `custom_code_min_length`, `require_https_destination`, `enforce_domain_allowlist`, `interstitial_warning_enabled`, `creation_rate_limit_per_hour`, `analytics_enabled`, `allow_password_protect`, `active`, `created_at`) VALUES
-(1, NULL, 4, 1, 0, 1, 30, 1, 1, 1, '2026-01-01 00:00:01');
+INSERT INTO `short_url_settings` (`company_id`, `default_expiry_days`, `custom_code_min_length`, `require_https_destination`, `enforce_domain_allowlist`, `allowed_destination_domains`, `interstitial_warning_enabled`, `creation_rate_limit_per_hour`, `analytics_enabled`, `allow_password_protect`, `active`, `created_at`) VALUES
+(1, NULL, 4, 1, 1, 'myhome.dynip.sapo.pt', 1, 30, 1, 1, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `ticket_settings` (`company_id`, `auto_issue_survey_on_close`, `survey_send_email_on_issue`, `sla_enabled_on_create`, `active`, `created_at`) VALUES
 (1, 0, 1, 1, 1, '2026-01-01 00:00:01');

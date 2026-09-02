@@ -25,7 +25,7 @@ Bidirectional integration with `modules/qr/`: short links can spawn dynamic webs
 - Public `go.php` (root alias) resolves by `?c=` (short_code) or `?t=` (access_token); legacy `modules/short-url/go.php` uses the same handler; click rate-limited; password gate via session key; interstitial confirm via session when enabled; redirect blocked when HTTPS/allowlist policy fails at redirect time.
 - Expired links return HTTP 410.
 - Configuration tab: admin edit only (`itm_is_admin($conn, $employeeId)`); all users read. `public_base_url` optional — valid `http`/`https` prefix before short code; empty uses `itm_short_url_default_public_base_prefix()` (`BASE_URL` + `/go.php?c=`).
-- **Security defaults (company `short_url_settings`):** `require_https_destination = 1`, `interstitial_warning_enabled = 1`, `creation_rate_limit_per_hour = 30`. Optional `enforce_domain_allowlist` + `allowed_destination_domains` (newline/comma list; host + subdomains). Policy enforced on save and at public redirect (`itm_short_url_resolve_public_redirect()`).
+- **Security defaults (company `short_url_settings`):** `require_https_destination = 1`, `interstitial_warning_enabled = 1`, `creation_rate_limit_per_hour = 30`. Seed company 1 includes `enforce_domain_allowlist = 1` and `allowed_destination_domains = myhome.dynip.sapo.pt` (replicated to companies 2–5 on import). Policy enforced on save and at public redirect (`itm_short_url_resolve_public_redirect()`).
 - No Add sample data.
 
 ## 5. UI Behavior Requirements
