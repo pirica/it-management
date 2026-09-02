@@ -47,30 +47,14 @@ function cr_table_exists($conn, $table) {
  * Retrieves table columns from schema
  */
 function cr_table_columns($conn, $table) {
-    $cols = [];
-    $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $cols[] = $row;
-    }
-    return $cols;
+    return itm_crud_table_columns($conn, $table);
 }
 
 /**
  * Maps foreign keys for the current table
  */
 function cr_fk_map($conn, $table) {
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = '{$tableEsc}'
-              AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $map = [];
-    $res = mysqli_query($conn, $sql);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $map[$row['COLUMN_NAME']] = $row;
-    }
-    return $map;
+    return itm_crud_fk_map($conn, $table);
 }
 
 /**
@@ -171,22 +155,7 @@ function cr_fk_label_for_value($conn, $fk, $company_id, $rawId) {
     return '';
 }
 function cr_fk_metadata($conn, $table) {
-    $labelCol = 'name';
-    $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    $available = [];
-    while ($des && ($d = mysqli_fetch_assoc($des))) {
-        $available[] = $d['Field'];
-    }
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
-        if (in_array($candidate, $available, true)) {
-            $labelCol = $candidate;
-            break;
-        }
-    }
-    return [
-        'label_col' => $labelCol,
-        'available' => $available,
-    ];
+    return itm_crud_fk_metadata($conn, $table);
 }
 
 /**

@@ -37,9 +37,8 @@ if (!function_exists('itm_budget_category_report_category_kind_column_exists')) 
             return false;
         }
 
-        $columnRes = mysqli_query($conn, "SHOW COLUMNS FROM budget_categories LIKE 'category_kind'");
-
-        return $columnRes && mysqli_num_rows($columnRes) > 0;
+        return function_exists('itm_table_has_column')
+            && itm_table_has_column($conn, 'budget_categories', 'category_kind');
     }
 }
 

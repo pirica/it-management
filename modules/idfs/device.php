@@ -84,41 +84,23 @@ if ($position_id > 0 && $company_id > 0) {
     $hasRacksTable = false;
     $hasRacksNameColumn = false;
 
-    $hasIdfCodeColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `idfs` LIKE 'idf_code'");
-    if ($hasIdfCodeColumnRes && mysqli_num_rows($hasIdfCodeColumnRes) > 0) {
-        $hasIdfCodeColumn = true;
-    }
-    $hasRackNameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `idfs` LIKE 'rack_name'");
-    if ($hasRackNameColumnRes && mysqli_num_rows($hasRackNameColumnRes) > 0) {
-        $hasRackNameColumn = true;
-    }
-    $hasIdfsRackIdColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `idfs` LIKE 'rack_id'");
-    if ($hasIdfsRackIdColumnRes && mysqli_num_rows($hasIdfsRackIdColumnRes) > 0) {
-        $hasIdfsRackIdColumn = true;
-    }
+    $hasIdfCodeColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'idfs', 'idf_code');
+    $hasRackNameColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'idfs', 'rack_name');
+    $hasIdfsRackIdColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'idfs', 'rack_id');
     $hasCompaniesTableRes = mysqli_query($conn, "SHOW TABLES LIKE 'companies'");
     if ($hasCompaniesTableRes && mysqli_num_rows($hasCompaniesTableRes) > 0) {
         $hasCompaniesTable = true;
     }
     if ($hasCompaniesTable) {
-        $hasCompaniesCompanyColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `companies` LIKE 'company'");
-        if ($hasCompaniesCompanyColumnRes && mysqli_num_rows($hasCompaniesCompanyColumnRes) > 0) {
-            $hasCompaniesCompanyColumn = true;
-        }
-        $hasCompaniesNameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `companies` LIKE 'name'");
-        if ($hasCompaniesNameColumnRes && mysqli_num_rows($hasCompaniesNameColumnRes) > 0) {
-            $hasCompaniesNameColumn = true;
-        }
+        $hasCompaniesCompanyColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'companies', 'company');
+        $hasCompaniesNameColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'companies', 'name');
     }
     $hasRacksTableRes = mysqli_query($conn, "SHOW TABLES LIKE 'racks'");
     if ($hasRacksTableRes && mysqli_num_rows($hasRacksTableRes) > 0) {
         $hasRacksTable = true;
     }
     if ($hasRacksTable) {
-        $hasRacksNameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `racks` LIKE 'name'");
-        if ($hasRacksNameColumnRes && mysqli_num_rows($hasRacksNameColumnRes) > 0) {
-            $hasRacksNameColumn = true;
-        }
+        $hasRacksNameColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'racks', 'name');
     }
 
     $idfCodeSelect = $hasIdfCodeColumn ? 'i.idf_code' : "'' AS idf_code";
@@ -189,31 +171,11 @@ $ports = [];
 $rj45PortNumbers = [];
 $sfpPortNumbers = [];
 
-$hasSwitchPortsLabelColumn = false;
-$hasSwitchPortsToPatchPortColumn = false;
-$hasSwitchPortsPatchPortColumn = false;
-$hasSwitchPortsCommentsColumn = false;
-$hasSwitchPortsHostnameColumn = false;
-$switchPortsLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'label'");
-if ($switchPortsLabelColumnRes && mysqli_num_rows($switchPortsLabelColumnRes) > 0) {
-    $hasSwitchPortsLabelColumn = true;
-}
-$switchPortsToPatchPortColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'to_patch_port'");
-if ($switchPortsToPatchPortColumnRes && mysqli_num_rows($switchPortsToPatchPortColumnRes) > 0) {
-    $hasSwitchPortsToPatchPortColumn = true;
-}
-$switchPortsPatchPortColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'patch_port'");
-if ($switchPortsPatchPortColumnRes && mysqli_num_rows($switchPortsPatchPortColumnRes) > 0) {
-    $hasSwitchPortsPatchPortColumn = true;
-}
-$switchPortsCommentsColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'comments'");
-if ($switchPortsCommentsColumnRes && mysqli_num_rows($switchPortsCommentsColumnRes) > 0) {
-    $hasSwitchPortsCommentsColumn = true;
-}
-$switchPortsHostnameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'hostname'");
-if ($switchPortsHostnameColumnRes && mysqli_num_rows($switchPortsHostnameColumnRes) > 0) {
-    $hasSwitchPortsHostnameColumn = true;
-}
+$hasSwitchPortsLabelColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'switch_ports', 'label');
+$hasSwitchPortsToPatchPortColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'switch_ports', 'to_patch_port');
+$hasSwitchPortsPatchPortColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'switch_ports', 'patch_port');
+$hasSwitchPortsCommentsColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'switch_ports', 'comments');
+$hasSwitchPortsHostnameColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'switch_ports', 'hostname');
 
 $switchPortsLiveLabelSelect = "''";
 if ($hasSwitchPortsToPatchPortColumn) {
@@ -245,11 +207,7 @@ $hasRj45SpeedTableRes = mysqli_query($conn, "SHOW TABLES LIKE 'rj45_speed'");
 if ($hasRj45SpeedTableRes && mysqli_num_rows($hasRj45SpeedTableRes) > 0) {
     $hasRj45SpeedTable = true;
 }
-$hasIdfPortsRj45SpeedColumn = false;
-$idfPortsRj45SpeedColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_ports` LIKE 'rj45_speed_id'");
-if ($idfPortsRj45SpeedColumnRes && mysqli_num_rows($idfPortsRj45SpeedColumnRes) > 0) {
-    $hasIdfPortsRj45SpeedColumn = true;
-}
+$hasIdfPortsRj45SpeedColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'idf_ports', 'rj45_speed_id');
 $rj45SpeedIdExpr = $hasIdfPortsRj45SpeedColumn ? 'pr.rj45_speed_id' : 'NULL';
 $normalizedPortTypeExpr = "UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, spt_any.type, 'RJ45')), ' ', ''), '+', 'PLUS'))";
 $speedLabelExpr = $hasRj45SpeedTable

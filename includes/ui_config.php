@@ -1764,14 +1764,13 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
     ];
 
     foreach ($columns as $column => $alterSql) {
-        $check = mysqli_query($conn, "SHOW COLUMNS FROM `ui_configuration` LIKE '" . mysqli_real_escape_string($conn, $column) . "'");
-        if (!$check) {
+        if (!function_exists('itm_table_has_column')) {
             return false;
         }
-        if (mysqli_num_rows($check) === 0 && mysqli_query($conn, $alterSql) !== true) {
-            return false;
-        }
-        if (mysqli_num_rows($check) === 0) {
+        if (!itm_table_has_column($conn, 'ui_configuration', $column)) {
+            if (mysqli_query($conn, $alterSql) !== true) {
+                return false;
+            }
             $localReport['added_columns'][] = 'ui_configuration.' . $column;
         }
     }
@@ -1779,15 +1778,12 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
     // Why: Sidebar layout is now normalized in employee_sidebar_preferences; remove deprecated JSON blob columns.
     $legacySidebarColumns = ['sidebar_visibility', 'sidebar_main_order', 'sidebar_submenu_order'];
     foreach ($legacySidebarColumns as $legacyColumn) {
-        $legacyColumnCheck = mysqli_query($conn, "SHOW COLUMNS FROM `ui_configuration` LIKE '" . mysqli_real_escape_string($conn, $legacyColumn) . "'");
-        if (!$legacyColumnCheck) {
-            return false;
+        if (!itm_table_has_column($conn, 'ui_configuration', $legacyColumn)) {
+            continue;
         }
-        if (mysqli_num_rows($legacyColumnCheck) > 0) {
-            $dropColumnSql = "ALTER TABLE `ui_configuration` DROP COLUMN `" . $legacyColumn . "`";
-            if (mysqli_query($conn, $dropColumnSql) !== true) {
-                return false;
-            }
+        $dropColumnSql = "ALTER TABLE `ui_configuration` DROP COLUMN `" . $legacyColumn . "`";
+        if (mysqli_query($conn, $dropColumnSql) !== true) {
+            return false;
         }
     }
 
@@ -2790,12 +2786,12 @@ function itm_ensure_employee_sidebar_preferences_table($conn, &$report = null) {
         'section_id' => 'VARCHAR(191) NULL DEFAULT NULL',
     ];
     foreach ($legacyLengthColumns as $columnName => $columnDefinition) {
-        $columnCheckSql = "SHOW COLUMNS FROM `employee_sidebar_preferences` LIKE '" . mysqli_real_escape_string($conn, $columnName) . "'";
-        $columnRes = mysqli_query($conn, $columnCheckSql);
-        if ($columnRes === false) {
-            return false;
+        $columnMeta = function_exists('itm_crud_table_column_meta')
+            ? itm_crud_table_column_meta($conn, 'employee_sidebar_preferences', $columnName)
+            : null;
+        if ($columnMeta === null) {
+            continue;
         }
-        $columnMeta = mysqli_fetch_assoc($columnRes);
 
         $columnType = strtolower((string)($columnMeta['Type'] ?? ''));
         if ($columnType === 'varchar(100)') {
@@ -2813,11 +2809,12 @@ function itm_ensure_employee_sidebar_preferences_table($conn, &$report = null) {
     }
 
     // Why: Legacy installs may keep old enum/nullability definitions that reject current insert payloads.
-    $entryTypeRes = mysqli_query($conn, "SHOW COLUMNS FROM `employee_sidebar_preferences` LIKE 'entry_type'");
-    if ($entryTypeRes === false) {
+    $entryTypeMeta = function_exists('itm_crud_table_column_meta')
+        ? itm_crud_table_column_meta($conn, 'employee_sidebar_preferences', 'entry_type')
+        : null;
+    if ($entryTypeMeta === null) {
         return false;
     }
-    $entryTypeMeta = mysqli_fetch_assoc($entryTypeRes);
     $entryTypeRaw = strtolower((string)($entryTypeMeta['Type'] ?? ''));
     $hasExpectedEntryEnum = ($entryTypeRaw === "enum('section','item')" || $entryTypeRaw === "enum('item','section')");
     if (!$hasExpectedEntryEnum) {
@@ -2826,11 +2823,12 @@ function itm_ensure_employee_sidebar_preferences_table($conn, &$report = null) {
         }
     }
 
-    $sectionIdRes = mysqli_query($conn, "SHOW COLUMNS FROM `employee_sidebar_preferences` LIKE 'section_id'");
-    if ($sectionIdRes === false) {
+    $sectionIdMeta = function_exists('itm_crud_table_column_meta')
+        ? itm_crud_table_column_meta($conn, 'employee_sidebar_preferences', 'section_id')
+        : null;
+    if ($sectionIdMeta === null) {
         return false;
     }
-    $sectionIdMeta = mysqli_fetch_assoc($sectionIdRes);
     $sectionIdType = strtolower((string)($sectionIdMeta['Type'] ?? ''));
     $sectionIdAllowsNull = strtoupper((string)($sectionIdMeta['Null'] ?? 'NO')) === 'YES';
     if ($sectionIdType !== 'varchar(191)' || !$sectionIdAllowsNull) {
@@ -2839,11 +2837,7 @@ function itm_ensure_employee_sidebar_preferences_table($conn, &$report = null) {
         }
     }
 
-    $collapsedRes = mysqli_query($conn, "SHOW COLUMNS FROM `employee_sidebar_preferences` LIKE 'is_collapsed'");
-    if ($collapsedRes === false) {
-        return false;
-    }
-    if (mysqli_num_rows($collapsedRes) === 0) {
+    if (!function_exists('itm_table_has_column') || !itm_table_has_column($conn, 'employee_sidebar_preferences', 'is_collapsed')) {
         if (!itm_run_query($conn, 'ALTER TABLE `employee_sidebar_preferences` ADD COLUMN `is_collapsed` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_visible`')) {
             return false;
         }

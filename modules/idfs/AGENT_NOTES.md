@@ -78,6 +78,7 @@ Related tables (`idf_positions`, `idf_ports`, `idf_links`, `idf_device_type`) ha
 - **Link delete/create parity:** `link_create`, `link_delete`, and `port_update` must keep status, colour, label, and notes aligned across linked `idf_ports` and mirrored `switch_ports` rows. [Cursor-Valid]
 - **Position delete ordering:** remove or update `idf_links` referencing ports on the position before deleting the position row. [Cursor-Valid]
 - **Equipment ID alignment:** stale `equipment.idf_id` or `switch_ports.idf_id` breaks port visualiser fallbacks in `view.php`. [Cursor-Valid]
+- **Schema column probes:** `idf_table_has_column()` in `api/_bootstrap.php` delegates to cached `itm_table_has_column()` — use it for legacy migration guards in `idf_ensure_status_schema()` instead of raw `SHOW COLUMNS` / per-call `DESCRIBE`.
 - **Regression gate:** after any IDF workflow change, run `php scripts/idfs_sync_human_test.php` (hard fail if any `[FAIL]`). On Windows Laragon use the full PHP 7.4.33 binary path documented in `AGENTS.md`. [Cursor-Valid]
 - **Configuration complexity:** creating or deleting an IDF cascades to positions; ensure related ports, links, and equipment references are handled in one transaction. [Cursor-Valid]
 - **UTF-8 BOM on `device.php`:** a leading BOM breaks header/session behaviour; keep the file UTF-8 without BOM. [Cursor-Fixed]

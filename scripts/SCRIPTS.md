@@ -488,6 +488,13 @@ php scripts/auth_register_reset_human_test.php
 
 **`verify_metadata_column_cache.php`:** asserts table-level caching in `itm_table_has_column()` / `itm_table_column_is_nullable()` (`includes/bootstrap_helpers.php`). Cold batch on `switch_ports` (15 checks matching `update_port.php`) expects schema `Questions` delta 1–2; warm repeat expects schema delta 0 (measurement excludes trailing `SHOW STATUS`). Optional env: `ITM_META_CACHE_TABLE` (default `switch_ports`).
 
+**CRUD scaffold schema cache (`itm_crud_schema_helpers.php` + `itm_crud_fk_metadata()`):**
+
+| Script | When |
+|--------|------|
+| `php scripts/apply_crud_schema_cached_helpers.php` | Dry-run; add `--apply` to point module `cr_table_columns()` / `cr_fk_map()` / `cr_fk_metadata()` at cached shared helpers |
+| `php scripts/check_crud_schema_cached_helpers.php` | After changing scaffold schema helpers or re-scaffolding modules — exit `1` when any delegate still runs inline `DESCRIBE` / `information_schema` |
+
 **`idfs_sync_human_test.php`:** after Admin login, POSTs to `index.php` to align session `company_id` with `ITM_COMPANY_ID` (login otherwise pre-selects the first active company alphabetically). Company-selection GET resolves `Location` redirects manually (open_basedir-safe; does not rely on `CURLOPT_FOLLOWLOCATION`). When `ITM_COMPANY_ID` / `ITM_IDF_ID` do not match an active IDF row, resolves the first active IDF in the database.
 
 **`auth_register_reset_human_test.php`:** invite → register → login → reset-password human-style regression without a browser. Asserts `mysqli_stmt_bind_param` contracts on `login.php`, `forgot-password.php`, and `reset-password.php`; verifies tenant-scoped **Active** `employment_status_id` on registration (companies 1–2 by default). **Mutates DB:** disposable invitations and `script-*` employees; teardown via `itm_script_test_employee_register_teardown()`. Optional: `--company=2`. Browser: `scripts/auth_register_reset_human_test.php?company=2` (uses `$_GET['company']` when `$argv` is unavailable).

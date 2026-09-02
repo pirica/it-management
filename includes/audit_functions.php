@@ -393,6 +393,10 @@ function itm_fetch_audit_record($conn, $table, $record_id, $company_id = null) {
  * Checks if a specific table has a given column (used for dynamic audit logic)
  */
 function itm_audit_table_has_column($conn, $table, $column) {
+    if (function_exists('itm_table_has_column')) {
+        return itm_table_has_column($conn, $table, $column);
+    }
+
     if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
         return false;
     }

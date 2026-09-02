@@ -33,30 +33,14 @@ function cr_escape_identifier($name) {
  * Fetches column metadata
  */
 function cr_table_columns($conn, $table) {
-    $cols = [];
-    $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $cols[] = $row;
-    }
-    return $cols;
+    return itm_crud_table_columns($conn, $table);
 }
 
 /**
  * Maps foreign keys
  */
 function cr_fk_map($conn, $table) {
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = '{$tableEsc}'
-              AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $map = [];
-    $res = mysqli_query($conn, $sql);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $map[$row['COLUMN_NAME']] = $row;
-    }
-    return $map;
+    return itm_crud_fk_map($conn, $table);
 }
 
 /**

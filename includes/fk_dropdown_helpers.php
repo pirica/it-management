@@ -14,25 +14,20 @@ if (!function_exists('itm_fk_table_column_names')) {
      */
     function itm_fk_table_column_names(mysqli $conn, string $table): array
     {
-        // Why: Static cache eliminates redundant DESCRIBE queries per table during a single HTTP request lifecycle.
-        static $cache = [];
-
         if (!function_exists('itm_is_safe_identifier') || !itm_is_safe_identifier($table)) {
             return [];
         }
 
-        if (isset($cache[$table])) {
-            return $cache[$table];
+        if (!function_exists('itm_crud_table_columns')) {
+            return [];
         }
 
         $columns = [];
-        $res = mysqli_query($conn, 'DESCRIBE `' . $table . '`');
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
+        foreach (itm_crud_table_columns($conn, $table) as $row) {
             $columns[] = (string)($row['Field'] ?? '');
         }
 
-        $cache[$table] = array_values(array_filter($columns));
-        return $cache[$table];
+        return array_values(array_filter($columns));
     }
 }
 
@@ -46,6 +41,23 @@ if (!function_exists('itm_fk_label_column_for_table')) {
         }
 
         return 'name';
+    }
+}
+
+if (!function_exists('itm_crud_fk_metadata')) {
+    /**
+     * Label column + column name list for scaffold cr_fk_metadata() wrappers.
+     *
+     * @return array{label_col:string,available:array<int,string>}
+     */
+    function itm_crud_fk_metadata($conn, $table): array
+    {
+        $available = itm_fk_table_column_names($conn, (string)$table);
+
+        return [
+            'label_col' => itm_fk_label_column_for_table($available),
+            'available' => $available,
+        ];
     }
 }
 

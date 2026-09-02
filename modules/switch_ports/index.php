@@ -20,45 +20,11 @@ function cr_escape_identifier($name) {
 }
 
 function cr_table_columns($conn, $table) {
-    $cols = [];
-    $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $cols[] = $row;
-    }
-    return $cols;
+    return itm_crud_table_columns($conn, $table);
 }
 
 function cr_fk_map($conn, $table) {
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = '{$tableEsc}'
-              AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $map = [];
-    $res = mysqli_query($conn, $sql);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $map[$row['COLUMN_NAME']] = $row;
-    }
-
-    if ($table === 'switch_ports') {
-        $manual = [
-            'equipment_id' => ['COLUMN_NAME' => 'equipment_id', 'REFERENCED_TABLE_NAME' => 'equipment', 'REFERENCED_COLUMN_NAME' => 'id'],
-            'status_id' => ['COLUMN_NAME' => 'status_id', 'REFERENCED_TABLE_NAME' => 'switch_status', 'REFERENCED_COLUMN_NAME' => 'id'],
-            'color_id' => ['COLUMN_NAME' => 'color_id', 'REFERENCED_TABLE_NAME' => 'cable_colors', 'REFERENCED_COLUMN_NAME' => 'id'],
-            'vlan_id' => ['COLUMN_NAME' => 'vlan_id', 'REFERENCED_TABLE_NAME' => 'vlans', 'REFERENCED_COLUMN_NAME' => 'id'],
-            'port_type' => ['COLUMN_NAME' => 'port_type', 'REFERENCED_TABLE_NAME' => 'switch_port_types', 'REFERENCED_COLUMN_NAME' => 'type'],
-            'to_location_id' => ['COLUMN_NAME' => 'to_location_id', 'REFERENCED_TABLE_NAME' => 'it_locations', 'REFERENCED_COLUMN_NAME' => 'id'],
-        ];
-
-        foreach ($manual as $column => $definition) {
-            if (!isset($map[$column])) {
-                $map[$column] = $definition;
-            }
-        }
-    }
-
-    return $map;
+    return itm_crud_fk_map($conn, $table);
 }
 
 function cr_fk_options($conn, $fk, $company_id) {
@@ -84,34 +50,7 @@ function cr_fk_options($conn, $fk, $company_id) {
 }
 
 function cr_fk_metadata($conn, $table) {
-    $labelCol = 'name';
-    $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    $available = [];
-    while ($des && ($d = mysqli_fetch_assoc($des))) {
-        $available[] = $d['Field'];
-    }
-
-    $tableLabelCandidates = [
-        'equipment' => ['hostname', 'name'],
-        'switch_status' => ['name', 'status'],
-        'cable_colors' => ['color_name', 'name'],
-        'vlans' => ['vlan_name', 'name'],
-        'switch_port_types' => ['name', 'type'],
-        'it_locations' => ['name', 'title'],
-    ];
-
-    $candidates = $tableLabelCandidates[$table] ?? ['name', 'title', 'username', 'code', 'mode_name', 'status', 'color_name', 'vlan_name'];
-    foreach ($candidates as $candidate) {
-        if (in_array($candidate, $available, true)) {
-            $labelCol = $candidate;
-            break;
-        }
-    }
-
-    return [
-        'label_col' => $labelCol,
-        'available' => $available,
-    ];
+    return itm_crud_fk_metadata($conn, $table);
 }
 
 function cr_manageable_columns($columns) {

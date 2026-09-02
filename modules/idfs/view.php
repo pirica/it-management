@@ -198,34 +198,19 @@ if ($locationNameLabel === '') {
 
 $positions = [];
 $maxPosInDb = 0;
-$hasSwitchFiberPortLabelColumn = false;
-$hasSwitchFiberPortLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment` LIKE 'switch_fiber_port_label'");
-if ($hasSwitchFiberPortLabelColumnRes && mysqli_num_rows($hasSwitchFiberPortLabelColumnRes) > 0) {
-    $hasSwitchFiberPortLabelColumn = true;
-}
+$hasSwitchFiberPortLabelColumn = function_exists('itm_table_has_column')
+    && itm_table_has_column($conn, 'equipment', 'switch_fiber_port_label');
 $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
     ? "COALESCE(e.switch_fiber_port_label, '')"
     : "''";
-$hasSwitchPortsLabelColumn = false;
-$hasSwitchPortsToPatchPortColumn = false;
-$hasSwitchPortsCommentsColumn = false;
-$hasSwitchPortsHostnameColumn = false;
-$switchPortsLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'label'");
-if ($switchPortsLabelColumnRes && mysqli_num_rows($switchPortsLabelColumnRes) > 0) {
-    $hasSwitchPortsLabelColumn = true;
-}
-$switchPortsToPatchPortColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'to_patch_port'");
-if ($switchPortsToPatchPortColumnRes && mysqli_num_rows($switchPortsToPatchPortColumnRes) > 0) {
-    $hasSwitchPortsToPatchPortColumn = true;
-}
-$switchPortsCommentsColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'comments'");
-if ($switchPortsCommentsColumnRes && mysqli_num_rows($switchPortsCommentsColumnRes) > 0) {
-    $hasSwitchPortsCommentsColumn = true;
-}
-$switchPortsHostnameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'hostname'");
-if ($switchPortsHostnameColumnRes && mysqli_num_rows($switchPortsHostnameColumnRes) > 0) {
-    $hasSwitchPortsHostnameColumn = true;
-}
+$hasSwitchPortsLabelColumn = function_exists('itm_table_has_column')
+    && itm_table_has_column($conn, 'switch_ports', 'label');
+$hasSwitchPortsToPatchPortColumn = function_exists('itm_table_has_column')
+    && itm_table_has_column($conn, 'switch_ports', 'to_patch_port');
+$hasSwitchPortsCommentsColumn = function_exists('itm_table_has_column')
+    && itm_table_has_column($conn, 'switch_ports', 'comments');
+$hasSwitchPortsHostnameColumn = function_exists('itm_table_has_column')
+    && itm_table_has_column($conn, 'switch_ports', 'hostname');
 $switchPortsLiveLabelSelect = "''";
 if ($hasSwitchPortsToPatchPortColumn) {
     $switchPortsLiveLabelSelect = "NULLIF(NULLIF(TRIM(pr_live.to_patch_port), ''), '0')";

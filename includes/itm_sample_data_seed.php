@@ -2044,25 +2044,46 @@ if (!function_exists('itm_seed_table_column_metas')) {
      */
     function itm_seed_table_column_metas(mysqli $conn, string $tableName): array
     {
-        $metas = [];
+        static $metaCache = [];
+
         if (!itm_is_safe_identifier($tableName)) {
-            return $metas;
+            return [];
         }
 
-        $tableEsc = mysqli_real_escape_string($conn, $tableName);
-        $res = mysqli_query($conn, 'SHOW COLUMNS FROM `' . str_replace('`', '``', $tableName) . '`');
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $metas[] = [
-                'name' => (string)($row['Field'] ?? ''),
-                'type' => (string)($row['Type'] ?? ''),
-                'null' => (string)($row['Null'] ?? ''),
-                'default' => $row['Default'] ?? null,
-                'extra' => (string)($row['Extra'] ?? ''),
-                'key' => (string)($row['Key'] ?? ''),
-            ];
+        if (isset($metaCache[$tableName])) {
+            return $metaCache[$tableName];
         }
 
-        return $metas;
+        $metas = [];
+        if (function_exists('itm_crud_table_columns')) {
+            foreach (itm_crud_table_columns($conn, $tableName) as $row) {
+                $metas[] = [
+                    'name' => (string)($row['Field'] ?? ''),
+                    'type' => (string)($row['Type'] ?? ''),
+                    'null' => (string)($row['Null'] ?? ''),
+                    'default' => $row['Default'] ?? null,
+                    'extra' => (string)($row['Extra'] ?? ''),
+                    'key' => (string)($row['Key'] ?? ''),
+                ];
+            }
+        } else {
+            $tableEsc = mysqli_real_escape_string($conn, $tableName);
+            $res = mysqli_query($conn, 'SHOW COLUMNS FROM `' . str_replace('`', '``', $tableName) . '`');
+            while ($res && ($row = mysqli_fetch_assoc($res))) {
+                $metas[] = [
+                    'name' => (string)($row['Field'] ?? ''),
+                    'type' => (string)($row['Type'] ?? ''),
+                    'null' => (string)($row['Null'] ?? ''),
+                    'default' => $row['Default'] ?? null,
+                    'extra' => (string)($row['Extra'] ?? ''),
+                    'key' => (string)($row['Key'] ?? ''),
+                ];
+            }
+        }
+
+        $metaCache[$tableName] = $metas;
+
+        return $metaCache[$tableName];
     }
 }
 

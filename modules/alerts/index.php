@@ -46,37 +46,14 @@ function cr_escape_identifier($name) {
  * Fetches column definitions for the target table.
  */
 function cr_table_columns($conn, $table) {
-    $cols = [];
-    if (!itm_is_safe_identifier($table)) return $cols;
-    $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $cols[] = $row;
-    }
-    return $cols;
+    return itm_crud_table_columns($conn, $table);
 }
 
 /**
  * Detects foreign key relationships for the table to enable dropdown selection.
  */
 function cr_fk_map($conn, $table) {
-    $map = [];
-    if (!itm_is_safe_identifier($table)) return $map;
-    $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = ?
-              AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $table);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $map[$row['COLUMN_NAME']] = $row;
-        }
-        mysqli_stmt_close($stmt);
-    }
-    return $map;
+    return itm_crud_fk_map($conn, $table);
 }
 
 /**
@@ -169,23 +146,7 @@ function cr_fk_ensure_selected_option($conn, $fk, $options, $selectedValue) {
  * Heuristically finds the best column to use as a display label for a reference table.
  */
 function cr_fk_metadata($conn, $table) {
-    $labelCol = 'name';
-    $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    $available = [];
-    while ($des && ($d = mysqli_fetch_assoc($des))) {
-        $available[] = $d['Field'];
-    }
-    // Preferred candidate labels in order of priority.
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
-        if (in_array($candidate, $available, true)) {
-            $labelCol = $candidate;
-            break;
-        }
-    }
-    return [
-        'label_col' => $labelCol,
-        'available' => $available,
-    ];
+    return itm_crud_fk_metadata($conn, $table);
 }
 
 /**

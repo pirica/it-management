@@ -49,37 +49,14 @@ function cr_escape_identifier($name) {
  * Fetches column definitions for the target table.
  */
 function cr_table_columns($conn, $table) {
-    $cols = [];
-    if (!itm_is_safe_identifier($table)) return $cols;
-    $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $cols[] = $row;
-    }
-    return $cols;
+    return itm_crud_table_columns($conn, $table);
 }
 
 /**
  * Detects foreign key relationships for the table to enable dropdown selection.
  */
 function cr_fk_map($conn, $table) {
-    $map = [];
-    if (!itm_is_safe_identifier($table)) return $map;
-    $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = ?
-              AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $table);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $map[$row['COLUMN_NAME']] = $row;
-        }
-        mysqli_stmt_close($stmt);
-    }
-    return $map;
+    return itm_crud_fk_map($conn, $table);
 }
 
 /**
@@ -137,42 +114,7 @@ function cr_fk_options($conn, $fk, $company_id) {
  * Heuristically finds the best column to use as a display label for a reference table.
  */
 function cr_fk_metadata($conn, $table) {
-    $labelCol = 'name';
-    $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    $available = [];
-    while ($des && ($d = mysqli_fetch_assoc($des))) {
-        $available[] = $d['Field'];
-    }
-
-    $tableLabelCandidates = [
-        'equipment' => ['hostname', 'name'],
-        'switch_status' => ['status', 'name'],
-        'cable_colors' => ['color_name', 'name'],
-        'vlans' => ['vlan_name', 'name', 'vlan_number'],
-        'idf_device_type' => ['idfdevicetype_name', 'name'],
-        'idf_positions' => ['device_name', 'position_no'],
-        'idf_ports' => ['label', 'port_no'],
-    ];
-
-    $candidates = $tableLabelCandidates[$table] ?? ['name', 'title', 'label', 'type', 'hostname', 'device_name', 'vlan_name', 'status', 'port_number', 'port_no', 'position_no', 'color_name', 'idfdevicetype_name', 'username', 'code', 'mode_name', 'hex_color', 'cable_type'];
-    foreach ($candidates as $candidate) {
-        if (in_array($candidate, $available, true)) {
-            $labelCol = $candidate;
-            break;
-        }
-    }
-    if (!in_array($labelCol, $available, true)) {
-        foreach ($available as $candidateField) {
-            if (!in_array($candidateField, ['id', 'company_id', 'active', 'created_at', 'updated_at'], true)) {
-                $labelCol = $candidateField;
-                break;
-            }
-        }
-    }
-    return [
-        'label_col' => $labelCol,
-        'available' => $available,
-    ];
+    return itm_crud_fk_metadata($conn, $table);
 }
 
 /**

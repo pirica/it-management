@@ -113,8 +113,7 @@ function idf_ensure_status_schema(mysqli $conn) {
         }
 
         // Why: Support visual port status with color mapping (relation to cable_colors).
-        $colorIdCheckRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_status` LIKE 'color_id'");
-        if ($colorIdCheckRes && mysqli_num_rows($colorIdCheckRes) === 0) {
+        if (!idf_table_has_column($conn, 'switch_status', 'color_id')) {
             mysqli_query($conn, "ALTER TABLE `switch_status` ADD COLUMN `color_id` int DEFAULT NULL AFTER `status` ");
             mysqli_query($conn, "ALTER TABLE `switch_status` ADD KEY `color_id` (`color_id`) ");
 
@@ -142,8 +141,7 @@ function idf_ensure_status_schema(mysqli $conn) {
             }
 
             // Why: Migrate existing hex colors to relation.
-            $oldColorRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_status` LIKE 'color'");
-            if ($oldColorRes && mysqli_num_rows($oldColorRes) > 0) {
+            if (idf_table_has_column($conn, 'switch_status', 'color')) {
                 mysqli_query(
                     $conn,
                     "UPDATE switch_status ss
@@ -191,8 +189,7 @@ function idf_ensure_status_schema(mysqli $conn) {
             );
             mysqli_query($conn, "ALTER TABLE `idf_ports` DROP COLUMN `status` ");
         } else {
-            $statusNameCheck = mysqli_query($conn, "SHOW COLUMNS FROM `idf_ports` LIKE 'status'");
-            if ($statusNameCheck && mysqli_num_rows($statusNameCheck) > 0) {
+            if (idf_table_has_column($conn, 'idf_ports', 'status')) {
                  mysqli_query($conn, "ALTER TABLE `idf_ports` CHANGE COLUMN `status` `status_id` int NOT NULL ");
             }
         }
@@ -309,13 +306,11 @@ function idf_ensure_status_schema(mysqli $conn) {
 
 
     // Persist selected cable color details on each IDF port row.
-    $portCableColorRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_ports` LIKE 'cable_color'");
-    if ($portCableColorRes && mysqli_num_rows($portCableColorRes) === 0) {
+    if (!idf_table_has_column($conn, 'idf_ports', 'cable_color')) {
         mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `cable_color` varchar(100) DEFAULT NULL AFTER `poe_id` ");
     }
 
-    $portHexColorRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_ports` LIKE 'hex_color'");
-    if ($portHexColorRes && mysqli_num_rows($portHexColorRes) === 0) {
+    if (!idf_table_has_column($conn, 'idf_ports', 'hex_color')) {
         mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `hex_color` varchar(7) DEFAULT NULL AFTER `cable_color` ");
     }
 
@@ -343,8 +338,7 @@ function idf_ensure_status_schema(mysqli $conn) {
     }
 
     // Keep a denormalized cable hex color on links for historical snapshots and exports.
-    $linkHexColorColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color_hex'");
-    if ($linkHexColorColRes && mysqli_num_rows($linkHexColorColRes) === 0) {
+    if (!idf_table_has_column($conn, 'idf_links', 'cable_color_hex')) {
         mysqli_query($conn, "ALTER TABLE `idf_links` ADD COLUMN `cable_color_hex` varchar(7) DEFAULT NULL AFTER `cable_color_id` ");
         mysqli_query(
             $conn,
@@ -357,8 +351,7 @@ function idf_ensure_status_schema(mysqli $conn) {
     }
 
     // Support for ID-based cable colors in idf_links.
-    $linkCableColorColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color_id'");
-    if ($linkCableColorColRes && mysqli_num_rows($linkCableColorColRes) === 0) {
+    if (!idf_table_has_column($conn, 'idf_links', 'cable_color_id')) {
         mysqli_query($conn, "ALTER TABLE `idf_links` ADD COLUMN `cable_color_id` int DEFAULT NULL AFTER `equipment_color_id` ");
         mysqli_query($conn, "ALTER TABLE `idf_links` ADD KEY `cable_color_id` (`cable_color_id`) ");
 
@@ -385,8 +378,7 @@ function idf_ensure_status_schema(mysqli $conn) {
             );
         }
 
-        $oldLinkColorRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color'");
-        if ($oldLinkColorRes && mysqli_num_rows($oldLinkColorRes) > 0) {
+        if (idf_table_has_column($conn, 'idf_links', 'cable_color')) {
             mysqli_query(
                 $conn,
                 "UPDATE idf_links l
@@ -441,8 +433,7 @@ function idf_ensure_status_schema(mysqli $conn) {
     }
 
     // Why: Legacy audit triggers may still reference idf_links.cable_color after migration to cable_color_id.
-    $linkCableColorLegacyRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color'");
-    $linkHasLegacyCableColor = $linkCableColorLegacyRes && mysqli_num_rows($linkCableColorLegacyRes) > 0;
+    $linkHasLegacyCableColor = idf_table_has_column($conn, 'idf_links', 'cable_color');
     if (!$linkHasLegacyCableColor) {
         mysqli_query($conn, "DROP TRIGGER IF EXISTS `trg_idf_links_audit_insert`");
         mysqli_query($conn, "DROP TRIGGER IF EXISTS `trg_idf_links_audit_update`");
@@ -1152,10 +1143,7 @@ function idf_resolve_named_lookup_id(mysqli $conn, int $company_id, string $tabl
 }
 
 function idf_table_has_column(mysqli $conn, string $table, string $column): bool {
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $columnEsc = mysqli_real_escape_string($conn, $column);
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
-    return $res && mysqli_num_rows($res) > 0;
+    return function_exists('itm_table_has_column') && itm_table_has_column($conn, $table, $column);
 }
 
 function idf_first_existing_column(mysqli $conn, string $table, array $candidates) {

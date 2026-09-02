@@ -271,9 +271,18 @@ if (!function_exists("esa_sync_from_employees_legacy")) {
 function esa_sync_from_employees_legacy($conn) {
     // Determine which columns actually exist in the employees table
     $employeeColumns = [];
-    $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM employees');
-    while ($columnsRes && ($column = mysqli_fetch_assoc($columnsRes))) {
-        $employeeColumns[(string)$column['Field']] = true;
+    if (function_exists('itm_crud_table_columns')) {
+        foreach (itm_crud_table_columns($conn, 'employees') as $column) {
+            $field = (string)($column['Field'] ?? '');
+            if ($field !== '') {
+                $employeeColumns[$field] = true;
+            }
+        }
+    } else {
+        $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM employees');
+        while ($columnsRes && ($column = mysqli_fetch_assoc($columnsRes))) {
+            $employeeColumns[(string)$column['Field']] = true;
+        }
     }
 
     $abilityFields = esa_resolve_ability_fields($conn, esa_current_company_id());

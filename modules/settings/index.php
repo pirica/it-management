@@ -229,11 +229,7 @@ function build_sql_backup($conn, $companyId) {
         $dump .= 'DROP TABLE IF EXISTS `' . $table . "`;\n";
         $dump .= $createRow['Create Table'] . ";\n\n";
 
-        $hasCompanyIdColumn = false;
-        $companyColumnRes = mysqli_query($conn, 'SHOW COLUMNS FROM `' . $table . "` LIKE 'company_id'");
-        if ($companyColumnRes && mysqli_num_rows($companyColumnRes) > 0) {
-            $hasCompanyIdColumn = true;
-        }
+        $hasCompanyIdColumn = function_exists('itm_table_has_column') && itm_table_has_column($conn, $table, 'company_id');
 
         $dataRes = false;
         if ($hasCompanyIdColumn) {

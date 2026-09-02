@@ -116,6 +116,10 @@ if (!function_exists('itm_detect_fk_table_columns')) {
      */
     function itm_detect_fk_table_columns(mysqli $conn, $table): array
     {
+        if (function_exists('itm_fk_table_column_names')) {
+            return itm_fk_table_column_names($conn, (string)$table);
+        }
+
         if (!itm_detect_fk_safe_identifier($table)) {
             return [];
         }

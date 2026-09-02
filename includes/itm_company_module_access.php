@@ -573,8 +573,7 @@ if (!function_exists('itm_ensure_module_access_icon_columns')) {
         }
         $altered = true;
         if (itm_module_access_table_exists($conn, 'modules_registry')) {
-            $check = mysqli_query($conn, "SHOW COLUMNS FROM `modules_registry` LIKE 'icon'");
-            if ($check && mysqli_num_rows($check) === 0) {
+            if (!itm_table_has_column($conn, 'modules_registry', 'icon')) {
                 $altered = $altered && mysqli_query(
                     $conn,
                     'ALTER TABLE `modules_registry` ADD COLUMN `icon` VARCHAR(16) NULL DEFAULT NULL AFTER `module_slug`'
@@ -582,8 +581,7 @@ if (!function_exists('itm_ensure_module_access_icon_columns')) {
             }
         }
         if (itm_module_access_table_exists($conn, 'company_module_access')) {
-            $check = mysqli_query($conn, "SHOW COLUMNS FROM `company_module_access` LIKE 'icon'");
-            if ($check && mysqli_num_rows($check) === 0) {
+            if (!itm_table_has_column($conn, 'company_module_access', 'icon')) {
                 $altered = $altered && mysqli_query(
                     $conn,
                     'ALTER TABLE `company_module_access` ADD COLUMN `icon` VARCHAR(16) NULL DEFAULT NULL AFTER `enabled`'

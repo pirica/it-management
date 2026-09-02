@@ -37,30 +37,14 @@ function cr_escape_identifier($name) {
  * Fetches column metadata for the current table using DESCRIBE
  */
 function cr_table_columns($conn, $table) {
-    $cols = [];
-    $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $cols[] = $row;
-    }
-    return $cols;
+    return itm_crud_table_columns($conn, $table);
 }
 
 /**
  * Maps foreign key columns to their referenced tables using INFORMATION_SCHEMA
  */
 function cr_fk_map($conn, $table) {
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = '{$tableEsc}'
-              AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $map = [];
-    $res = mysqli_query($conn, $sql);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $map[$row['COLUMN_NAME']] = $row;
-    }
-    return $map;
+    return itm_crud_fk_map($conn, $table);
 }
 
 /**
@@ -95,23 +79,7 @@ function cr_fk_options($conn, $fk, $company_id) {
  * Detects metadata (like label column) for a referenced table
  */
 function cr_fk_metadata($conn, $table) {
-    $labelCol = 'name';
-    $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    $available = [];
-    while ($des && ($d = mysqli_fetch_assoc($des))) {
-        $available[] = $d['Field'];
-    }
-    // Preferred label columns in order of priority
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
-        if (in_array($candidate, $available, true)) {
-            $labelCol = $candidate;
-            break;
-        }
-    }
-    return [
-        'label_col' => $labelCol,
-        'available' => $available,
-    ];
+    return itm_crud_fk_metadata($conn, $table);
 }
 
 /**
@@ -735,8 +703,7 @@ function cr_sync_onboarding_system_access_columns($conn, $company_id) {
 
     $table = 'employee_onboarding_requests';
     $existingColumns = [];
-    $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($columnsRes && ($columnRow = mysqli_fetch_assoc($columnsRes))) {
+    foreach (itm_crud_table_columns($conn, $table) as $columnRow) {
         $existingColumns[(string)($columnRow['Field'] ?? '')] = true;
     }
 
@@ -778,8 +745,7 @@ function cr_sync_onboarding_status_columns($conn) {
     $table = 'employee_onboarding_requests';
     $requiredColumns = ['status_hod', 'status_hrd', 'status_ism', 'status_gm', 'status_fin'];
     $existingColumns = [];
-    $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($columnsRes && ($columnRow = mysqli_fetch_assoc($columnsRes))) {
+    foreach (itm_crud_table_columns($conn, $table) as $columnRow) {
         $existingColumns[(string)($columnRow['Field'] ?? '')] = true;
     }
 
@@ -823,8 +789,7 @@ function cr_sync_onboarding_email_tracking_columns($conn) {
         'email_sent_fin_at' => " DATETIME DEFAULT NULL",
     ];
     $existingColumns = [];
-    $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($columnsRes && ($columnRow = mysqli_fetch_assoc($columnsRes))) {
+    foreach (itm_crud_table_columns($conn, $table) as $columnRow) {
         $existingColumns[(string)($columnRow['Field'] ?? '')] = true;
     }
 

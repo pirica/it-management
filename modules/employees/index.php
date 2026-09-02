@@ -205,10 +205,10 @@ function emp_ensure_is_hidden_column($conn) {
  */
 if (!function_exists("emp_ensure_duplicate_column")) {
 function emp_ensure_duplicate_column($conn) {
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM employees LIKE 'duplicate'");
-    if ($res && mysqli_num_rows($res) === 0) {
-        mysqli_query($conn, "ALTER TABLE employees ADD COLUMN `duplicate` TINYINT(1) NOT NULL DEFAULT 0 AFTER `id`");
+    if (function_exists('itm_table_has_column') && itm_table_has_column($conn, 'employees', 'duplicate')) {
+        return;
     }
+    mysqli_query($conn, "ALTER TABLE employees ADD COLUMN `duplicate` TINYINT(1) NOT NULL DEFAULT 0 AFTER `id`");
 }
 }
 
@@ -729,9 +729,9 @@ $duplicatesCount = emp_recalculate_duplicates($conn, $company_id);
 $duplicateValueMaps = emp_collect_duplicate_values($conn, $company_id);
 
 // Determine dynamic column order and visibility
-$columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM employees');
-$columns = []; $columnTypes = [];
-while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
+$columns = [];
+$columnTypes = [];
+foreach (itm_crud_table_columns($conn, 'employees') as $c) {
     $columns[] = $c['Field'];
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }

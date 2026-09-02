@@ -12,17 +12,9 @@ if (!function_exists('idf_ensure_idf_positions_capacity_columns')) {
         }
         $ensured = true;
 
-        $hasPortCount = false;
-        $portCountColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_positions` LIKE 'port_count'");
-        if ($portCountColRes && mysqli_num_rows($portCountColRes) > 0) {
-            $hasPortCount = true;
-        }
+        $hasPortCount = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'idf_positions', 'port_count');
 
-        $hasRj45Count = false;
-        $rj45ColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_positions` LIKE 'rj45_count'");
-        if ($rj45ColRes && mysqli_num_rows($rj45ColRes) > 0) {
-            $hasRj45Count = true;
-        }
+        $hasRj45Count = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'idf_positions', 'rj45_count');
 
         if ($hasPortCount && !$hasRj45Count) {
             mysqli_query(
@@ -33,11 +25,7 @@ if (!function_exists('idf_ensure_idf_positions_capacity_columns')) {
             $hasRj45Count = true;
         }
 
-        $hasSfpCount = false;
-        $sfpColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_positions` LIKE 'sfp_count'");
-        if ($sfpColRes && mysqli_num_rows($sfpColRes) > 0) {
-            $hasSfpCount = true;
-        }
+        $hasSfpCount = function_exists('itm_table_has_column') && itm_table_has_column($conn, 'idf_positions', 'sfp_count');
 
         if (!$hasSfpCount) {
             $afterColumn = $hasRj45Count ? 'rj45_count' : ($hasPortCount ? 'port_count' : 'equipment_id');

@@ -41,6 +41,10 @@ if (!function_exists('itm_software_eol_hardware_kind_meta')) {
 if (!function_exists('itm_software_eol_table_has_column')) {
     function itm_software_eol_table_has_column(mysqli $conn, $table, $column)
     {
+        if (function_exists('itm_table_has_column')) {
+            return itm_table_has_column($conn, $table, $column);
+        }
+
         $table = trim((string)$table);
         $column = trim((string)$column);
         if ($table === '' || $column === '' || !function_exists('itm_is_safe_identifier')) {

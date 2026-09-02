@@ -59,73 +59,14 @@ function cr_starts_with($haystack, $needle) {
  * Fetches column definitions for the target table.
  */
 function cr_table_columns($conn, $table) {
-    $cols = [];
-    if (!itm_is_safe_identifier($table)) return $cols;
-    $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $cols[] = $row;
-    }
-    return $cols;
+    return itm_crud_table_columns($conn, $table);
 }
 
 /**
  * Detects foreign key relationships for the table to enable dropdown selection.
  */
 function cr_fk_map($conn, $table) {
-    $map = [];
-    if (!itm_is_safe_identifier($table)) return $map;
-    $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = ?
-              AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $table);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $map[$row['COLUMN_NAME']] = $row;
-        }
-        mysqli_stmt_close($stmt);
-    }
-
-    // Why: some legacy databases were created without FK constraints, which leaves
-    // list views showing raw numeric IDs instead of readable labels.
-    if ($table === 'catalogs') {
-        $catalogFallbacks = [
-            'equipment_type_id' => 'equipment_types',
-            'manufacturer_id' => 'manufacturers',
-            'supplier_id' => 'suppliers',
-        ];
-
-        foreach ($catalogFallbacks as $columnName => $referencedTable) {
-            if (isset($map[$columnName])) {
-                continue;
-            }
-            if (!itm_is_safe_identifier($columnName) || !itm_is_safe_identifier($referencedTable)) {
-                continue;
-            }
-
-            $describeRes = @mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($referencedTable));
-            $exists = ($describeRes !== false);
-            if ($describeRes instanceof mysqli_result) {
-                mysqli_free_result($describeRes);
-            }
-
-            if (!$exists) {
-                continue;
-            }
-
-            $map[$columnName] = [
-                'COLUMN_NAME' => $columnName,
-                'REFERENCED_TABLE_NAME' => $referencedTable,
-                'REFERENCED_COLUMN_NAME' => 'id',
-            ];
-        }
-    }
-
-    return $map;
+    return itm_crud_fk_map($conn, $table);
 }
 
 /**
@@ -307,46 +248,7 @@ function cr_fk_display_maps($conn, $fkMap, $uiColumns, $company_id) {
  * Heuristically finds the best column to use as a display label for a reference table.
  */
 function cr_fk_metadata($conn, $table) {
-    $labelCol = 'name';
-    $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    $available = [];
-    $typeMap = [];
-    while ($des && ($d = mysqli_fetch_assoc($des))) {
-        $fieldName = (string)($d['Field'] ?? '');
-        if ($fieldName === '') {
-            continue;
-        }
-        $available[] = $fieldName;
-        $typeMap[$fieldName] = strtolower((string)($d['Type'] ?? ''));
-    }
-    // Preferred candidate labels in order of priority.
-    foreach (['name', 'title', 'label', 'display_name', 'supplier_name', 'manufacturer_name', 'equipment_type', 'username', 'code', 'mode_name'] as $candidate) {
-        if (in_array($candidate, $available, true)) {
-            $labelCol = $candidate;
-            break;
-        }
-    }
-    // Why: some legacy lookup tables do not use conventional "name/title" columns.
-    // Selecting a readable text-like column prevents empty FK dropdowns in edit/create views.
-    if (!in_array($labelCol, $available, true)) {
-        foreach ($available as $fieldName) {
-            if (in_array($fieldName, ['id', 'company_id', 'active', 'created_at', 'updated_at'], true)) {
-                continue;
-            }
-            $fieldType = $typeMap[$fieldName] ?? '';
-            if (cr_contains($fieldType, 'char') || cr_contains($fieldType, 'text') || cr_contains($fieldType, 'enum')) {
-                $labelCol = $fieldName;
-                break;
-            }
-        }
-    }
-    if (!in_array($labelCol, $available, true) && in_array('id', $available, true)) {
-        $labelCol = 'id';
-    }
-    return [
-        'label_col' => $labelCol,
-        'available' => $available,
-    ];
+    return itm_crud_fk_metadata($conn, $table);
 }
 
 /**

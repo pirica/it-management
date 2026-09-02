@@ -26,14 +26,11 @@ function itm_employees_ensure_is_hidden_column($conn)
         return false;
     }
 
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM employees LIKE 'is_hidden'");
-    if (!$res) {
-        return false;
+    if (function_exists('itm_table_has_column') && itm_table_has_column($conn, 'employees', 'is_hidden')) {
+        return true;
     }
-    if (mysqli_num_rows($res) === 0) {
-        if (mysqli_query($conn, "ALTER TABLE employees ADD COLUMN `is_hidden` TINYINT(1) NOT NULL DEFAULT 0 AFTER `hide_year`") !== true) {
-            return false;
-        }
+    if (mysqli_query($conn, "ALTER TABLE employees ADD COLUMN `is_hidden` TINYINT(1) NOT NULL DEFAULT 0 AFTER `hide_year`") !== true) {
+        return false;
     }
 
     return true;

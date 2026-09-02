@@ -1620,6 +1620,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>One-time/maintenance: add <code>$displayFieldColumns = $uiColumns</code> (or <code>$visibleFieldColumns</code>) before module paths so list search does not reference an undefined variable. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped <code>index.php</code> files. Re-run when new flattened CRUD modules omit the alias.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="apply_crud_schema_cached_helpers.php" target="_blank" rel="nofollow noreferrer">apply_crud_schema_cached_helpers.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Maintenance: replace inline scaffold <code>cr_table_columns()</code>, <code>cr_fk_map()</code>, and <code>cr_fk_metadata()</code> bodies with delegates to <code>itm_crud_table_columns()</code>, <code>itm_crud_fk_map()</code>, and <code>itm_crud_fk_metadata()</code> in <code>includes/</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Pair with <code>check_crud_schema_cached_helpers.php</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="check_crud_schema_cached_helpers.php" target="_blank" rel="nofollow noreferrer">check_crud_schema_cached_helpers.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Static gate: every module scaffold <code>cr_table_columns()</code> / <code>cr_fk_map()</code> / <code>cr_fk_metadata()</code> must delegate to cached helpers (no inline <code>DESCRIBE</code> or <code>information_schema.KEY_COLUMN_USAGE</code> in those function bodies). Exit <code>1</code> on mismatch.</td>
+                    <td class="scripts-catalog-how-stub">CLI only.</td>
+                </tr>
                 <tr data-tags="catalogs">
                     <td><a href="apply_script_catalog_tags.php" target="_blank" rel="nofollow noreferrer">apply_script_catalog_tags.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
