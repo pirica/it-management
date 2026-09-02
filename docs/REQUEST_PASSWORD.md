@@ -69,11 +69,24 @@ To preserve the audit trail and prevent unauthorized deletion of pending request
 
 ---
 
-## 6. Verifications & Operational Diagnostics
+## 6. Email approval link signing (HR / HOD)
+
+HR and HOD one-click authorize/decline links in email are signed with **HMAC-SHA256**:
+
+- **Secret:** `ITM_REQUEST_PASSWORD_APPROVAL_SECRET` in project root `.env` (documented in `.env.example`). Loaded by `itm_request_password_approval_secret()` in `includes/itm_request_password_approval.php`.
+- **Never commit** production values; use a long random string per environment (e.g. `openssl rand -hex 32`).
+- **Regression:** `php scripts/verify_request_password.php` and `php scripts/verify_pentest_report.php` (requires non-empty env for the former).
+
+If the env key is missing, approval links return a generic configuration error and HR/HOD email send shows a flash error.
+
+---
+
+## 7. Verifications & Operational Diagnostics
 
 Run the following diagnostics from the repository root to verify approval states, signature validation gates, automated notifications, and owner-only delete restrictions:
 
 ```bash
+# Requires ITM_REQUEST_PASSWORD_APPROVAL_SECRET in .env
 # Verify Request Password multi-stage approval gates, signatures, and notifications
 php scripts/verify_request_password.php
 

@@ -28,7 +28,7 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 
 ## Security
-- Authorize/Decline links use HMAC-SHA256 signed tokens to prevent tampering.
+- Authorize/Decline links use HMAC-SHA256 signed tokens to prevent tampering. Signing key: **`ITM_REQUEST_PASSWORD_APPROVAL_SECRET`** in project root `.env` via `itm_request_password_approval_secret()` (`includes/itm_request_password_approval.php`) — not stored in source. Generate with `openssl rand -hex 32`; rotate per environment.
 - CSRF protection on all POST actions.
 - Multi-tenancy strictly enforced via `company_id`.
 - Soft delete pattern implemented: deleting a request password record updates `active = 0`, sets `deleted_by` and `deleted_at`, rather than hard-deleting the database row.
@@ -40,7 +40,7 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - Only the creator may delete — enforce in UI and on the delete POST. [Cursor-Fixed]
 - Do not regress list `data-itm-db-import-endpoint` or Actions header `data-itm-actions-origin="1"` when changing row actions. [Cursor-Fixed]
 - ISM final notification must wait until both HR and HOD are Approved. [Cursor-Valid]
-- Approval links use HMAC-SHA256 — verify with `hash_equals`; do not weaken token/secret handling. [Cursor-Valid]
+- Approval links use HMAC-SHA256 — verify with `hash_equals`; signing key from `.env` `ITM_REQUEST_PASSWORD_APPROVAL_SECRET` only. [Cursor-Fixed]
 - **Named verifier:** `php scripts/verify_request_password.php` (catalog: `scripts/scripts.php`) — RBAC, HMAC, list markers, creator-only delete; PoC: `repro_request_password_bypass.php`.
 - Application dropdown built from `employee_system_access` must skip audit/meta columns or non-system flags appear as apps. [Cursor-Fixed]
 - Do not wrap create fields and Save/Back in one `.card` that `ui-layout.js` can mistake for the action bar — keep a dedicated `.form-actions` row. [Cursor-Fixed]
