@@ -11,7 +11,7 @@
 
 The IT Management System is a large procedural PHP application (~2,643 PHP files, 272+ module entry points) with substantial defensive engineering: prepared-statement static auditing, CSRF coverage checks, upload-directory hardening, multi-tenant `company_id` enforcement in central bootstrap, role/module access gates, and targeted regression scripts for high-risk areas (Explorer ACL, QR share, API v2, hotel distribution).
 
-**Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase, but several **confirmed high-impact weaknesses** remain in workflow authentication (password-request email approvals), secrets management (DB-password-derived encryption keys), and deployment defaults (seed administrator credentials). No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`. **ITM-PENTEST-006** (verbose error display default) and **ITM-PENTEST-001** (hardcoded approval HMAC secret → `.env` `ITM_REQUEST_PASSWORD_APPROVAL_SECRET`) were remediated.
+**Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase, but **deployment hygiene** risks remain (default seed credentials, DB-password-derived encryption keys). Request Password email approvals (ITM-PENTEST-001–003) and verbose PHP error display defaults (ITM-PENTEST-006) were remediated. No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`.
 
 **Primary risks:** Credential and secrets compromise via default accounts or database credential leakage; phishing via intentional short-link redirects. Request Password email approvals now use POST+CSRF confirm flow with designated-approver binding (ITM-PENTEST-001–003 remediated).
 
@@ -46,7 +46,26 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 3. **Manual source review** — authentication, approval workflows, encryption key derivation, upload validation, public join/share tokens, webhook signature verification, security headers, error-handling defaults.
 4. **Cross-reference** — prior internal notes (`docs/security-validated-findings.md`, `docs/security_assessment_report.md`) verified against current code; stale/theoretical items re-validated or excluded.
 5. **Safe proof-of-concept** — logical PoCs derived from code (token forgery formulas, header absence, config flags); no live exploitation or data modification.
-6. **Regression verifier** — `php scripts/verify_pentest_report.php` (static line-level checks for ITM-PENTEST-001–022; PHPUnit: `--filter PentestReport`).
+6. **Regression verifier** — `php scripts/verify_pentest_report.php` (static line-level checks for ITM-PENTEST-001–022; PHPUnit: `--filter PentestReport`). Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator session).
+
+---
+
+## Regression verifier output (`verify_pentest_report.php`)
+
+Exit code **0** means every finding still matches `docs/report.md` — **not** that all risks are closed.
+
+| Label | Meaning | Findings |
+|-------|---------|----------|
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 007–016 |
+| **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
+| **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
+
+Examples:
+
+- `[OPEN] ITM-PENTEST-004: seed Admin bcrypt…` — default `Admin` password still in `db/02_data.sql` (expected until seeds change).
+- `[OPEN] ITM-PENTEST-005: DB_PASS-derived encryption keys…` — integration secrets still keyed from `DB_PASS` (documented, not remediated).
+- `[INFO] ITM-PENTEST-017: check_sql_injection_coverage.php passes` — static SQLi gate is effective.
 
 ---
 
@@ -158,7 +177,7 @@ Previously, after HMAC validation, the handler updated approval status using onl
 ### ITM-PENTEST-004 Default and demo credentials in database seed data
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** (documented — not remediated) — seed Admin bcrypt hash at `db/02_data.sql` line **868** (`username` `Admin` for company 1); demo accounts block comment line **2261**, `INSERT` at lines **2262–2278** (`demo1`–`demo5`, password equals username per comment). Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Confirmed** (documented — not remediated) — expect **`[OPEN]`** in `php scripts/verify_pentest_report.php`. Seed Admin bcrypt hash at `db/02_data.sql` line **868** (`username` `Admin` for company 1); demo accounts block comment line **2261**, `INSERT` at lines **2262–2278** (`demo1`–`demo5`, password equals username per comment).
 
 **Severity:** High  
 **OWASP Category:** A07:2021 – Identification and Authentication Failures  
@@ -185,7 +204,7 @@ Fresh imports seed administrator accounts (`Admin`, `Admin2`–`Admin5`) with a 
 ### ITM-PENTEST-005 Server-side secrets encrypted with keys derived from database password
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** (documented — not remediated) — `hash('sha256', (defined('DB_PASS') ? DB_PASS : 'itmanagement') . …)` in `includes/itm_email.php` lines **10–12** (`itm_smtp_encryption_key`), `includes/itm_totp_helpers.php` lines **260–262**, `includes/itm_ldap_auth.php` lines **7–9**, `includes/itm_stripe_checkout.php` lines **7–9**, `includes/itm_hotel_booking_distribution_secrets.php` lines **7–8**, `includes/itm_webhook_queue.php` lines **7–9**. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Confirmed** (documented — not remediated) — expect **`[OPEN]`** in `php scripts/verify_pentest_report.php`. `hash('sha256', (defined('DB_PASS') ? DB_PASS : 'itmanagement') . …)` in `includes/itm_email.php` lines **10–12** (`itm_smtp_encryption_key`), `includes/itm_totp_helpers.php` lines **260–262**, `includes/itm_ldap_auth.php` lines **7–9**, `includes/itm_stripe_checkout.php` lines **7–9**, `includes/itm_hotel_booking_distribution_secrets.php` lines **7–8**, `includes/itm_webhook_queue.php` lines **7–9**.
 
 **Severity:** Medium  
 **OWASP Category:** A02:2021 – Cryptographic Failures  
@@ -534,7 +553,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 ### ITM-PENTEST-017 Positive: SQL injection static gate passes
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `php scripts/check_sql_injection_coverage.php` exits `0` (invoked by `scripts/verify_pentest_report.php`); scanner source at `scripts/check_sql_injection_coverage.php`. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Confirmed** — expect **`[INFO]`** — `php scripts/check_sql_injection_coverage.php` exits `0` (invoked by `scripts/verify_pentest_report.php`); scanner source at `scripts/check_sql_injection_coverage.php`.
 
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
@@ -547,7 +566,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 ### ITM-PENTEST-018 Positive: CSRF static gate passes for module POST handlers
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `php scripts/check_csrf_coverage.php` exits `0` (invoked by `scripts/verify_pentest_report.php`); scanner source at `scripts/check_csrf_coverage.php`. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Confirmed** — expect **`[INFO]`** — `php scripts/check_csrf_coverage.php` exits `0` (invoked by `scripts/verify_pentest_report.php`); scanner source at `scripts/check_csrf_coverage.php`.
 
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
@@ -560,7 +579,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 ### ITM-PENTEST-019 Positive: Explorer upload and path controls
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `get_full_path()` and `explorer_validate_upload_file()` defined in `modules/explorer/api.php`; upload hardening via `itm_ensure_files_storage_directory()` / `deny_http` policy per `AGENTS.md`. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Confirmed** — expect **`[INFO]`** — `get_full_path()` and `explorer_validate_upload_file()` defined in `modules/explorer/api.php`; upload hardening via `itm_ensure_files_storage_directory()` / `deny_http` policy per `AGENTS.md`.
 
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
@@ -573,7 +592,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 ### ITM-PENTEST-020 Positive: Login and password-reset rate limiting
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `itm_is_login_rate_limited()` in `login.php`; `itm_is_password_reset_rate_limited()` in `forgot-password.php` (also used from `reset-password.php`). Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Confirmed** — expect **`[INFO]`** — `itm_is_login_rate_limited()` in `login.php`; `itm_is_password_reset_rate_limited()` in `forgot-password.php` (also used from `reset-password.php`).
 
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
@@ -586,7 +605,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 ### ITM-PENTEST-021 Positive: Session fixation mitigation on login
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `session_regenerate_id(true)` after successful authentication at `login.php` line **194**. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Confirmed** — expect **`[INFO]`** — `session_regenerate_id(true)` after successful authentication at `login.php` line **194**.
 
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
@@ -599,7 +618,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 ### ITM-PENTEST-022 Positive: Hotel cancellation policy path allowlist (RCE mitigated)
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `itm_hotel_booking_normalize_cancellation_policy_url()` extension allowlist `in_array($ext, ['html', 'htm', 'txt']` at `includes/itm_hotel_booking.php` line **1591** (blocks `..` sequences). Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Confirmed** — expect **`[INFO]`** — `itm_hotel_booking_normalize_cancellation_policy_url()` extension allowlist `in_array($ext, ['html', 'htm', 'txt']` at `includes/itm_hotel_booking.php` line **1591** (blocks `..` sequences).
 
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — previously reported risk area  
