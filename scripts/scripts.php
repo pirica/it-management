@@ -889,7 +889,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="count_db_tables.php" target="_blank" rel="nofollow noreferrer">count_db_tables.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Counts live tables in <code>information_schema</code> for <code>itmanagement</code>, echoes the total as plain text, and overwrites <code>scripts/number_db_tables.txt</code> with the same number (for external monitors). <strong>No login required.</strong><br>Run php scripts/count_db_tables.php</td>
+                    <td>Counts live tables in <code>information_schema</code> for <code>itmanagement</code> and echoes the total as plain text (browser or CLI only). <strong>No login required</strong> from loopback or allowlisted IP (see <code>ITM_SCRIPT_NO_AUTH_ALLOWED_IPS</code>).<br>Run php scripts/count_db_tables.php</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage or php scripts/count_db_tables.php</td>
                 </tr>
                 <tr data-tags="audit_logs">

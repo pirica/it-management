@@ -97,7 +97,7 @@ Common HTTP codes: `401` invalid/missing key, `403` scope or RBAC, `404` not fou
 
 ## OpenAPI 3.0
 
-Public spec (no secrets):
+Public spec (no secrets). Browser access requires loopback, `ITM_SCRIPT_NO_AUTH_ALLOWED_IPS`, or `ITM_MAINTENANCE_TOKEN` (see `.env.example`).
 
 - Browser: [scripts/openapi.php?format=json](http://localhost/it-management/scripts/openapi.php?format=json) — open in a new tab
 - CLI: `php scripts/openapi.php`
