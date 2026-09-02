@@ -286,7 +286,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `php scripts/repro_status_leak.php` | PoC — cross-tenant employee status leak. |
 | `php scripts/repro_visitors_bac.php` | PoC — Broken Access Control in visitors access log. |
 | `php scripts/repro_visitors_sqli.php` | PoC — SQL Injection in visitors access log inline edit. |
-| `php scripts/verify_audit_updated.php` | Verification — audit log redaction of sensitive fields. |
+| `php scripts/verify_pentest_report.php` | Static regression for `docs/report.md` ITM-PENTEST-001–022: line-level markers for open findings, remediated 006, positive controls 017–022; runs `check_sql_injection_coverage.php` and `check_csrf_coverage.php`. PHPUnit: `--filter PentestReport`. |
 | `php scripts/verify_audit_logs_disclosure.php` | Three-step employees audit disclosure regression: static `db/03_triggers.sql` employees trigger scan, live disposable employee UPDATE probe, retro scan of recent `employees` audit rows. Prints each step; optional `ITM_TEST_COMPANY_ID`. |
 | `php scripts/verify_status_leak_fixed.php` | Verification — fixed scoping for employee status. |
 | `php scripts/verify_visitors_bac_fix.php` | Verification — blocked unauthorized visitor log additions (against live module). |
@@ -1414,6 +1414,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_whatsapp_share.php` — WhatsApp deep-link message/url helpers (`includes/itm_whatsapp_share.php`, `js/itm-whatsapp-share.js`); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
+- `php scripts/verify_pentest_report.php` — static regression for `docs/report.md` ITM-PENTEST-001–022 (open findings, remediated 006, positive controls); invokes SQLi/CSRF static gates. PHPUnit: `--filter PentestReport`. Browser: `?run=1` (Administrator).
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
 - `php scripts/verify_command_palette_search.php` — `includes/itm_command_palette_search.php`, `includes/itm_search_index.php`, `modules/search/api.php`, `js/command-palette.js`, header Ctrl+K wiring, RBAC gates, FULLTEXT backfill/remove probes
 - `php scripts/verify_command_palette_sidebar_slugs.php` — every Admin sidebar module slug findable via palette module navigation; lib `scripts/lib/itm_command_palette_sidebar_verify.php`
