@@ -2420,6 +2420,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub"><code>php scripts/run_change_request_reminders.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="verify_pentest_report.php" target="_blank" rel="nofollow noreferrer">verify_pentest_report.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Static regression for <code>docs/report.md</code> pentest findings ITM-PENTEST-001–022: line-level markers for open issues, remediated 006, positive controls 017–022; invokes <code>check_sql_injection_coverage.php</code> and <code>check_csrf_coverage.php</code>. PHPUnit: <code>--filter PentestReport</code>.</td>
+                    <td><code>php scripts/verify_pentest_report.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>

@@ -46,6 +46,7 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 3. **Manual source review** — authentication, approval workflows, encryption key derivation, upload validation, public join/share tokens, webhook signature verification, security headers, error-handling defaults.
 4. **Cross-reference** — prior internal notes (`docs/security-validated-findings.md`, `docs/security_assessment_report.md`) verified against current code; stale/theoretical items re-validated or excluded.
 5. **Safe proof-of-concept** — logical PoCs derived from code (token forgery formulas, header absence, config flags); no live exploitation or data modification.
+6. **Regression verifier** — `php scripts/verify_pentest_report.php` (static line-level checks for ITM-PENTEST-001–022; PHPUnit: `--filter PentestReport`).
 
 ---
 
@@ -64,6 +65,9 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 ## Findings
 
 ### ITM-PENTEST-001 Hardcoded HMAC secret for password-request email approvals
+
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — hardcoded `$secret = 'request_password_secret_key_2024'` at `modules/request_password/index.php` line **58** (`hash_hmac` at line **59**); duplicated at `scripts/verify_request_password.php` line **158**. Regression: `php scripts/verify_pentest_report.php`.
 
 **Severity:** High  
 **OWASP Category:** A02:2021 – Cryptographic Failures / A07:2021 – Identification and Authentication Failures  
@@ -101,6 +105,9 @@ $token = hash_hmac('sha256', $recordId . 'hr' . 'approve', $secret);
 
 ### ITM-PENTEST-002 State-changing GET endpoint for password-request approvals (CSRF)
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — GET handler `$_GET['approval_api']` at `modules/request_password/index.php` line **51**; `UPDATE request_password` at lines **72–74** without CSRF. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** High  
 **OWASP Category:** A01:2021 – Broken Access Control  
 **Affected Component:** Request Password — email approval API  
@@ -131,6 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
 
 ### ITM-PENTEST-003 Missing approver identity and role verification on email approvals
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — between token check (lines **61–65**) and `UPDATE` (lines **72–74**) in `modules/request_password/index.php` there is no `itm_is_admin()`, approver employee match, or HR/HOD role gate. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** High  
 **OWASP Category:** A01:2021 – Broken Access Control  
 **Affected Component:** Request Password — approval handler  
@@ -155,6 +165,9 @@ After HMAC validation, the handler updates approval status using only `company_i
 
 ### ITM-PENTEST-004 Default and demo credentials in database seed data
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** (documented — not remediated) — seed Admin bcrypt hash at `db/02_data.sql` line **868** (`username` `Admin` for company 1); demo accounts block comment line **2261**, `INSERT` at lines **2262–2278** (`demo1`–`demo5`, password equals username per comment). Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** High  
 **OWASP Category:** A07:2021 – Identification and Authentication Failures  
 **Affected Component:** Authentication — seed employees  
@@ -178,6 +191,9 @@ Fresh imports seed administrator accounts (`Admin`, `Admin2`–`Admin5`) with a 
 ---
 
 ### ITM-PENTEST-005 Server-side secrets encrypted with keys derived from database password
+
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** (documented — not remediated) — `hash('sha256', (defined('DB_PASS') ? DB_PASS : 'itmanagement') . …)` in `includes/itm_email.php` lines **10–12** (`itm_smtp_encryption_key`), `includes/itm_totp_helpers.php` lines **260–262**, `includes/itm_ldap_auth.php` lines **7–9**, `includes/itm_stripe_checkout.php` lines **7–9**, `includes/itm_hotel_booking_distribution_secrets.php` lines **7–8**, `includes/itm_webhook_queue.php` lines **7–9**. Regression: `php scripts/verify_pentest_report.php`.
 
 **Severity:** Medium  
 **OWASP Category:** A02:2021 – Cryptographic Failures  
@@ -214,6 +230,8 @@ Similar pattern in `itm_totp_encryption_key()` (`includes/itm_totp_helpers.php` 
 
 **Status:** **Remediated** (default off; admins may re-enable in Settings → UI Configuration)  
 **Date updated:** 2026-09-02  
+**Verification:** **Remediated** — `itm_ui_config_defaults()['enable_all_error_reporting']` at `includes/ui_config.php` line **1540**; bootstrap fallback `?? 0` at `config/config.php` line **651**; schema default `'0'` at `db/01_schema.sql` line **3716**; backfill `db/migrations/ui_configuration_error_reporting_default_off_dml.sql`. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Medium  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
 **Affected Component:** Global bootstrap  
@@ -249,6 +267,9 @@ if (($ui_config['enable_all_error_reporting'] ?? 0) === 1) {
 
 ### ITM-PENTEST-007 Missing standard HTTP security headers
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — repository-wide grep of `includes/*.php` finds no `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, or `Referrer-Policy`; no central helper in `config/config.php` or `includes/header.php`. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Medium  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
 **Affected Component:** Global HTTP responses  
@@ -272,6 +293,9 @@ Repository-wide search found **no** implementation of `Content-Security-Policy`,
 ---
 
 ### ITM-PENTEST-008 Maintenance / localhost authentication bypass for QA scripts
+
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — localhost / maintenance-token skip at `config/config.php` lines **543–547** (`$itmIsLocalhost`, `hash_equals($itmMaintToken, …)`); browser QA allowlist in `scripts/lib/itm_script_bootstrap.php` includes `module_browser_qa_runner.php` and `run_tests.php`. Regression: `php scripts/verify_pentest_report.php`.
 
 **Severity:** Medium  
 **OWASP Category:** A01:2021 – Broken Access Control  
@@ -304,6 +328,9 @@ Allowlist: `scripts/lib/itm_script_bootstrap.php` → `module_browser_qa_runner.
 ---
 
 ### ITM-PENTEST-009 Short URL service enables open redirects (phishing risk)
+
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `itm_short_url_normalize_destination()` at `includes/itm_short_url.php` line **112** (allows `http://` / `https://`); 302 redirect at `modules/short-url/go.php` line **62**; `'require_https_destination' => 0` default at `includes/itm_short_url.php` line **129**. Regression: `php scripts/verify_pentest_report.php`.
 
 **Severity:** Medium  
 **OWASP Category:** A10:2021 – Server-Side Request Forgery (redirect variant) / social engineering  
@@ -344,6 +371,9 @@ header('Location: ' . $destination, true, 302);
 
 ### ITM-PENTEST-010 Legacy plaintext password-reset token column support
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — legacy `OR (reset_token = ?` branch at `includes/itm_password_reset.php` line **152** in `itm_password_reset_lookup_employee_by_token()`. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Medium  
 **OWASP Category:** A02:2021 – Cryptographic Failures  
 **Affected Component:** Password reset  
@@ -373,6 +403,9 @@ Token validation accepts **either** `reset_token_hash` **or** legacy plaintext `
 
 ### ITM-PENTEST-011 Public unauthenticated information endpoints
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `ITM_SCRIPT_NO_AUTH` allowlist in `config/config.php` lines **514–516** includes `count_db_tables.php` and `openapi.php` (no session required). Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Medium  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
 **Affected Component:** Diagnostics / API documentation  
@@ -395,6 +428,9 @@ Token validation accepts **either** `reset_token_hash` **or** legacy plaintext `
 
 ### ITM-PENTEST-012 MySQL error message echoed on approval failure
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `echo "Error updating status: " . mysqli_error($conn)` at `modules/request_password/index.php` line **81**. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Low  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
 **Affected Component:** Request Password approval handler  
@@ -414,6 +450,9 @@ On failed `UPDATE`, the handler echoes `mysqli_error($conn)` to the browser.
 ---
 
 ### ITM-PENTEST-013 Public ticket survey form lacks CSRF token
+
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — POST handler `isset($_POST['submit_survey'])` at `ticket-survey.php` line **43** with no `itm_validate_csrf_token()` / `itm_require_post_csrf()` in file. Regression: `php scripts/verify_pentest_report.php`.
 
 **Severity:** Low  
 **OWASP Category:** A01:2021 – Broken Access Control (CSRF)  
@@ -435,6 +474,9 @@ Public survey submission is gated by an unguessable token in the URL but POST re
 
 ### ITM-PENTEST-014 Session cookie `Secure` flag conditional on HTTPS detection
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `'secure' => $itmSessionSecure` in `session_set_cookie_params()` at `config/config.php` line **418** (`$itmSessionSecure` derived from HTTPS / `X-Forwarded-Proto` detection above). Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Low  
 **OWASP Category:** A07:2021 – Identification and Authentication Failures  
 **Affected Component:** Session bootstrap  
@@ -454,6 +496,9 @@ Public survey submission is gated by an unguessable token in the URL but POST re
 ---
 
 ### ITM-PENTEST-015 Explorer API lacks application-level rate limiting
+
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — no `itm_api_enforce_rate_limit_or_exit()` call in `modules/explorer/api.php` (CSRF enforced on POST at lines **262–266** only). Regression: `php scripts/verify_pentest_report.php`.
 
 **Severity:** Low  
 **OWASP Category:** A04:2021 – Insecure Design  
@@ -475,6 +520,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 
 ### ITM-PENTEST-016 Placeholder third-party API key in source
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE')` at `config/config.php` line **98**. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Informational  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
 **Affected Component:** Email fallback configuration  
@@ -493,6 +541,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 
 ### ITM-PENTEST-017 Positive: SQL injection static gate passes
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `php scripts/check_sql_injection_coverage.php` exits `0` (invoked by `scripts/verify_pentest_report.php`); scanner source at `scripts/check_sql_injection_coverage.php`. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
 **Affected Component:** Codebase-wide  
@@ -502,6 +553,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 ---
 
 ### ITM-PENTEST-018 Positive: CSRF static gate passes for module POST handlers
+
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `php scripts/check_csrf_coverage.php` exits `0` (invoked by `scripts/verify_pentest_report.php`); scanner source at `scripts/check_csrf_coverage.php`. Regression: `php scripts/verify_pentest_report.php`.
 
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
@@ -513,6 +567,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 
 ### ITM-PENTEST-019 Positive: Explorer upload and path controls
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `get_full_path()` and `explorer_validate_upload_file()` defined in `modules/explorer/api.php`; upload hardening via `itm_ensure_files_storage_directory()` / `deny_http` policy per `AGENTS.md`. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
 **Affected Component:** Explorer  
@@ -522,6 +579,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 ---
 
 ### ITM-PENTEST-020 Positive: Login and password-reset rate limiting
+
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `itm_is_login_rate_limited()` in `login.php`; `itm_is_password_reset_rate_limited()` in `forgot-password.php` (also used from `reset-password.php`). Regression: `php scripts/verify_pentest_report.php`.
 
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
@@ -533,6 +593,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 
 ### ITM-PENTEST-021 Positive: Session fixation mitigation on login
 
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `session_regenerate_id(true)` after successful authentication at `login.php` line **194**. Regression: `php scripts/verify_pentest_report.php`.
+
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — defensive control  
 **Affected Component:** Authentication  
@@ -542,6 +605,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 ---
 
 ### ITM-PENTEST-022 Positive: Hotel cancellation policy path allowlist (RCE mitigated)
+
+**Date updated:** 2026-09-02  
+**Verification:** **Confirmed** — `itm_hotel_booking_normalize_cancellation_policy_url()` extension allowlist `in_array($ext, ['html', 'htm', 'txt']` at `includes/itm_hotel_booking.php` line **1591** (blocks `..` sequences). Regression: `php scripts/verify_pentest_report.php`.
 
 **Severity:** Informational (control effectiveness)  
 **OWASP Category:** N/A — previously reported risk area  
@@ -641,7 +707,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 | Security headers (CSP, XFO, HSTS) | **Not implemented** in app layer | ITM-PENTEST-007 |
 | Email approval workflow | **Weak** | ITM-PENTEST-001–003 |
 | Secrets at rest (integration) | **Moderate** | DB_PASS-derived keys — ITM-PENTEST-005 |
-| Error display defaults | **Weak** | ITM-PENTEST-006 |
+| Error display defaults | **Effective** (default off) | ITM-PENTEST-006 remediated; admins may re-enable in Settings |
 
 ---
 
@@ -671,9 +737,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 
 ## Final Risk Assessment
 
-**Overall rating: MEDIUM-HIGH** for a default deployment with seed data and factory UI settings; **MEDIUM** after mandatory credential rotation, disabling verbose errors, rotating approval secrets, and hardening production ingress.
+**Overall rating: MEDIUM-HIGH** for a default deployment with seed data and factory UI settings; **MEDIUM** after mandatory credential rotation, rotating approval secrets, and hardening production ingress (verbose error display now defaults off per ITM-PENTEST-006).
 
-The application demonstrates mature security **process** (static gates, regression scripts, upload hardening, RBAC layering) uncommon in procedural PHP codebases. The highest **confirmed** technical risks are concentrated in the **Request Password approval workflow** (hardcoded secret, GET CSRF, missing approver binding) and **deployment hygiene** (default `Admin` password, DB-derived encryption keys, verbose errors).
+The application demonstrates mature security **process** (static gates, regression scripts, upload hardening, RBAC layering) uncommon in procedural PHP codebases. The highest **confirmed** technical risks are concentrated in the **Request Password approval workflow** (hardcoded secret, GET CSRF, missing approver binding) and **deployment hygiene** (default `Admin` password, DB-derived encryption keys). Verbose PHP error display defaults were remediated (ITM-PENTEST-006).
 
 Addressing ITM-PENTEST-001 through ITM-PENTEST-004 should be prioritised before internet exposure. Defence-in-depth items (headers, rate limits, maintenance token policy) reduce blast radius from phishing and misconfiguration.
 
