@@ -3116,6 +3116,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="verify_force_password_change.php" target="_blank" rel="nofollow noreferrer">verify_force_password_change.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>ITM-PENTEST-004 mitigation: <code>employees.must_change_password</code>, seed Admin flag, <code>force-password-change.php</code> gate wiring.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="verify_password_reset_flow.php" target="_blank" rel="nofollow noreferrer">verify_password_reset_flow.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>

@@ -402,6 +402,19 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
      */
     function itm_verify_db_migrations_probe_custom($conn, $filename, $sql, array $parsed)
     {
+        if ($filename === 'employees_must_change_password.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'employees', 'must_change_password');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'employees.must_change_password column present.'
+                    : 'Missing employees.must_change_password — apply migration or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'company_sso_jit.sql') {
             $ok = itm_verify_db_migrations_column_exists($conn, 'companies', 'sso_jit_enabled');
 

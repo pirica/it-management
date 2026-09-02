@@ -232,7 +232,7 @@ if (!function_exists('itm_password_reset_complete_for_employee')) {
         $stmt = mysqli_prepare(
             $conn,
             'UPDATE employees
-             SET password = ?, reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL
+             SET password = ?, must_change_password = 0, reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL
              WHERE id = ?
                AND reset_token_hash = ?
                AND reset_token_expires_at >= NOW()

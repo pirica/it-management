@@ -236,6 +236,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                 }
+            }
+
+            if (itm_employee_must_change_password($conn, $employeeId)) {
+                header('Location: ' . BASE_URL . 'force-password-change.php');
+                exit();
+            }
+
+            if ($isAdmin) {
                 header('Location: dashboard.php');
                 exit();
             }

@@ -293,7 +293,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `php scripts/repro_status_leak.php` | PoC — cross-tenant employee status leak. |
 | `php scripts/repro_visitors_bac.php` | PoC — Broken Access Control in visitors access log. |
 | `php scripts/repro_visitors_sqli.php` | PoC — SQL Injection in visitors access log inline edit. |
-| `php scripts/verify_pentest_report.php` | Static regression for `docs/report.md` ITM-PENTEST-001–022. Output: `[PASS]` remediated (001–003, 006–008, 009–016), `[OPEN]` documented gaps (004–005), `[INFO]` positive controls (017–022), `[FAIL]` drift. Invokes `check_sql_injection_coverage.php` and `check_csrf_coverage.php`. PHPUnit: `--filter PentestReport`. Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator). |
+| `php scripts/verify_pentest_report.php` | Static regression for `docs/report.md` ITM-PENTEST-001–022. Output: `[PASS]` remediated (001–003, 006–008, 009–016), `[OPEN]` documented gaps (004–005), `[INFO]` positive controls (004-mitigation, 017–022), `[FAIL]` drift. Invokes `check_sql_injection_coverage.php` and `check_csrf_coverage.php`. PHPUnit: `--filter PentestReport`. Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator). |
 | `php scripts/verify_explorer_api_rate_limit.php` | ITM-PENTEST-015 regression: `modules/explorer/api.php` calls `itm_explorer_api_enforce_rate_limit_or_exit()`; rolling-hour cap blocks over-limit requests. Browser: [verify_explorer_api_rate_limit.php?run=1](http://localhost/it-management/scripts/verify_explorer_api_rate_limit.php?run=1) (Administrator). |
 | `php scripts/verify_audit_logs_disclosure.php` | Three-step employees audit disclosure regression: static `db/03_triggers.sql` employees trigger scan, live disposable employee UPDATE probe, retro scan of recent `employees` audit rows. Prints each step; optional `ITM_TEST_COMPANY_ID`. |
 | `php scripts/verify_status_leak_fixed.php` | Verification — fixed scoping for employee status. |
@@ -511,6 +511,8 @@ php scripts/auth_register_reset_human_test.php
 **`auth_register_reset_human_test.php`:** invite → register → login → reset-password human-style regression without a browser. Asserts `mysqli_stmt_bind_param` contracts on `login.php`, `forgot-password.php`, and `reset-password.php`; verifies tenant-scoped **Active** `employment_status_id` on registration (companies 1–2 by default). **Mutates DB:** disposable invitations and `script-*` employees; teardown via `itm_script_test_employee_register_teardown()`. Optional: `--company=2`. Browser: `scripts/auth_register_reset_human_test.php?company=2` (uses `$_GET['company']` when `$argv` is unavailable).
 
 **`verify_password_reset_flow.php`:** store/lookup/complete reset tokens using `includes/itm_password_reset.php` (MySQL `DATE_ADD` expiry, legacy plain-token fallback). Uses a disposable script-test employee.
+
+**`verify_force_password_change.php`:** `employees.must_change_password` column, seed Admin flag, validation/apply helpers, and `config/config.php` gate (ITM-PENTEST-004 mitigation). Browser: [verify_force_password_change.php?run=1](http://localhost/it-management/scripts/verify_force_password_change.php?run=1) (Administrator).
 
 #### API tier rate-limit regression (`apitest_tier_*.php`)
 

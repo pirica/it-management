@@ -347,6 +347,7 @@ require_once ROOT_PATH . 'includes/itm_login_attempt_identifier.php';
 require_once ROOT_PATH . 'includes/itm_ldap_auth.php';
 require_once ROOT_PATH . 'includes/itm_vault_org_recovery.php';
 require_once ROOT_PATH . 'includes/itm_password_reset.php';
+require_once ROOT_PATH . 'includes/itm_force_password_change.php';
 require_once ROOT_PATH . 'includes/itm_explorer_paths.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
 require_once ROOT_PATH . 'includes/itm_company_module_access.php';
@@ -571,13 +572,23 @@ if (
     exit();
 }
 
+// Why: Seed/demo accounts must rotate documented default passwords before browsing the portal.
+if (
+    !$itmSkipWebAuth
+    && isset($conn)
+    && $conn instanceof mysqli
+    && function_exists('itm_force_password_change_enforce_or_redirect')
+) {
+    itm_force_password_change_enforce_or_redirect($conn, $current_file);
+}
+
 // Ensure a company is selected before accessing protected modules
 if (
     !$itmSkipWebAuth
     && isset($_SESSION['employee_id'])
     && !isset($_SESSION['company_id'])
     && !$isReadOnlyUserConfig
-    && !in_array($current_file, ['index.php', 'logout.php', 'scripts.php'], true)
+    && !in_array($current_file, ['index.php', 'logout.php', 'scripts.php', 'force-password-change.php'], true)
 ) {
     header('Location: ' . BASE_URL . 'index.php');
     exit();

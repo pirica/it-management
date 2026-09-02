@@ -2277,6 +2277,12 @@ SELECT e.`id`, e.`company_id`, NULL, 1, '2026-01-01 00:00:01'
 FROM `employees` e
 WHERE e.`username` IN ('demo1', 'demo2', 'demo3', 'demo4', 'demo5');
 
+-- Why: Seed Admin and demo QA accounts ship with documented default passwords — require rotation on first password login.
+UPDATE `employees`
+SET `must_change_password` = 1
+WHERE `username` IN ('Admin', 'Admin2', 'Admin3', 'Admin4', 'Admin5', 'demo1', 'demo2', 'demo3', 'demo4', 'demo5')
+  AND `deleted_at` IS NULL;
+
 INSERT INTO `ui_configuration` (`company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`)
 SELECT e.`company_id`, e.`id`, 'left', 'left', 'left', 'left', 0, 1, 1, 0, '25', '⚙️ IT Controls', 'images/favicons/company_1.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', NULL
 FROM `employees` e

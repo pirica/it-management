@@ -1664,6 +1664,7 @@ CREATE TABLE `employees` (
   `insurance_n` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
 
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `must_change_password` tinyint(1) NOT NULL DEFAULT '0',
   `vault_key_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `vault_org_recovery_consent_at` timestamp NULL DEFAULT NULL,
   `vault_org_recovery_consent_reference` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
