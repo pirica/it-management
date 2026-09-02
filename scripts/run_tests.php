@@ -46,6 +46,10 @@ $nl = itm_script_output_nl();
 
 require_once ROOT_PATH . 'scripts/lib/script_browser_nav.php';
 require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
+require_once ROOT_PATH . 'includes/itm_maintenance_script_admin_gate.php';
+if (!$isCli) {
+    itm_enforce_maintenance_script_admin_browser(isset($conn) ? $conn : null);
+}
 require_once ROOT_PATH . 'includes/itm_cli_binary.php';
 
 /**

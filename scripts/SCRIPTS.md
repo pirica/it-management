@@ -240,11 +240,11 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `itm_script_browser_no_auth_script_basenames()` | `count_db_tables.php`, `test_chatbot.php`, `openapi.php` — `ITM_SCRIPT_NO_AUTH` scripts (gated by `itm_script_browser_no_auth_client_allowed()`) |
 | `itm_script_no_auth_allowed_hosts_resolved()` | Built-in `localhost`, `127.0.0.1`, `myhome.dynip.sapo.pt` + `ITM_SCRIPT_NO_AUTH_ALLOWED_HOSTS` |
 | `itm_script_no_auth_allowed_ips_resolved()` | Built-in `127.0.0.1` + `ITM_SCRIPT_NO_AUTH_ALLOWED_IPS` |
-| `itm_script_browser_no_auth_client_allowed()` | True on loopback, allowlisted Host/IP, or valid `ITM_MAINTENANCE_TOKEN` / `X-ITM-Maintenance-Token` |
-| `itm_script_browser_skip_web_auth_allowlist()` | `module_browser_qa_runner.php`, `run_tests.php` — may skip web auth on localhost / `ITM_MAINTENANCE_TOKEN` |
-| `itm_script_browser_maintenance_skip_web_auth_applies()` | True for allowlisted `ITM_CLI_SCRIPT` browser requests from `127.0.0.1`/`::1` or valid `ITM_MAINTENANCE_TOKEN` |
-| `itm_script_browser_maintenance_skip_admin_basenames()` | `run_tests.php` only — may skip Admin browser gate when maintenance web-auth bypass applies |
-| `itm_script_browser_maintenance_skip_admin_applies()` | True when `run_tests.php` may run without Administrator on localhost / maintenance token |
+| `itm_script_browser_no_auth_client_allowed()` | True on loopback, allowlisted Host/IP, or valid `ITM_MAINTENANCE_TOKEN` / `X-ITM-Maintenance-Token` (no-auth scripts only) |
+| `itm_script_browser_skip_web_auth_allowlist()` | Empty — browser QA no longer skips portal login (ITM-PENTEST-008 remediated) |
+| `itm_script_browser_maintenance_skip_web_auth_applies()` | Always **false** — MBQA / PHPUnit browser menu require signed-in Administrator |
+| `itm_script_browser_maintenance_skip_admin_basenames()` | Empty — no script may skip Admin browser gate |
+| `itm_script_browser_maintenance_skip_admin_applies()` | Always **false** |
 | `itm_script_browser_isolation_exempt_basenames()` | Catalog/API/MBQA scripts that keep the signed-in browser session |
 | `itm_script_begin_browser_isolated_session($conn, $skipWebAuth)` | Browser `scripts/*`: swap to disposable test Admin/employee; copies `csrf_token` into isolated session when present; shutdown restores real session and merges isolated `csrf_token` back |
 | `itm_script_finish_browser_isolated_session()` | Shutdown hook: delete disposable employee, merge isolated `csrf_token` into pre-swap backup, restore real `$_SESSION` |
@@ -265,7 +265,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 
 **CLI-only scripts** — bash wrappers (`smoke_test.sh`, `import_database_split.sh`, …), session hijack helpers (`bypass_login.php`, `bypass_v2.php`), catalog listing-only repro tools, or `itm_script_prepare_cli_entry()` before `config.php`. Repo/DB writers that previously blocked the browser now use **`itm_apply_script_bootstrap.php`** (dry-run default) instead of a hard CLI-only guard.
 
-**Skip-web-auth allowlist** (localhost / `ITM_MAINTENANCE_TOKEN`): `module_browser_qa_runner.php`, `run_tests.php`. **Administrator still required in the browser for MBQA** (`itm_enforce_maintenance_script_admin_browser()`). **No Admin** when bypass applies: `run_tests.php` only (`itm_script_browser_maintenance_skip_admin_basenames()`). **No-auth browser scripts** (`count_db_tables.php`, `openapi.php`): loopback, `ITM_SCRIPT_NO_AUTH_ALLOWED_IPS`, or maintenance token via `itm_script_browser_no_auth_client_allowed()`. Regression: `php scripts/verify_script_localhost_maintenance_auth.php`.
+**Browser QA auth (ITM-PENTEST-008 remediated):** `module_browser_qa_runner.php` and `run_tests.php` require a signed-in **Administrator** in the browser — no localhost / `ITM_MAINTENANCE_TOKEN` portal-login skip. Both call `itm_enforce_maintenance_script_admin_browser()`. CLI unchanged (`ITM_CLI_SCRIPT`). **No-auth browser scripts** (`count_db_tables.php`, `openapi.php`): loopback, `ITM_SCRIPT_NO_AUTH_ALLOWED_IPS`, or maintenance token via `itm_script_browser_no_auth_client_allowed()`. Regression: `php scripts/verify_script_localhost_maintenance_auth.php`.
 
 **Recovery:** if the dashboard shows company info but **No companies available** and `scripts.php` returns admin 403, the browser cookie was likely replaced by a script test user — sign out and log in again as Admin.
 
@@ -293,7 +293,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `php scripts/repro_status_leak.php` | PoC — cross-tenant employee status leak. |
 | `php scripts/repro_visitors_bac.php` | PoC — Broken Access Control in visitors access log. |
 | `php scripts/repro_visitors_sqli.php` | PoC — SQL Injection in visitors access log inline edit. |
-| `php scripts/verify_pentest_report.php` | Static regression for `docs/report.md` ITM-PENTEST-001–022. Output: `[PASS]` remediated (001–003, 006–007, 009–016), `[OPEN]` documented gaps (004–005, 008), `[INFO]` positive controls (017–022), `[FAIL]` drift. Invokes `check_sql_injection_coverage.php` and `check_csrf_coverage.php`. PHPUnit: `--filter PentestReport`. Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator). |
+| `php scripts/verify_pentest_report.php` | Static regression for `docs/report.md` ITM-PENTEST-001–022. Output: `[PASS]` remediated (001–003, 006–008, 009–016), `[OPEN]` documented gaps (004–005), `[INFO]` positive controls (017–022), `[FAIL]` drift. Invokes `check_sql_injection_coverage.php` and `check_csrf_coverage.php`. PHPUnit: `--filter PentestReport`. Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator). |
 | `php scripts/verify_explorer_api_rate_limit.php` | ITM-PENTEST-015 regression: `modules/explorer/api.php` calls `itm_explorer_api_enforce_rate_limit_or_exit()`; rolling-hour cap blocks over-limit requests. Browser: [verify_explorer_api_rate_limit.php?run=1](http://localhost/it-management/scripts/verify_explorer_api_rate_limit.php?run=1) (Administrator). |
 | `php scripts/verify_audit_logs_disclosure.php` | Three-step employees audit disclosure regression: static `db/03_triggers.sql` employees trigger scan, live disposable employee UPDATE probe, retro scan of recent `employees` audit rows. Prints each step; optional `ITM_TEST_COMPANY_ID`. |
 | `php scripts/verify_status_leak_fixed.php` | Verification — fixed scoping for employee status. |
@@ -1423,7 +1423,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_whatsapp_share.php` — WhatsApp deep-link message/url helpers (`includes/itm_whatsapp_share.php`, `js/itm-whatsapp-share.js`); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
-- `php scripts/verify_pentest_report.php` — static regression for `docs/report.md` ITM-PENTEST-001–022 (`[PASS]` remediated 001–003, 006–007, 009–016; `[OPEN]` gaps 004–005, 008; `[INFO]` 017–022; `[FAIL]` drift); invokes SQLi/CSRF static gates. PHPUnit: `--filter PentestReport`. Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator).
+- `php scripts/verify_pentest_report.php` — static regression for `docs/report.md` ITM-PENTEST-001–022 (`[PASS]` remediated 001–003, 006–008, 009–016; `[OPEN]` gaps 004–005; `[INFO]` 017–022; `[FAIL]` drift); invokes SQLi/CSRF static gates. PHPUnit: `--filter PentestReport`. Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator).
 - `php scripts/verify_explorer_api_rate_limit.php` — ITM-PENTEST-015: Explorer `api.php` per-employee hourly cap (`itm_explorer_api_enforce_rate_limit_or_exit`). Browser: [verify_explorer_api_rate_limit.php?run=1](http://localhost/it-management/scripts/verify_explorer_api_rate_limit.php?run=1) (Administrator).
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
 - `php scripts/verify_command_palette_search.php` — `includes/itm_command_palette_search.php`, `includes/itm_search_index.php`, `modules/search/api.php`, `js/command-palette.js`, header Ctrl+K wiring, RBAC gates, FULLTEXT backfill/remove probes
