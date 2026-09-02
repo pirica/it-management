@@ -14,6 +14,7 @@ error_log.txt
 mysql_import.err
 server.log
 php_server_8000.log.pr-body-tmp.md
+.pr-body-tmp.md
 update.sh
 reset_git_history.php
 scripts/number_db_tables.txt
