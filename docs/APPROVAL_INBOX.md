@@ -24,7 +24,7 @@ Unified tenant-scoped list of pending approval stages mirrored from source modul
 
 | Module | Sync trigger |
 |--------|----------------|
-| `modules/request_password/` | After create/edit save, email approval send, and email `approval_api` decision |
+| `modules/request_password/` | After create/edit save, email approval send, and email `approval_submit` POST decision |
 | `modules/employee_onboarding_requests/` | After create/edit save, approval email send, and email `approval_api` decision |
 | `modules/approvals/` | After successful create/edit save |
 | `modules/forecast_revisions/` | After successful create/edit save |

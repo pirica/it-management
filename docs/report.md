@@ -13,7 +13,7 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 
 **Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase, but several **confirmed high-impact weaknesses** remain in workflow authentication (password-request email approvals), secrets management (DB-password-derived encryption keys), and deployment defaults (seed administrator credentials). No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`. **ITM-PENTEST-006** (verbose error display default) and **ITM-PENTEST-001** (hardcoded approval HMAC secret → `.env` `ITM_REQUEST_PASSWORD_APPROVAL_SECRET`) were remediated.
 
-**Primary risks:** CSRF-triggered approval of password-reset requests; credential and secrets compromise via default accounts or database credential leakage; phishing via intentional short-link redirects.
+**Primary risks:** Credential and secrets compromise via default accounts or database credential leakage; phishing via intentional short-link redirects. Request Password email approvals now use POST+CSRF confirm flow with designated-approver binding (ITM-PENTEST-001–003 remediated).
 
 ---
 
@@ -55,7 +55,7 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 | Severity      | Count |
 | ------------- | ----- |
 | Critical      | 0     |
-| High          | 3     |
+| High          | 1     |
 | Medium        | 8     |
 | Low           | 5     |
 | Informational | 6     |
@@ -105,67 +105,53 @@ HR/HOD approve/decline links use `hash_hmac('sha256', $recordId . $target . $dec
 
 **Attack Scenario:** Attacker with **only** repo access cannot derive valid tokens without the production env value.
 
-**Recommendation:** Keep a long random secret per environment; restrict `.env` file permissions; rotate after staff changes. *(Remediated for hardcoded source secret; ITM-PENTEST-002/003 remain open.)*
+**Recommendation:** Keep a long random secret per environment; restrict `.env` file permissions; rotate after staff changes. *(Remediated for hardcoded source secret; ITM-PENTEST-002/003 also remediated.)*
 
 ---
 
 ### ITM-PENTEST-002 State-changing GET endpoint for password-request approvals (CSRF)
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — GET handler `$_GET['approval_api']` at `modules/request_password/index.php` line **51**; `UPDATE request_password` at lines **72–74** without CSRF. Regression: `php scripts/verify_pentest_report.php`.
+**Status:** **Remediated** — email links open a GET confirmation page (`approval_confirm`); state change requires POST `approval_submit` with `itm_require_post_csrf()`.  
+**Verification:** **Remediated** — no `approval_api` GET handler in `modules/request_password/index.php`; GET `approval_confirm` and POST `approval_submit` with CSRF at `rp_process_approval_decision()` / `itm_request_password_approval_render_confirm_form()` in `includes/itm_request_password_approval.php`. Regression: `php scripts/verify_pentest_report.php`, `php scripts/verify_request_password.php`.
 
 **Severity:** High  
 **OWASP Category:** A01:2021 – Broken Access Control  
 **Affected Component:** Request Password — email approval API  
-**Affected File:** `modules/request_password/index.php`  
-**Affected Function:** Approval handler (`approval_api` branch)  
-**Affected Parameter:** HTTP method GET with `decision=approve|decline`
+**Affected File:** `modules/request_password/index.php`, `includes/itm_request_password_approval.php`  
+**Affected Function:** Approval confirm + POST handler (formerly `approval_api` GET)  
+**Affected Parameter:** HTTP method GET with `decision=approve|decline` *(historical)*
 
 **Description:**  
-Approvals are applied via **idempotent GET requests** without CSRF tokens. Combined with ITM-PENTEST-001, a malicious page can auto-load an approval URL while the victim is logged in. Email clients that prefetch links may also trigger unintended state changes.
+Previously, approvals were applied via **idempotent GET requests** without CSRF tokens. Email links now land on a read-only confirmation page; the approver must submit a POST form protected by CSRF before `request_password` is updated.
 
-**Evidence:**
+**Evidence (remediated):** Email URLs use `approval_confirm=1`; `UPDATE request_password` runs only inside POST `approval_submit` after `itm_require_post_csrf()`.
 
-```51:74:modules/request_password/index.php
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
-    ...
-    $sql = "UPDATE request_password SET $statusField = ?, $dateField = CURDATE() WHERE id = ? AND company_id = ?";
-```
+**Impact (historical):** Integrity violation — password-reset workflow bypass or denial without approver intent.
 
-**Proof of Concept (safe):** Embed `<img src="http://localhost/it-management/modules/request_password/index.php?approval_api=1&id=1&target=hr&decision=approve&token=VALID_HMAC">` in a page visited by a logged-in user (token from ITM-PENTEST-001).
-
-**Impact:** Integrity violation — password-reset workflow bypass or denial (decline) without approver intent.
-
-**Attack Scenario:** HR manager remains logged into ITM; visits attacker-controlled content; browser issues GET; request marked approved.
-
-**Recommendation:** Use POST with CSRF for approvals, one-time tokens with expiry, and explicit approver role verification. *(Documentation only.)*
+**Recommendation:** *(Implemented)* POST with CSRF for approvals; designated approver verification (ITM-PENTEST-003).
 
 ---
 
 ### ITM-PENTEST-003 Missing approver identity and role verification on email approvals
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — between token check (lines **61–65**) and `UPDATE` (lines **72–74**) in `modules/request_password/index.php` there is no `itm_is_admin()`, approver employee match, or HR/HOD role gate. Regression: `php scripts/verify_pentest_report.php`.
+**Status:** **Remediated** — HMAC tokens bind designated `approver` employee id; `itm_request_password_approval_employee_may_act()` gates GET confirm and POST apply.  
+**Verification:** **Remediated** — `itm_request_password_approval_sign_token()` / `itm_request_password_approval_verify_token()` include approver employee id in payload (`includes/itm_request_password_approval.php`); `modules/request_password/index.php` calls `itm_request_password_approval_employee_may_act()` before confirm render and before `UPDATE`. Regression: `php scripts/verify_pentest_report.php`, `php scripts/verify_request_password.php`.
 
 **Severity:** High  
 **OWASP Category:** A01:2021 – Broken Access Control  
 **Affected Component:** Request Password — approval handler  
-**Affected File:** `modules/request_password/index.php`  
-**Affected Function:** Approval handler  
-**Affected Parameter:** N/A (missing server-side check)
+**Affected File:** `modules/request_password/index.php`, `includes/itm_request_password_approval.php`  
+**Affected Function:** `itm_request_password_approval_employee_may_act()`  
+**Affected Parameter:** `approver` query/body field + session `employee_id`
 
 **Description:**  
-After HMAC validation, the handler updates approval status using only `company_id` from the **current session**. It does **not** verify that the session user is the designated HR/HOD approver, holds an HR role, or matches `assigned` approver fields on the record.
+Previously, after HMAC validation, the handler updated approval status using only `company_id` from the session without verifying the session user was the designated HR/HOD approver. Tokens and handlers now require the logged-in employee to match the tenant `approvers` row for HRD/HOD Approval.
 
-**Evidence:** Lines 51–83 update `hr_approval_status` / `hod_approval_status` with no `itm_is_admin()`, department, or approver-employee checks between token validation and `UPDATE`.
+**Impact (historical):** Horizontal privilege escalation within tenant — any staff with a leaked token could approve sensitive password-reset workflows.
 
-**Proof of Concept (safe):** Any authenticated employee in company 1 with a valid forged or leaked token can approve a request intended for HR/HOD.
-
-**Impact:** Horizontal privilege escalation within tenant — low-privilege staff can approve sensitive password-reset workflows.
-
-**Attack Scenario:** Attacker employee forges token (ITM-PENTEST-001) and opens link in their own authenticated session.
-
-**Recommendation:** Bind tokens to approver employee ID or role; on use, verify `$_SESSION['employee_id']` matches intended approver before `UPDATE`. *(Documentation only.)*
+**Recommendation:** *(Implemented)* Bind tokens to approver employee ID; verify `$_SESSION['employee_id']` matches designated approver before `UPDATE`.
 
 ---
 
@@ -711,7 +697,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 | LDAP filter escaping | Effective | `ldap_escape()` in `itm_ldap_apply_user_filter()` |
 | Chatbot XSS | Effective | `escapeHtml()` before `innerHTML` in `js/chatbot.js` |
 | Security headers (CSP, XFO, HSTS) | **Not implemented** in app layer | ITM-PENTEST-007 |
-| Email approval workflow | **Weak** | ITM-PENTEST-001 remediated (env secret); ITM-PENTEST-002–003 remain |
+| Email approval workflow | **Improved** | ITM-PENTEST-001–003 remediated (env secret, POST+CSRF confirm, approver binding) |
 | Secrets at rest (integration) | **Moderate** | DB_PASS-derived keys — ITM-PENTEST-005 |
 | Error display defaults | **Effective** (default off) | ITM-PENTEST-006 remediated; admins may re-enable in Settings |
 
@@ -745,9 +731,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 
 **Overall rating: MEDIUM-HIGH** for a default deployment with seed data and factory UI settings; **MEDIUM** after mandatory credential rotation, rotating approval secrets, and hardening production ingress (verbose error display now defaults off per ITM-PENTEST-006).
 
-The application demonstrates mature security **process** (static gates, regression scripts, upload hardening, RBAC layering) uncommon in procedural PHP codebases. The highest **confirmed** technical risks are concentrated in the **Request Password approval workflow** (GET CSRF, missing approver binding — ITM-PENTEST-002/003) and **deployment hygiene** (default `Admin` password, DB-derived encryption keys). Hardcoded approval HMAC secret (ITM-PENTEST-001) and verbose PHP error display defaults (ITM-PENTEST-006) were remediated.
+The application demonstrates mature security **process** (static gates, regression scripts, upload hardening, RBAC layering) uncommon in procedural PHP codebases. Remaining **confirmed** high-impact risks are concentrated in **deployment hygiene** (default `Admin` password — ITM-PENTEST-004) and **DB-derived encryption keys** (ITM-PENTEST-005). Request Password email approvals (ITM-PENTEST-001–003), hardcoded approval secret, and verbose PHP error display defaults (ITM-PENTEST-006) were remediated.
 
-Addressing ITM-PENTEST-002 through ITM-PENTEST-004 should be prioritised before internet exposure. Defence-in-depth items (headers, rate limits, maintenance token policy) reduce blast radius from phishing and misconfiguration.
+Addressing ITM-PENTEST-004 should be prioritised before internet exposure. Defence-in-depth items (headers, rate limits, maintenance token policy) reduce blast radius from phishing and misconfiguration.
 
 ---
 

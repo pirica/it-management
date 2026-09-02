@@ -71,9 +71,15 @@ To preserve the audit trail and prevent unauthorized deletion of pending request
 
 ## 6. Email approval link signing (HR / HOD)
 
-HR and HOD one-click authorize/decline links in email are signed with **HMAC-SHA256**:
+HR and HOD authorize/decline links in email use a **two-step** flow:
+
+1. **GET `approval_confirm`** — validates HMAC, shows a confirmation form (no database change).
+2. **POST `approval_submit`** — requires CSRF (`itm_require_post_csrf()`), re-validates token, verifies the signed-in employee is the designated HR/HOD approver, then updates `request_password`.
+
+Signing uses **HMAC-SHA256** with payload `recordId|target|decision|approverEmployeeId`:
 
 - **Secret:** `ITM_REQUEST_PASSWORD_APPROVAL_SECRET` in project root `.env` (documented in `.env.example`). Loaded by `itm_request_password_approval_secret()` in `includes/itm_request_password_approval.php`.
+- **Approver binding:** `itm_request_password_approval_employee_may_act()` ensures `$_SESSION['employee_id']` matches the tenant `approvers` row for HRD/HOD Approval and the `approver` id embedded in the link.
 - **Never commit** production values; use a long random string per environment (e.g. `openssl rand -hex 32`).
 - **Regression:** `php scripts/verify_request_password.php` and `php scripts/verify_pentest_report.php` (requires non-empty env for the former).
 

@@ -19,7 +19,7 @@ CSRF, SQLi, and security guardrail tests.
 - **TotpTest.php** — secret generation, encrypt/decrypt round-trip, employee-row verification, disabled skip path; disposable user via `itm_script_test_employee_create()`.
 - **SecurityFixesTest.php** — subprocess verification of fixed security paths; role-escalation and sensitive-import cases seed attackers via `itm_script_test_employee_create()` (no `employees.active` column).
 - **PentestReportTest.php** — subprocess runner for `scripts/verify_pentest_report.php` (`docs/report.md` ITM-PENTEST-001–022 static markers; no DB).
-- **RequestPasswordApprovalTest.php** — `itm_request_password_approval_secret()` reads `ITM_REQUEST_PASSWORD_APPROVAL_SECRET` from env.
+- **RequestPasswordApprovalTest.php** — `itm_request_password_approval_secret()` env helper; approver-bound HMAC sign/verify.
 
 ## 10. Common Pitfalls
 
