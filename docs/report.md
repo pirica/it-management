@@ -56,8 +56,8 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 | Label | Meaning | Findings |
 |-------|---------|----------|
-| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 010, 012–014 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–011, 015–016 |
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 010, 012–014, 016 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–011, 015 |
 | **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
@@ -561,22 +561,33 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 
 ### ITM-PENTEST-016 Placeholder third-party API key in source
 
+**Status:** **Remediated** — `MAILERLITE_API_KEY` loaded from `.env` / process environment only  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE')` at `config/config.php` line **98**. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — no `YOUR_MAILERLITE_API_KEY_HERE` literal in `config/config.php`; `getenv('MAILERLITE_API_KEY')` (optional alias `ITM_MAILERLITE_API_KEY`) before `define('MAILERLITE_API_KEY', …)`. Regression: `php scripts/verify_pentest_report.php`.
 
-**Severity:** Informational  
+**Severity:** Informational (was open; remediated)  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
-**Affected Component:** Email fallback configuration  
+**Affected Component:** Email / onboarding approval HMAC configuration  
 **Affected File:** `config/config.php`  
 **Affected Function:** Constant definition  
 **Affected Parameter:** `MAILERLITE_API_KEY`
 
 **Description:**  
-`MAILERLITE_API_KEY` is defined as literal `YOUR_MAILERLITE_API_KEY_HERE`. Operational risk if replaced with a real key in tracked config instead of `.env`.
+**Previously** `MAILERLITE_API_KEY` was a tracked placeholder literal (`YOUR_MAILERLITE_API_KEY_HERE`). **Now** the constant is populated from `MAILERLITE_API_KEY` or `ITM_MAILERLITE_API_KEY` in project root `.env` / server env (empty string when unset). `modules/employee_onboarding_requests/index.php` uses the constant for approval-link HMAC when non-empty; otherwise it falls back to a local default.
 
-**Evidence:** Line 98 in `config/config.php`.
+**Evidence (current — remediated):**
 
-**Recommendation:** Remove literal from source; load only from environment. *(Documentation only.)*
+```98:104:config/config.php
+$itm_mailerlite_api_key = trim((string)getenv('MAILERLITE_API_KEY'));
+if ($itm_mailerlite_api_key === '') {
+    $itm_mailerlite_api_key = trim((string)getenv('ITM_MAILERLITE_API_KEY'));
+}
+define('MAILERLITE_API_KEY', $itm_mailerlite_api_key);
+```
+
+**Impact:** Production keys are not committed in tracked PHP source.
+
+**Recommendation:** Set `MAILERLITE_API_KEY` in `.env` per environment; restrict file permissions. *(Remediated — env-only loading.)*
 
 ---
 
