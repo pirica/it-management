@@ -137,6 +137,42 @@ if ($userInfoNorm !== '') {
     su_verify_pass('Destination normalization rejects userinfo URLs.');
 }
 
+$allowlistSaveInput = [
+    'default_expiry_days' => '',
+    'custom_code_min_length' => 4,
+    'require_https_destination' => '1',
+    'enforce_domain_allowlist' => '1',
+    'allowed_destination_domains' => 'myhome.dynip.sapo.pt',
+    'interstitial_warning_enabled' => '1',
+    'creation_rate_limit_per_hour' => 30,
+    'analytics_enabled' => '1',
+    'allow_password_protect' => '1',
+    'public_base_url' => '',
+];
+if (!itm_short_url_save_settings($conn, $companyId, 1, $allowlistSaveInput)) {
+    su_verify_fail('save_settings with enforce_domain_allowlist failed (mysqli bind_param).');
+} else {
+    $savedAllow = itm_short_url_load_settings($conn, $companyId);
+    if (empty($savedAllow['enforce_domain_allowlist']) || trim((string) ($savedAllow['allowed_destination_domains'] ?? '')) !== 'myhome.dynip.sapo.pt') {
+        su_verify_fail('save_settings did not persist allowlist fields.');
+    } else {
+        su_verify_pass('save_settings persists enforce_domain_allowlist + allowed_destination_domains.');
+    }
+}
+
+itm_short_url_save_settings($conn, $companyId, 1, [
+    'default_expiry_days' => '',
+    'custom_code_min_length' => 4,
+    'require_https_destination' => '1',
+    'enforce_domain_allowlist' => '',
+    'allowed_destination_domains' => '',
+    'interstitial_warning_enabled' => '1',
+    'creation_rate_limit_per_hour' => 30,
+    'analytics_enabled' => '1',
+    'allow_password_protect' => '1',
+    'public_base_url' => '',
+]);
+
 if (empty(itm_short_url_load_settings($conn, $companyId)['id'])) {
     itm_short_url_save_settings($conn, $companyId, 1, [
         'default_expiry_days' => '',

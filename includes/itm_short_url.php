@@ -412,7 +412,7 @@ function itm_short_url_save_settings($conn, $companyId, $employeeId, array $inpu
         if (!$stmt) {
             return false;
         }
-        mysqli_stmt_bind_param($stmt, 'iiiisiisiisiii', $defaultExpiryDays, $minLen, $requireHttps, $enforceAllowlist, $allowedDomains, $interstitial, $creationLimit, $analytics, $allowPassword, $publicBaseUrl, $employeeId, $existingId, $companyId);
+        mysqli_stmt_bind_param($stmt, 'iiiisiiiisiii', $defaultExpiryDays, $minLen, $requireHttps, $enforceAllowlist, $allowedDomains, $interstitial, $creationLimit, $analytics, $allowPassword, $publicBaseUrl, $employeeId, $existingId, $companyId);
         $ok = mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
         return $ok;
