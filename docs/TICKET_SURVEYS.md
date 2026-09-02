@@ -35,7 +35,7 @@ Audit triggers: `trg_ticket_questionnaires_audit_*`, `trg_ticket_questionnaire_q
 
 | URL | Auth | Behaviour |
 |-----|------|-----------|
-| `ticket-survey.php?token={64-char}` | None | Load questionnaire; POST submits ratings/text; sets `completed_at`, syncs `tickets.csat_score` / `csat_comment` |
+| `ticket-survey.php?token={64-char}` | None | Load questionnaire; POST submits ratings/text (requires session `csrf_token` via `itm_validate_csrf_token()`); sets `completed_at`, syncs `tickets.csat_score` / `csat_comment` |
 | `ticket-csat.php?token=…` | None | Legacy HMAC token from `includes/itm_ticket_csat.php`; redirects to latest **pending** survey URL when present |
 
 Token builder: `itm_ticket_survey_build_public_url($token)` → `{BASE_URL}/ticket-survey.php?token=…`.
