@@ -14,3 +14,4 @@ PHPUnit coverage for `modules/settings/` API Access behaviour that is not covere
 
 ## 10. Common Pitfalls
 - Do not mutate seed Admin (`employee_id = 1`) or seed `ui_configuration` rows — always create disposable employees and clean up in `tearDown()`.
+- `testCrossTenantAdminResolvesTenantSeedAdminConfiguration` clears `$_SESSION` before resolve assertions so earlier tests cannot leak `login_employee_id` / `employee_id` into `itm_api_resolve_configuration_employee_id()`.

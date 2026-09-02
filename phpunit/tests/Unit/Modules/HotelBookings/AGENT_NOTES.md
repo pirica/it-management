@@ -31,5 +31,6 @@ Maps to checkout stay-bar occupancy helpers in `includes/itm_hotel_booking.php` 
 | `testCheckoutRedirectUrlAllowedAcceptsHttpsWhenAppUrlIsHttp` | `itm_hotel_booking_portal_checkout_redirect_url_allowed` |
 | `testApplyCheckoutOccupancyChangeSuccessMergesOccupancyIntoRedirect` | `itm_hotel_booking_portal_apply_checkout_occupancy_change` (adults bump + redirect merge; DB) |
 | `testApplyCheckoutOccupancyChangeRoomCountRestartsAtStepOne` | `itm_hotel_booking_portal_apply_checkout_occupancy_change` (room-count bump → Step 1; DB) |
+| `testPrepareCheckoutSummaryLowersTouristTaxWhenAdultsDecrease` | `itm_hotel_booking_portal_prepare_checkout_summary` + `checkout_breakdown` — draft occupancy must differ per scenario (draft wins over URL when stay matches; DB) |
 
 Run: `php scripts/run_tests.php --filter HotelBookingRoomTypePortalRules` or `--filter HotelBookingCheckoutOccupancy`
