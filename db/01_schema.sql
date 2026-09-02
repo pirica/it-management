@@ -3741,6 +3741,7 @@ CREATE TABLE `ui_configuration` (
   `rate_limit_request_count` int NOT NULL DEFAULT '0',
   `rate_limit_enabled` tinyint(1) NOT NULL DEFAULT '1',
   `tier` enum('Free','Basic','Pro','Enterprise') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Free',
+  `explorer_api_rate_limit_per_hour` int NOT NULL DEFAULT '1200',
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,

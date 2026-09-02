@@ -17,6 +17,7 @@ if (defined('ROOT_PATH')) {
 }
 
 require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
+require_once ROOT_PATH . 'includes/itm_explorer_api_rate_limit.php';
 
 /* ---------------- SAFE PATH HELPERS ---------------- */
 
@@ -194,6 +195,10 @@ if (isset($_GET['downloadZip'])) {
     $user_id = (int)$_SESSION['employee_id'];
     $username = $_SESSION['username'] ?? 'unknown';
 
+    if (!(defined('ITM_VERIFY_SKIP_ROUTER') && ITM_VERIFY_SKIP_ROUTER)) {
+        itm_explorer_api_enforce_rate_limit_or_exit($company_id, $user_id);
+    }
+
     // Fetch department codes for ACL checks inside get_full_path().
       require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
     $zip_dept_codes = explorer_fetch_user_department_codes($conn, $user_id, $company_id);
@@ -268,6 +273,9 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') 
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);
+if ($company_id > 0 && $user_id > 0 && !(defined('ITM_VERIFY_SKIP_ROUTER') && ITM_VERIFY_SKIP_ROUTER)) {
+    itm_explorer_api_enforce_rate_limit_or_exit($company_id, $user_id);
+}
 $username = $_SESSION['username'] ?? 'unknown';
 // Why: Sanitise username for filesystem safety to prevent path traversal or separator issues.
 $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);

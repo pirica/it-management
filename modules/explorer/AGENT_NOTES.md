@@ -44,6 +44,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **Responsive:** topbar/search/tabs adapt below 768px; file grid uses smaller tiles on mobile (`index.php` inline CSS).
 - **Employee sidebar (index.php):** `🌐 Employees` links to `modules/employees/`; `🎉 Birthdays` links to `modules/birthdays/`; **Profile Storage** opens `Private/{username}_{user_id}/profile` via `openEmployeeProfileFolder()` (employee profile photos from the employees module).
 - `api.php` for async operations; `file.php` for authorised file delivery (required after `deny_http`).
+- **Per-employee rate limit:** `api.php` calls `itm_explorer_api_enforce_rate_limit_or_exit()` (`includes/itm_explorer_api_rate_limit.php`) on `downloadZip` GET and after CSRF on POST; cap from `ui_configuration.explorer_api_rate_limit_per_hour` (Settings → API Access; default **1200**/hour; **0** = off). Counters live under `files/rate_limits/explorer_api/`; HTTP **429** JSON when over cap. Regression: `php scripts/verify_explorer_api_rate_limit.php`.
 
 ## 6. API Actions (If Applicable)
 All actions are POST to `api.php` with `action` parameter (JSON responses unless noted):
