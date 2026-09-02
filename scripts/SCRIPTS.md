@@ -1243,7 +1243,7 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 |--------|---------|
 | `php scripts/verify_emails_module.php` | Regression: `emails`, `email_smtp_configurations`, `email_alert_rules` tables, `modules_registry` row, default SMTP seed, alert rule seeds, `itm_send_email()` helper; static vault-key notification contract in `user-config.php` (subjects, transactional template, no master-key variables in `itm_send_email()` args); company 1 warranty/license **30-day alert window is a hard fail** (script inserts disposable license sample when empty, then deletes it). `db/` uses relative `DATE_ADD(CURDATE(), …)` expiry seeds so fresh imports stay in-window |
 | `php scripts/verify_webmail_module.php` | Regression: `modules/webmail/` folders (inbox, starred, sent, archived, trash), star/archive toggles, soft/hard delete, `modules_registry` row `webmail` on shared `emails` table |
-| `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`); cross-tenant `file.php` profile read denied; static `$ui_config` reload after sidebar save |
+| `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`); cross-tenant `file.php` profile read denied; static cache-bust and `$ui_config` reassignment inside `update_sidebar` / `update_dashboard_widgets` success paths (`strpos` action-block check) |
 | `php scripts/verify_sidebar_preferences.php` | Regression: canonical section normalize/reconcile (`explorer` → `employee`), section visibility sync, `employee_sidebar_preferences` DB round-trip, Settings SideMenu access-gate static wiring, `user-config.php` fresh `$ui_config` contract |
 | `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); warranty matches also enqueue in-app notifications for equipment assignees; optional `--company=1` and `--verbose` (per-rule match/sent notes when count is 0) |
 | `php scripts/run_inbound_email_tickets.php` | Polls per-company inbound mail (IMAP or local **Mailpit** API when `imap_host` = `mailpit`) and creates or updates `tickets` from mail routed to `companies.email`; optional `--company=1`, `--verbose`, `--dry-run` |
@@ -1305,7 +1305,7 @@ php -r "echo function_exists('imap_open') ? 'imap ok' : 'imap missing';"
 
 Run `verify_webmail_module.php` when changing `modules/webmail/` or webmail-related `itm_send_email()` log options.
 
-Run `verify_user_config_profile.php` when changing `user-config.php`, `includes/employee_profile_photo.php`, or Explorer `file.php` profile-photo serving (URL contract, home-company UPDATE scoping, cross-tenant deny).
+Run `verify_user_config_profile.php` when changing `user-config.php`, `includes/employee_profile_photo.php`, or Explorer `file.php` profile-photo serving (URL contract, home-company UPDATE scoping, cross-tenant deny, sidebar/dashboard `$ui_config` reload).
 
 Run `verify_sidebar_preferences.php` when changing `user-config.php` Personalized Sidebar, `modules/settings/` SideMenu, or `includes/ui_config.php` sidebar save/load helpers.
 

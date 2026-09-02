@@ -3,8 +3,10 @@
  * user-config.php profile field regression checks.
  *
  * Verifies home-company profile UPDATEs, profile photo URL/serve contract
- * (root page must not use module-relative ../../ explorer paths), and Explorer
- * file.php tenant ACL for cross-tenant profile photo reads.
+ * (root page must not use module-relative ../../ explorer paths), Explorer
+ * file.php tenant ACL for cross-tenant profile photo reads, and static
+ * cache-bust plus $ui_config reassignment inside update_sidebar /
+ * update_dashboard_widgets success paths.
  *
  * CLI: php scripts/verify_user_config_profile.php
  * Browser: scripts/verify_user_config_profile.php
@@ -19,7 +21,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/verify_user_config_profile.php</code> — exit <code>1</code> on failure. Run when changing <code>user-config.php</code>, <code>includes/employee_profile_photo.php</code>, or Explorer <code>file.php</code> profile photo serving (URL contract, home-company UPDATE scoping, cross-tenant <code>file.php</code> deny).
+<code>php scripts/verify_user_config_profile.php</code> — exit <code>1</code> on failure. Run when changing <code>user-config.php</code>, <code>includes/employee_profile_photo.php</code>, or Explorer <code>file.php</code> profile photo serving (URL contract, home-company UPDATE scoping, cross-tenant <code>file.php</code> deny, sidebar/dashboard <code>$ui_config</code> reload).
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 define('ITM_CLI_SCRIPT', true);
@@ -45,6 +47,29 @@ function ucp_pass($message)
 {
     global $nl;
     echo colorText('[PASS] ' . $message, 'pass') . $nl;
+}
+
+/**
+ * Why: Assert cache-bust + $ui_config reassignment inside one POST action block.
+ * strpos avoids preg quoting bugs where "\$action" never matches source $action.
+ */
+function ucp_action_block_reloads_ui_config($source, $action)
+{
+    $actionNeedle = "\$action === '" . $action . "'";
+    $pos = strpos($source, $actionNeedle);
+    if ($pos === false) {
+        return false;
+    }
+    $nextPos = strpos($source, '$action ===', $pos + strlen($actionNeedle));
+    $len = ($nextPos === false) ? 2500 : min(2500, $nextPos - $pos);
+    if ($len < 1) {
+        return false;
+    }
+    $slice = substr($source, $pos, $len);
+    $bust = 'itm_get_ui_configuration($conn, $company_id, $user_id, true)';
+    $reload = '$ui_config = itm_get_ui_configuration';
+
+    return strpos($slice, $bust) !== false && strpos($slice, $reload) !== false;
 }
 
 $conn = $GLOBALS['conn'] ?? null;
@@ -229,8 +254,7 @@ if ($userConfig === false) {
     } else {
         ucp_pass('user-config.php uses shared personalized sidebar save helper.');
     }
-  // Why: Single-quoted pattern — double-quoted "\$action" loses the backslash and never matches $action in source.
-    if (!preg_match('/elseif \(\$action === \'update_sidebar\'\)[\s\S]{0,1200}\$ui_config\s*=\s*itm_get_ui_configuration/', $userConfig)) {
+    if (!ucp_action_block_reloads_ui_config($userConfig, 'update_sidebar')) {
         ucp_fail('user-config.php must reload $ui_config after successful update_sidebar.');
     } else {
         ucp_pass('user-config.php reloads $ui_config after sidebar save.');
@@ -245,7 +269,7 @@ if ($userConfig === false) {
     } else {
         ucp_pass('user-config.php smart dashboard widget prefs section present.');
     }
-    if (!preg_match('/elseif \(\$action === \'update_dashboard_widgets\'\)[\s\S]{0,800}\$ui_config\s*=\s*itm_get_ui_configuration/', $userConfig)) {
+    if (!ucp_action_block_reloads_ui_config($userConfig, 'update_dashboard_widgets')) {
         ucp_fail('user-config.php must reload $ui_config after successful update_dashboard_widgets.');
     } else {
         ucp_pass('user-config.php reloads $ui_config after dashboard widget save.');
