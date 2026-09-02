@@ -213,6 +213,7 @@ Similar pattern in `itm_totp_encryption_key()` (`includes/itm_totp_helpers.php` 
 ### ITM-PENTEST-006 Verbose error display enabled by default
 
 **Status:** **Remediated** (default off; admins may re-enable in Settings → UI Configuration)  
+**Date updated:** 2026-09-02  
 **Severity:** Medium  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
 **Affected Component:** Global bootstrap  
