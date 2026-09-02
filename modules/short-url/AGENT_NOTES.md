@@ -10,7 +10,7 @@ Bidirectional integration with `modules/qr/`: short links can spawn dynamic webs
 
 - **short_urls** — per-employee links (`destination_url`, `short_code`, `access_token`, `password_hash`, `expires_at`, `click_count`, `qr_code_id`)
 - **short_url_clicks** — click analytics (no audit triggers)
-- **short_url_settings** — per-company defaults (expiry days, code min length, HTTPS requirement, analytics, password allow, **public_base_url**)
+- **short_url_settings** — per-company defaults (expiry days, code min length, HTTPS requirement default **on**, domain allowlist, interstitial warning default **on**, creation rate limit/hour, analytics, password allow, **public_base_url**)
 
 ## 3. Required Relationships
 
@@ -22,9 +22,10 @@ Bidirectional integration with `modules/qr/`: short links can spawn dynamic webs
 ## 4. Business Rules (Critical for Agents)
 
 - Authenticated queries: `company_id` + `employee_id` = session owner.
-- Public `go.php` (root alias) resolves by `?c=` (short_code) or `?t=` (access_token); legacy `modules/short-url/go.php` uses the same handler; rate-limited; password gate via session key.
+- Public `go.php` (root alias) resolves by `?c=` (short_code) or `?t=` (access_token); legacy `modules/short-url/go.php` uses the same handler; click rate-limited; password gate via session key; interstitial confirm via session when enabled; redirect blocked when HTTPS/allowlist policy fails at redirect time.
 - Expired links return HTTP 410.
 - Configuration tab: admin edit only (`itm_is_admin($conn, $employeeId)`); all users read. `public_base_url` optional — valid `http`/`https` prefix before short code; empty uses `itm_short_url_default_public_base_prefix()` (`BASE_URL` + `/go.php?c=`).
+- **Security defaults (company `short_url_settings`):** `require_https_destination = 1`, `interstitial_warning_enabled = 1`, `creation_rate_limit_per_hour = 30`. Optional `enforce_domain_allowlist` + `allowed_destination_domains` (newline/comma list; host + subdomains). Policy enforced on save and at public redirect (`itm_short_url_resolve_public_redirect()`).
 - No Add sample data.
 
 ## 5. UI Behavior Requirements

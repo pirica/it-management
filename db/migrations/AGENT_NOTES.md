@@ -28,6 +28,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 | `saved_report_views.sql` | `saved_report_views` + `scheduled_reports.saved_view_id` — saved list views for custom report builder |
 | `qr_design_templates.sql` | `qr_design_templates` — employee-scoped QR design presets (wizard Design step save/load) |
 | `short_url_public_base_url.sql` | Adds `public_base_url` on `short_url_settings` (destructive to settings rows only) |
+| `short_url_security_hardening.sql` | HTTPS default on, domain allowlist, interstitial, creation rate limit columns (destructive to `short_url_settings` rows only) |
 | `short_url.sql` | `short_urls`, `short_url_clicks`, `short_url_settings`, `qr_codes.short_url_id` — Short URLs module + QR back-link (destructive to `qr_codes` / `qr_code_scans`) |
 | `employee_sidebar_preferences_is_collapsed.sql` | `employee_sidebar_preferences.is_collapsed` — per-section fold for double-click sidebar collapse (destructive DROP+CREATE) |
 | `hotel_booking_portal_date_ddmmmyyyy.sql` | `hotel_booking_settings.portal_date_format` adds `european_ddmmmyyyy` (DD/MMM/YYYY) |

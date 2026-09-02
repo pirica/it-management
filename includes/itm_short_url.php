@@ -118,7 +118,224 @@ function itm_short_url_normalize_destination($url)
     if (!preg_match('#^https?://#i', $url)) {
         $url = 'https://' . $url;
     }
+    $parts = parse_url($url);
+    if (!is_array($parts)) {
+        return '';
+    }
+    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+    if ($scheme !== 'http' && $scheme !== 'https') {
+        return '';
+    }
+    if (!empty($parts['user']) || !empty($parts['pass'])) {
+        return '';
+    }
     return $url;
+}
+
+function itm_short_url_destination_host($url)
+{
+    $url = itm_short_url_normalize_destination($url);
+    if ($url === '') {
+        return '';
+    }
+    $host = parse_url($url, PHP_URL_HOST);
+    if (!is_string($host) || $host === '') {
+        return '';
+    }
+    return strtolower($host);
+}
+
+/**
+ * @return string[] lowercase host suffixes (no leading dots)
+ */
+function itm_short_url_parse_allowed_domains($raw)
+{
+    $raw = str_replace(["\r\n", "\r"], "\n", trim((string) $raw));
+    if ($raw === '') {
+        return [];
+    }
+    $domains = [];
+    foreach (preg_split('/[\n,]+/', $raw) as $piece) {
+        $domain = strtolower(trim($piece));
+        $domain = ltrim($domain, '.');
+        if ($domain === '' || strpos($domain, ' ') !== false) {
+            continue;
+        }
+        if (!preg_match('/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/i', $domain)) {
+            continue;
+        }
+        $domains[] = $domain;
+    }
+    return array_values(array_unique($domains));
+}
+
+function itm_short_url_host_matches_allowlist($host, array $allowedDomains)
+{
+    $host = strtolower(trim((string) $host));
+    if ($host === '' || $allowedDomains === []) {
+        return false;
+    }
+    foreach ($allowedDomains as $domain) {
+        $domain = strtolower(trim((string) $domain));
+        if ($domain === '') {
+            continue;
+        }
+        if ($host === $domain) {
+            return true;
+        }
+        if (strlen($host) > strlen($domain) && substr($host, -strlen($domain) - 1) === '.' . $domain) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @return array{ok:bool,error:string}
+ */
+function itm_short_url_destination_passes_policy($destination, array $settings)
+{
+    $destination = itm_short_url_normalize_destination($destination);
+    if ($destination === '' || filter_var($destination, FILTER_VALIDATE_URL) === false) {
+        return ['ok' => false, 'error' => 'Destination URL is invalid.'];
+    }
+    if (!empty($settings['require_https_destination']) && stripos($destination, 'https://') !== 0) {
+        return ['ok' => false, 'error' => 'Destination URL must use HTTPS.'];
+    }
+    if (!empty($settings['enforce_domain_allowlist'])) {
+        $host = itm_short_url_destination_host($destination);
+        $allowed = itm_short_url_parse_allowed_domains($settings['allowed_destination_domains'] ?? '');
+        if ($host === '' || !itm_short_url_host_matches_allowlist($host, $allowed)) {
+            return ['ok' => false, 'error' => 'Destination domain is not on the company allowlist.'];
+        }
+    }
+    return ['ok' => true, 'error' => ''];
+}
+
+/**
+ * Resolve stored destination for public redirect (HTTPS + allowlist at redirect time).
+ *
+ * @return array{ok:bool,destination:string,error:string,host:string}
+ */
+function itm_short_url_resolve_public_redirect($conn, array $row)
+{
+    $companyId = (int) ($row['company_id'] ?? 0);
+    $destination = itm_short_url_normalize_destination((string) ($row['destination_url'] ?? ''));
+    if ($destination === '') {
+        return ['ok' => false, 'destination' => '', 'error' => 'Destination unavailable.', 'host' => ''];
+    }
+    $settings = ($conn instanceof mysqli && $companyId > 0)
+        ? itm_short_url_load_settings($conn, $companyId)
+        : itm_short_url_default_settings();
+    $policy = itm_short_url_destination_passes_policy($destination, $settings);
+    if (empty($policy['ok'])) {
+        return [
+            'ok' => false,
+            'destination' => '',
+            'error' => (string) ($policy['error'] ?? 'Destination blocked by policy.'),
+            'host' => itm_short_url_destination_host($destination),
+        ];
+    }
+    return [
+        'ok' => true,
+        'destination' => $destination,
+        'error' => '',
+        'host' => itm_short_url_destination_host($destination),
+    ];
+}
+
+function itm_short_url_interstitial_session_key($shortCode)
+{
+    return 'short_url_interstitial_' . hash('sha256', (string) $shortCode);
+}
+
+function itm_short_url_interstitial_confirmed($shortCode)
+{
+    $key = itm_short_url_interstitial_session_key($shortCode);
+    return !empty($_SESSION[$key]);
+}
+
+function itm_short_url_set_interstitial_confirmed($shortCode)
+{
+    $_SESSION[itm_short_url_interstitial_session_key($shortCode)] = 1;
+}
+
+function itm_short_url_render_interstitial_page(array $row, $destination, $host, $error = '')
+{
+    $code = htmlspecialchars((string) ($row['short_code'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $title = htmlspecialchars((string) ($row['title'] ?? 'Short link'), ENT_QUOTES, 'UTF-8');
+    $hostLabel = htmlspecialchars((string) $host, ENT_QUOTES, 'UTF-8');
+    $err = $error !== '' ? '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>' : '';
+    $css = htmlspecialchars(itm_short_url_public_css_href(), ENT_QUOTES, 'UTF-8');
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
+    echo '<title>Leaving this site</title><link rel="stylesheet" href="' . $css . '"></head><body>';
+    echo '<div class="card" style="max-width:520px;margin:48px auto;">';
+    echo '<h1 title="External link warning">⚠️</h1>';
+    echo '<p>You are about to leave this application and visit an external website.</p>';
+    echo '<p><strong>' . $title . '</strong></p>';
+    echo '<p>Destination host: <code>' . $hostLabel . '</code></p>';
+    echo '<p style="color:var(--text-secondary);">Only continue if you trust this link. Phishing sites may look legitimate.</p>';
+    echo $err;
+    echo '<form method="post" style="display:flex;gap:8px;flex-wrap:wrap;">';
+    echo '<input type="hidden" name="short_url_interstitial_confirm" value="1">';
+    echo '<input type="hidden" name="short_code" value="' . $code . '">';
+    echo '<button type="submit" class="btn btn-primary" title="Continue to destination">➡️</button>';
+    echo '<a href="javascript:history.back();" class="btn" title="Go back">🔙</a>';
+    echo '</form></div></body></html>';
+}
+
+function itm_short_url_creation_rate_limit_dir()
+{
+    return rtrim((string) ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . 'files'
+        . DIRECTORY_SEPARATOR . 'rate_limits' . DIRECTORY_SEPARATOR . 'short_url_create';
+}
+
+/**
+ * @return array{ok:bool,error:string}
+ */
+function itm_short_url_creation_rate_limit_check($companyId, $employeeId, array $settings, $recordAttempt = false)
+{
+    if (!function_exists('itm_qr_share_join_rate_limit_prune_events')) {
+        return ['ok' => true, 'error' => ''];
+    }
+    $maxAttempts = (int) ($settings['creation_rate_limit_per_hour'] ?? 30);
+    if ($maxAttempts <= 0) {
+        return ['ok' => true, 'error' => ''];
+    }
+    $companyId = (int) $companyId;
+    $employeeId = (int) $employeeId;
+    if ($companyId <= 0 || $employeeId <= 0) {
+        return ['ok' => false, 'error' => 'Invalid session for link creation.'];
+    }
+    $windowSeconds = 3600;
+    $dir = itm_short_url_creation_rate_limit_dir();
+    if (function_exists('itm_ensure_upload_directory')) {
+        itm_ensure_upload_directory($dir, 'deny_all');
+    } elseif (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    $path = $dir . DIRECTORY_SEPARATOR . hash('sha256', $companyId . ':' . $employeeId) . '.json';
+    $now = time();
+    $events = [];
+    if (is_file($path)) {
+        $raw = @file_get_contents($path);
+        $decoded = $raw !== false ? json_decode($raw, true) : null;
+        if (is_array($decoded) && isset($decoded['events']) && is_array($decoded['events'])) {
+            $events = itm_qr_share_join_rate_limit_prune_events($decoded['events'], $now, $windowSeconds);
+        }
+    }
+    if (count($events) >= $maxAttempts) {
+        return ['ok' => false, 'error' => 'Link creation limit reached (' . $maxAttempts . ' per hour). Try again later.'];
+    }
+    if ($recordAttempt) {
+        $events[] = $now;
+        @file_put_contents(
+            $path,
+            json_encode(['events' => $events], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            LOCK_EX
+        );
+    }
+    return ['ok' => true, 'error' => ''];
 }
 
 function itm_short_url_default_settings()
@@ -126,7 +343,11 @@ function itm_short_url_default_settings()
     return [
         'default_expiry_days' => null,
         'custom_code_min_length' => 4,
-        'require_https_destination' => 0,
+        'require_https_destination' => 1,
+        'enforce_domain_allowlist' => 0,
+        'allowed_destination_domains' => null,
+        'interstitial_warning_enabled' => 1,
+        'creation_rate_limit_per_hour' => 30,
         'analytics_enabled' => 1,
         'allow_password_protect' => 1,
         'public_base_url' => null,
@@ -166,10 +387,18 @@ function itm_short_url_save_settings($conn, $companyId, $employeeId, array $inpu
     $defaultExpiryDays = $defaultExpiry === '' ? null : max(1, (int) $defaultExpiry);
     $minLen = max(4, min(12, (int) ($input['custom_code_min_length'] ?? 4)));
     $requireHttps = !empty($input['require_https_destination']) ? 1 : 0;
+    $enforceAllowlist = !empty($input['enforce_domain_allowlist']) ? 1 : 0;
+    $allowedDomainsRaw = trim((string) ($input['allowed_destination_domains'] ?? ''));
+    $allowedDomains = $allowedDomainsRaw === '' ? null : $allowedDomainsRaw;
+    $interstitial = !empty($input['interstitial_warning_enabled']) ? 1 : 0;
+    $creationLimit = max(0, min(500, (int) ($input['creation_rate_limit_per_hour'] ?? 30)));
     $analytics = !empty($input['analytics_enabled']) ? 1 : 0;
     $allowPassword = !empty($input['allow_password_protect']) ? 1 : 0;
     $baseParse = itm_short_url_parse_public_base_url_input($input);
     if (empty($baseParse['ok'])) {
+        return false;
+    }
+    if ($enforceAllowlist && $allowedDomains === null) {
         return false;
     }
     $publicBaseUrl = $baseParse['value'];
@@ -178,23 +407,23 @@ function itm_short_url_save_settings($conn, $companyId, $employeeId, array $inpu
     $existingId = (int) ($existing['id'] ?? 0);
 
     if ($existingId > 0) {
-        $sql = 'UPDATE short_url_settings SET default_expiry_days = ?, custom_code_min_length = ?, require_https_destination = ?, analytics_enabled = ?, allow_password_protect = ?, public_base_url = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $sql = 'UPDATE short_url_settings SET default_expiry_days = ?, custom_code_min_length = ?, require_https_destination = ?, enforce_domain_allowlist = ?, allowed_destination_domains = ?, interstitial_warning_enabled = ?, creation_rate_limit_per_hour = ?, analytics_enabled = ?, allow_password_protect = ?, public_base_url = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             return false;
         }
-        mysqli_stmt_bind_param($stmt, 'iiiiisiii', $defaultExpiryDays, $minLen, $requireHttps, $analytics, $allowPassword, $publicBaseUrl, $employeeId, $existingId, $companyId);
+        mysqli_stmt_bind_param($stmt, 'iiiisiisiisiii', $defaultExpiryDays, $minLen, $requireHttps, $enforceAllowlist, $allowedDomains, $interstitial, $creationLimit, $analytics, $allowPassword, $publicBaseUrl, $employeeId, $existingId, $companyId);
         $ok = mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
         return $ok;
     }
 
-    $sql = 'INSERT INTO short_url_settings (company_id, default_expiry_days, custom_code_min_length, require_https_destination, analytics_enabled, allow_password_protect, public_base_url, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    $sql = 'INSERT INTO short_url_settings (company_id, default_expiry_days, custom_code_min_length, require_https_destination, enforce_domain_allowlist, allowed_destination_domains, interstitial_warning_enabled, creation_rate_limit_per_hour, analytics_enabled, allow_password_protect, public_base_url, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return false;
     }
-    mysqli_stmt_bind_param($stmt, 'iiiiissii', $companyId, $defaultExpiryDays, $minLen, $requireHttps, $analytics, $allowPassword, $publicBaseUrl, $employeeId, $employeeId);
+    mysqli_stmt_bind_param($stmt, 'iiiiisiiiisii', $companyId, $defaultExpiryDays, $minLen, $requireHttps, $enforceAllowlist, $allowedDomains, $interstitial, $creationLimit, $analytics, $allowPassword, $publicBaseUrl, $employeeId, $employeeId);
     $ok = mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     return $ok;
@@ -259,8 +488,11 @@ function itm_short_url_validate_save($conn, $companyId, $employeeId, array $inpu
     $destination = itm_short_url_normalize_destination($input['destination_url'] ?? '');
     if ($destination === '' || !filter_var($destination, FILTER_VALIDATE_URL)) {
         $errors[] = 'A valid destination URL is required.';
-    } elseif (!empty($settings['require_https_destination']) && stripos($destination, 'https://') !== 0) {
-        $errors[] = 'Destination URL must use HTTPS for this company.';
+    } else {
+        $policy = itm_short_url_destination_passes_policy($destination, $settings);
+        if (empty($policy['ok'])) {
+            $errors[] = (string) ($policy['error'] ?? 'Destination URL is not allowed.');
+        }
     }
 
     $minLen = (int) ($settings['custom_code_min_length'] ?? 4);
@@ -536,6 +768,11 @@ function itm_short_url_create_from_destination($conn, $companyId, $employeeId, $
     $validated = itm_short_url_validate_save($conn, $companyId, $employeeId, $input, 0);
     if (!empty($validated['errors'])) {
         return ['ok' => false, 'errors' => $validated['errors']];
+    }
+    $settings = itm_short_url_load_settings($conn, $companyId);
+    $createLimit = itm_short_url_creation_rate_limit_check($companyId, $employeeId, $settings, true);
+    if (empty($createLimit['ok'])) {
+        return ['ok' => false, 'errors' => [(string) ($createLimit['error'] ?? 'Link creation limit reached.')]];
     }
     $passwordHash = null;
     if ((string) ($validated['password'] ?? '') !== '') {

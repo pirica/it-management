@@ -29,6 +29,8 @@ if (!$row) {
 }
 
 $shortCode = (string) ($row['short_code'] ?? '');
+$companyId = (int) ($row['company_id'] ?? 0);
+$settings = itm_short_url_load_settings($conn, $companyId);
 
 if (itm_short_url_is_expired($row)) {
     itm_short_url_render_public_page(410, 'Link expired', 'This short link has expired.');
@@ -51,13 +53,31 @@ if ($passwordHash !== '') {
     }
 }
 
-itm_short_url_record_click($conn, $row);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['short_url_interstitial_confirm'])) {
+    $postedCode = trim((string) ($_POST['short_code'] ?? ''));
+    if ($postedCode !== '' && hash_equals($shortCode, $postedCode)) {
+        itm_short_url_set_interstitial_confirmed($shortCode);
+        $redirectQuery = $code !== '' ? 'c=' . rawurlencode($shortCode) : 't=' . rawurlencode((string) ($row['access_token'] ?? ''));
+        header('Location: ?' . $redirectQuery);
+        exit;
+    }
+}
 
-$destination = itm_short_url_normalize_destination((string) ($row['destination_url'] ?? ''));
-if ($destination === '') {
-    itm_short_url_render_public_page(404, 'Invalid short URL', 'Invalid short URL. Destination unavailable.');
+$redirect = itm_short_url_resolve_public_redirect($conn, $row);
+if (empty($redirect['ok'])) {
+    itm_short_url_render_public_page(403, 'Link blocked', (string) ($redirect['error'] ?? 'This destination is not allowed.'));
     exit;
 }
+
+$destination = (string) $redirect['destination'];
+$host = (string) ($redirect['host'] ?? '');
+
+if (!empty($settings['interstitial_warning_enabled']) && !itm_short_url_interstitial_confirmed($shortCode)) {
+    itm_short_url_render_interstitial_page($row, $destination, $host);
+    exit;
+}
+
+itm_short_url_record_click($conn, $row);
 
 header('Location: ' . $destination, true, 302);
 exit;

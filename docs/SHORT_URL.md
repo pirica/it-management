@@ -19,7 +19,16 @@ Unknown, expired, or unavailable links render a simple HTML message (for example
 ## UI tabs
 
 - **Links** — hero shorten form + personal link library
-- **Configuration** — company defaults (admin edit): default expiry, min code length, HTTPS requirement, analytics toggle, password toggle, **public base URL** (prefix ending with `?c=`; blank uses application `BASE_URL`)
+- **Configuration** — company defaults (admin edit): default expiry, min code length, **HTTPS requirement** (default on), **domain allowlist** (optional enforcement + textarea), **interstitial warning** (default on), **creation rate limit per employee/hour** (default 30; `0` = unlimited), analytics toggle, password toggle, **public base URL** (prefix ending with `?c=`; blank uses application `BASE_URL`)
+
+## Public redirect security
+
+- **Save-time policy** — `itm_short_url_validate_save()` calls `itm_short_url_destination_passes_policy()` (HTTPS + optional allowlist).
+- **Redirect-time policy** — `go.php` uses `itm_short_url_resolve_public_redirect()` before any 302 (blocks stale HTTP rows when HTTPS is required).
+- **Interstitial** — when `interstitial_warning_enabled`, visitors confirm via POST before redirect (`itm_short_url_render_interstitial_page()`).
+- **Creation throttle** — `itm_short_url_creation_rate_limit_check()` on new links (file-backed per `company_id` + `employee_id`).
+
+Configuration: [modules/short-url/index.php?tab=configuration](http://localhost/it-management/modules/short-url/index.php?tab=configuration) (Admin session)
 
 ## QR integration
 
