@@ -443,7 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newConfig['enable_auto_scaffolding'] = isset($_POST['enable_auto_scaffolding']) ? 1 : 0;
         } else {
             // Why: System flags are admin-only in Settings UI; non-admins must not change them via crafted POST.
-            $newConfig['enable_all_error_reporting'] = (int) ($currentUiConfig['enable_all_error_reporting'] ?? 1);
+            $newConfig['enable_all_error_reporting'] = (int) ($currentUiConfig['enable_all_error_reporting'] ?? 0);
             $newConfig['enable_audit_logs'] = (int) ($currentUiConfig['enable_audit_logs'] ?? 1);
             $newConfig['enable_auto_scaffolding'] = (int) ($currentUiConfig['enable_auto_scaffolding'] ?? 0);
         }
@@ -1152,7 +1152,7 @@ if (!isset($crud_title)) {
                                 <h4 style="margin:0 0 12px 0;font-size:1em;font-weight:600;">System</h4>
                                 <div class="form-group">
                                     <label class="role-flag-option" for="enable_all_error_reporting">
-                                        <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo ((int) ($currentUiConfig['enable_all_error_reporting'] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo ((int) ($currentUiConfig['enable_all_error_reporting'] ?? 0) === 1) ? 'checked' : ''; ?>>
                                         <span>Enable all error reporting</span>
                                     </label>
                                 </div>

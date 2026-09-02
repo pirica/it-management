@@ -2333,7 +2333,7 @@ if (!function_exists('itm_seed_insert_ui_configuration_sample_row')) {
                             new_button_position = \'left\',
                             export_buttons_position = \'left\',
                             back_save_position = \'left\',
-                            enable_all_error_reporting = 1,
+                            enable_all_error_reporting = 0,
                             enable_audit_logs = 1,
                             enable_chatbot = 1,
                             enable_auto_scaffolding = 0,
@@ -2365,7 +2365,7 @@ if (!function_exists('itm_seed_insert_ui_configuration_sample_row')) {
                 export_buttons_position, back_save_position, enable_all_error_reporting,
                 enable_audit_logs, enable_chatbot, enable_auto_scaffolding, records_per_page,
                 app_name, favicon_path, equipment_type_sidebar_visibility, active
-            ) VALUES (?, ?, \'left\', \'left\', \'left\', \'left\', 1, 1, 1, 0, \'25\', ?, ?, ?, 1)'
+            ) VALUES (?, ?, \'left\', \'left\', \'left\', \'left\', 0, 1, 1, 0, \'25\', ?, ?, ?, 1)'
         );
         if (!$stmt) {
             $error = 'Could not prepare ui_configuration sample insert.';

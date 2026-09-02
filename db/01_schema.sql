@@ -3713,7 +3713,7 @@ CREATE TABLE `ui_configuration` (
   `new_button_position` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left',
   `export_buttons_position` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left',
   `back_save_position` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left',
-  `enable_all_error_reporting` tinyint(1) NOT NULL DEFAULT '1',
+  `enable_all_error_reporting` tinyint(1) NOT NULL DEFAULT '0',
   `enable_audit_logs` tinyint(1) NOT NULL DEFAULT '1',
   `enable_chatbot` tinyint(1) NOT NULL DEFAULT '1',
   `enable_sidebar_section_collapse` tinyint(1) NOT NULL DEFAULT '1',

@@ -11,7 +11,7 @@
 
 The IT Management System is a large procedural PHP application (~2,643 PHP files, 272+ module entry points) with substantial defensive engineering: prepared-statement static auditing, CSRF coverage checks, upload-directory hardening, multi-tenant `company_id` enforcement in central bootstrap, role/module access gates, and targeted regression scripts for high-risk areas (Explorer ACL, QR share, API v2, hotel distribution).
 
-**Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase, but several **confirmed high-impact weaknesses** remain in workflow authentication (password-request email approvals), secrets management (hardcoded HMAC key, DB-password-derived encryption keys), and deployment defaults (seed administrator credentials, verbose error display enabled by default). No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`.
+**Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase, but several **confirmed high-impact weaknesses** remain in workflow authentication (password-request email approvals), secrets management (hardcoded HMAC key, DB-password-derived encryption keys), and deployment defaults (seed administrator credentials). No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`. **ITM-PENTEST-006** (verbose error display default) was remediated — `enable_all_error_reporting` now defaults to `0`.
 
 **Primary risks:** forged or CSRF-triggered approval of password-reset requests; credential and secrets compromise via default accounts or database credential leakage; information disclosure through verbose PHP errors; phishing via intentional short-link redirects.
 
@@ -212,20 +212,21 @@ Similar pattern in `itm_totp_encryption_key()` (`includes/itm_totp_helpers.php` 
 
 ### ITM-PENTEST-006 Verbose error display enabled by default
 
+**Status:** **Remediated** (default off; admins may re-enable in Settings → UI Configuration)  
 **Severity:** Medium  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
 **Affected Component:** Global bootstrap  
-**Affected File:** `config/config.php`, `includes/ui_config.php`  
+**Affected File:** `config/config.php`, `includes/ui_config.php`, `db/01_schema.sql`, `db/02_data.sql`  
 **Affected Function:** Error reporting block; `itm_ui_config_defaults()`  
-**Affected Parameter:** `enable_all_error_reporting` (default `1`)
+**Affected Parameter:** `enable_all_error_reporting` (default **`0`**)
 
 **Description:**  
-When `enable_all_error_reporting` is enabled (default for new `ui_configuration` rows), the application sets `display_errors=1` and logs to `error_log.txt` under the project root. This can expose stack traces, SQL fragments, and filesystem paths to end users.
+When `enable_all_error_reporting` is enabled, the application sets `display_errors=1` and logs to `error_log.txt` under the project root. This can expose stack traces, SQL fragments, and filesystem paths to end users. **At assessment time** the default was `1` for new `ui_configuration` rows; the codebase now defaults to **`0`** (schema, seeds, PHP fallbacks, and Settings checkbox).
 
-**Evidence:**
+**Evidence (current — remediated):**
 
 ```650:655:config/config.php
-if (($ui_config['enable_all_error_reporting'] ?? 1) === 1) {
+if (($ui_config['enable_all_error_reporting'] ?? 0) === 1) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
     ini_set('log_errors', '1');
@@ -233,13 +234,15 @@ if (($ui_config['enable_all_error_reporting'] ?? 1) === 1) {
 }
 ```
 
-**Proof of Concept (safe):** Trigger a handled PHP notice on a module page with default UI settings; observe inline error output.
+`itm_ui_config_defaults()['enable_all_error_reporting']` is `0`; `db/01_schema.sql` column default is `'0'`; `db/migrations/ui_configuration_error_reporting_default_off_dml.sql` backfills existing rows from `1` → `0`.
 
-**Impact:** Information disclosure aiding further attacks (path disclosure, query hints).
+**Proof of Concept (safe):** With defaults unchanged after remediation, trigger a handled PHP notice on a module page — inline error output should **not** appear unless an admin enables **Enable all error reporting** in Settings.
 
-**Attack Scenario:** Attacker probes malformed parameters to surface warnings on production with defaults unchanged.
+**Impact:** Information disclosure aiding further attacks (path disclosure, query hints) when the flag is on.
 
-**Recommendation:** Default `enable_all_error_reporting` to `0` in production; log errors server-side only; block web access to `error_log.txt`. *(Documentation only.)*
+**Attack Scenario:** Attacker probes malformed parameters to surface warnings on production only when verbose reporting was explicitly enabled.
+
+**Recommendation:** Keep default `0` in production; log errors server-side only; block web access to `error_log.txt`. *(Remediated for default; log-file hardening remains optional.)*
 
 ---
 
