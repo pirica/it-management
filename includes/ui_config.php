@@ -1537,7 +1537,7 @@ function itm_ui_config_defaults() {
         'new_button_position' => 'left',
         'export_buttons_position' => 'left',
         'back_save_position' => 'left',
-        'enable_all_error_reporting' => 1,
+        'enable_all_error_reporting' => 0,
         'enable_audit_logs' => 1,
         'enable_chatbot' => 1,
         'enable_sidebar_section_collapse' => 1,
@@ -1673,7 +1673,7 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `new_button_position` VARCHAR(30) NOT NULL DEFAULT 'left',
         `export_buttons_position` VARCHAR(30) NOT NULL DEFAULT 'left',
         `back_save_position` VARCHAR(30) NOT NULL DEFAULT 'left',
-        `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1,
+        `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 0,
         `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1,
         `enable_chatbot` TINYINT(1) NOT NULL DEFAULT 1,
         `enable_sidebar_section_collapse` TINYINT(1) NOT NULL DEFAULT 1,
@@ -1733,7 +1733,7 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
     // Add missing columns if they don't exist
     $columns = [
         'employee_id' => "ALTER TABLE `ui_configuration` ADD COLUMN `employee_id` INT NOT NULL DEFAULT 0 AFTER `company_id`",
-        'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
+        'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 0 AFTER `back_save_position`",
         'enable_audit_logs' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_all_error_reporting`",
         'enable_chatbot' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_chatbot` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_audit_logs`",
         'enable_sidebar_section_collapse' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_sidebar_section_collapse` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_chatbot`",
