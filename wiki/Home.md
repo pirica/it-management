@@ -2,7 +2,7 @@
 
 A complete **IT Asset Management System** built with PHP and MySQL, with multi-company support.
 
-Captured screenshots and diagrams below use paths under `docs/readme/` in the repository (same assets as [README.md](../README.md)).
+Screenshots use stable raw URLs from the repository `docs/readme/` folder (same assets as [README.md](https://github.com/pirica/it-management/blob/master/README.md)).
 
 ## Quick Links
 
@@ -20,18 +20,23 @@ Captured screenshots and diagrams below use paths under `docs/readme/` in the re
 
 ## Features
 
-- Complete CRUD operations across modules
+- Complete CRUD operations across modules (248 database tables after fresh `db/` import)
+- Multi-company tenant switching with RBAC permission matrix
 - GitHub Copilot-inspired light/dark theme
-- Equipment management with photo uploads
-- Printer and workstation tracking
-- Ticket management system
+- Equipment management with Switch Port Manager and equipment type facades
+- Explorer multi-tenant file storage with vault-gated private folders
+- Ticket management, problem management, and post-ticket CSAT surveys
 - Floor Plans gallery (nested folders, tags, image/PDF/CAD uploads)
-- Responsive design
-- API (`scripts/api.php`)
+- Appointments self-service IT visit booking
+- Hotel guest booking portal and partner distribution API
+- Saved report views and scheduled exports
+- Per-employee locale settings (money symbol, date/time formats)
+- Integration API (`scripts/api.php`) and paid-tier API v2 (`modules/api_v2/router.php`)
+- Live Chat and Knowledge Base chatbot widget
 
 ## Tech stack
 
-- PHP 7.4.33 (MySQLi — no PDO)
+- PHP **7.4.33** (MySQLi — no PDO; maintained target — not PHP 8.x primary)
 - MySQL 8.0+
 - Apache 2.4+
 - Vanilla JavaScript + `css/styles.css`
@@ -39,49 +44,49 @@ Captured screenshots and diagrams below use paths under `docs/readme/` in the re
 
 ## Screenshots
 
-Local Laragon-style install at `http://localhost/it-management/` (default light theme after sign-in).
+Local install at [http://localhost/it-management/](http://localhost/it-management/) (Dunebox or Laragon).
 
 ### Dashboard
 
 Tenant overview with quick stats and settings shortcut.
 
-![Dashboard overview](../docs/readme/dashboard.png)
+![Dashboard overview](https://raw.githubusercontent.com/pirica/it-management/master/docs/readme/dashboard.png)
 
 ### Equipment
 
 Module list with search, sort, and table tools (export / import).
 
-![Equipment module list](../docs/readme/equipment.png)
+![Equipment module list](https://raw.githubusercontent.com/pirica/it-management/master/docs/readme/equipment.png)
 
 ### IDF rack
 
 Visual rack layout with positions, port grid, and linked device management.
 
-![IDF rack view](../docs/readme/idf.png)
+![IDF rack view](https://raw.githubusercontent.com/pirica/it-management/master/docs/readme/idf.png)
 
 ### Rack planner
 
 Drag-and-drop rack elevation with patch panels, switches, and servers by RU.
 
-![Rack planner](../docs/readme/rack_planner.png)
+![Rack planner](https://raw.githubusercontent.com/pirica/it-management/master/docs/readme/rack_planner.png)
 
 ### Floor Plans
 
 Gallery with nested folders, tags, and uploads (images, PDF, AutoCAD); optional link to IT Locations; drag-and-drop moves. See [Floor Plans Gallery](Floor-Plans).
 
-![Floor Plans gallery](../docs/readme/floor_plans.png)
+![Floor Plans gallery](https://raw.githubusercontent.com/pirica/it-management/master/docs/readme/floor_plans.png)
 
 ## Architecture
 
 High-level request flow from web entry points through shared core into company-scoped MySQL data and audit logging.
 
-![Architecture overview](../docs/readme/architecture.png)
+![Architecture overview](https://raw.githubusercontent.com/pirica/it-management/master/docs/readme/architecture.png)
 
 ### Database schema
 
 Core table relationships for the company-scoped multi-tenant data model.
 
-![Database schema overview](../docs/readme/database-diagram.png)
+![Database schema overview](https://raw.githubusercontent.com/pirica/it-management/master/docs/readme/database-diagram.png)
 
 ---
 
@@ -97,4 +102,4 @@ Core table relationships for the company-scoped multi-tenant data model.
 8. Import Excel
 9. IDF Synchronization
 
-Agent and contributor guardrails in the repository are defined in [`AGENTS.md`](../AGENTS.md). Wiki pages **Foreign Keys**, **Import Excel**, and **IDF Synchronization** summarize those sections for human readers.
+Agent and contributor guardrails in the repository are defined in [`AGENTS.md`](https://github.com/pirica/it-management/blob/master/AGENTS.md). Wiki pages **Foreign Keys**, **Import Excel**, and **IDF Synchronization** summarize those sections for human readers.

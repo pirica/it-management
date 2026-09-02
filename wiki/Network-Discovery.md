@@ -1,6 +1,11 @@
 # Network Discovery & IP2WHOIS
 
-**IP Subnets** → **Search** → **Network Discovery** scans an IPv4 range (up to 255 addresses) using TCP connect probes (no shell/`exec`). Responding hosts can be added to the **IP Addresses** inventory when they match a company subnet.
+Two entry points run IPv4 TCP connect discovery (up to 255 addresses per scan, no shell/`exec`):
+
+1. **IP Subnets** → **Search** → **Network Discovery** (`modules/ip_subnets/`)
+2. Standalone **Network Discovery** module (`modules/network_discovery/`) with profile-based staging
+
+Responding hosts can be added to the **IP Addresses** inventory when they match a company subnet.
 
 ## Optional: hosted domains (IP2WHOIS)
 

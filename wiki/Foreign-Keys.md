@@ -24,9 +24,20 @@ Apply the same order for list/view label resolution and for edit-form option loa
 - If a saved FK value is not returned by the current company-scoped options query, **append or load that saved row** so the form does not fall back to `-- Select --`.
 - Apply FK option-loading fixes consistently across all duplicated entry files that share the same helpers.
 
-## Created-by and user reference fields
+## Audit columns and user reference fields
 
-For `created_by`, `updated_by`, `approved_by`, and `*_by_user_id`:
+### Standard audit actors (`created_by`, `updated_by`, `deleted_by`, `created_at`, `updated_at`, `deleted_at`)
+
+Scaffold CRUD modules follow `AGENTS.md` audit-column rules:
+
+| Screen | Requirement |
+|--------|-------------|
+| **List** | Show `active` with badges only; **hide** `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`; filter live rows with `deleted_at IS NULL` |
+| **View** | Show `active` badges plus all six meta fields; `*_by` → employee full name; `*_at` → formatted audit timestamp |
+| **Create / edit** | `created_by`, `created_at`, `updated_by`, `updated_at` as **hidden** inputs (server-stamped — not dropdowns); do not expose `deleted_*` on create/edit |
+| **Delete** | Soft-delete stamps `deleted_by` / `deleted_at` from session |
+
+### Non-audit user FKs (`approved_by`, `*_by_user_id`, and similar)
 
 | Screen | Requirement |
 |--------|-------------|
@@ -57,7 +68,7 @@ Before finishing a module change:
 - [ ] `edit.php` — persisted FK values stay selected when scoped options are incomplete
 - [ ] Fallback lookups are tenant-safe (scoped first, id-only for legacy)
 - [ ] Display renderer changes applied to both list and detail flows
-- [ ] User reference fields follow created-by UX rules
+- [ ] Standard audit actors use hidden server-stamped inputs on create/edit; non-audit user FKs use dropdowns
 - [ ] `switch_status` color/FK rules applied when that module changed
 
 ## Related documentation

@@ -2,7 +2,7 @@
 
 Reference Data → **Floor Plans** (`modules/floor_plans/`) stores building layouts and drawings per company.
 
-![Floor Plans gallery](../docs/readme/floor_plans.png)
+![Floor Plans gallery](https://raw.githubusercontent.com/pirica/it-management/master/docs/readme/floor_plans.png)
 
 ## Capabilities
 

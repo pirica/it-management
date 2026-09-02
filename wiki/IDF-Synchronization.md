@@ -65,7 +65,13 @@ Run from the **repository root** after any affected Create/Edit/Update/Delete/Co
 php scripts/idfs_sync_human_test.php
 ```
 
-**Windows Laragon (when `php` is not on PATH):**
+**Windows Dunebox (primary — when `php` is not on PATH):**
+
+```text
+D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php
+```
+
+**Windows Laragon (alternate):**
 
 ```text
 <laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php

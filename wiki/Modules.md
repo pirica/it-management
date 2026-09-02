@@ -22,23 +22,27 @@ The modules below use **custom entry points** instead (or in addition). They are
 | [Floor Plans](#floor-plans-entry-points) | Gallery + optional table CRUD | `modules/floor_plans/index.php` (gallery) |
 | [Knowledge Base](#knowledge-base) | Support articles | `modules/knowledge_base/index.php` |
 | [IT Settings](#it-settings) | Chatbot & Contact config | `modules/it_settings/index.php` |
+| [Explorer](#explorer) | Multi-tenant file storage | `modules/explorer/index.php` |
+| [Calendar](#calendar-alerts--events) | Aggregated planner | `modules/calendar/index.php` |
+| [Reports Hub](#reports-hub) | Saved views & scheduled reports | `modules/reports/index.php` |
+| [Guest booking portal](#guest-booking-portal) | Public hotel booking | `booking/` (no employee session) |
+| [Appointments](#appointments) | Self-service IT visit booking | `modules/appointments/index.php` |
 
 ## Module list
 
 | Module | Description |
 | --- | --- |
 | **Equipment** | Manage IT equipment with Switch Port Manager |
+| **Equipment type facades** | Filtered equipment views: `is_printer`, `is_workstation`, `is_server`, `is_switch`, and related `modules/is_*/` folders |
 | **IDFs** | IDF registry plus rack visualizer — [entry points](#idfs-non-crud-entry-points) |
-| **IPAM** | VLANs, IP subnets (CIDR), and IP addresses linked to equipment; includes **Network Discovery** TCP scan under IP Subnets |
+| **IPAM** | VLANs, IP subnets (CIDR), and IP addresses linked to equipment; includes **Network Discovery** TCP scan under IP Subnets and standalone `modules/network_discovery/` |
 | **Rack planner** | Visual rack elevation and component placement |
 | **Floor Plans** | Gallery-first file manager; table view via `list_all.php` — [entry points](#floor-plans-entry-points) |
-| **Printers** | Track printers and supplies |
-| **Workstations** | Manage workstations |
+| **Explorer** | Secure multi-tenant file storage (`files/{company_id}/`) — [entry points](#explorer) |
 | **Tickets** | Support ticket system |
-| **Inventory** | Track supplies |
-| **Users** | User management |
+| **Inventory** | `inventory_categories` and `inventory_items` CRUD modules |
 | **Departments** | Department management |
-| **Employees** | Employee tracking |
+| **Employees** | Employee tracking and login (no separate `modules/users/` folder) |
 | **Companies** | Multi-company support |
 | **Settings** | System UI, sidebar, backups, and maintenance — [entry points](#settings) |
 | **Budgeting** | Annual/Monthly Budgets, Forecasts, Expenses (CRUD modules) |
@@ -46,7 +50,7 @@ The modules below use **custom entry points** instead (or in addition). They are
 | **Audit Logs** | Change audit trail |
 | **Roles & Permissions** | Manage custom roles, hierarchies, and active counts via a 6-column RBAC matrix |
 | **Email Management** | Configure company SMTP, inspect send logs, and manage automated alert rules |
-| **Private Contacts** | User-private address book with UK localization, favorites, and secure share sessions |
+| **Private Contacts** | User-private address book with vault encryption, favorites, and secure share sessions |
 | **Passwords** | Encrypted private password manager with folder organization and import/export tools |
 | **Request Password** | Handle password reset workflow requiring applicant, HR, HOD, and ISM approvals |
 | **Visitors Access Log** | Log manual visitor entries with immutable history rules |
@@ -54,7 +58,13 @@ The modules below use **custom entry points** instead (or in addition). They are
 | **Ops Report** | Daily hotel operations figures, walk-rounds, and guest feedback sections |
 | **Calendar** | Aggregated planner showing events, alerts, ticket deadlines, and equipment expirations |
 | **Alerts** | Manage global/private notifications; supports ICS calendar file imports |
-| **Chatbot / Live Chat** | Floating tech assistance powered by a multi-tenant Knowledge Base |
+| **Chatbot** | Floating IT support widget powered by tenant-scoped Knowledge Base articles |
+| **Live Chat** | Agent conversations and waiting-room flows (`modules/live_chat/`, `live_chat_conversations/`) |
+| **Appointments** | Self-service IT visit booking with weekly slot modal — [entry points](#appointments) |
+| **Problem Management** | Root-cause investigations, known errors, and master ticket rollup (`modules/problems/`) |
+| **Saved report views** | Custom filter/column presets from tickets, equipment, and expenses lists |
+| **API v2** | Paid-tier JSON REST gateway with scoped integration keys (`modules/api_v2/router.php`) |
+| **Hotel booking distribution** | Partner channel API for inventory, ARI, and reservations (`modules/hotel_booking_api/`) |
 | **License Management** | Manage software license keys, types, suppliers, quantities, and expirations |
 | **Company Module Access** | Matrix enabling admins to turn specific modules on/off per company |
 | **Bills & Invoices** | Financial accounts payable/receivable with manual posting to expenses |
@@ -147,15 +157,20 @@ Wrappers (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) se
 
 ## IPAM & network discovery
 
-VLANs, subnets, and IP addresses. **IP Subnets → Search → Network Discovery** scans an IPv4 range (up to 255 addresses) via TCP connect probes. See [Network Discovery & IP2WHOIS](Network-Discovery).
+VLANs, subnets, and IP addresses. **IP Subnets → Search → Network Discovery** scans an IPv4 range (up to 255 addresses) via TCP connect probes. A standalone **Network Discovery** module (`modules/network_discovery/`) also provides profile-based staging. See [Network Discovery & IP2WHOIS](Network-Discovery).
 
-## Printers
+## Equipment type facades
 
-Manage printer inventory and supply status.
+Printer, workstation, server, switch, and related device classes are **filtered views** of the equipment table — not separate modules:
 
-## Workstations
+| Facade | Path |
+| --- | --- |
+| Printers | `modules/is_printer/` |
+| Workstations | `modules/is_workstation/` |
+| Servers | `modules/is_server/` |
+| Switches | `modules/is_switch/` |
 
-Track workstation records and assignments.
+See `README.md` for the full facade list (`is_router`, `is_firewall`, `is_access_point`, and others).
 
 ## Tickets
 
@@ -163,11 +178,11 @@ Create and manage support tickets, including photo attachments in `tickets_photo
 
 ## Inventory
 
-Track consumables and stock levels.
+Consumables and stock via **`inventory_categories`** and **`inventory_items`** CRUD modules.
 
-## Users, departments, employees, companies
+## Departments, employees, companies
 
-User access, organizational structure, employee records, and multi-company data partitioning (`company_id` scoping).
+Organizational structure, employee records, and multi-company data partitioning (`company_id` scoping). Login and user management live under **`modules/employees/`** (there is no `modules/users/` folder).
 
 ### Employee Type (`modules/employee_type/`)
 
@@ -203,11 +218,11 @@ Manage tenant role configurations and dynamic RBAC matrices. Administrators can 
 
 ## Email Management
 
-Configure SMTP profiles, track complete outbound/inbound delivery logs, and establish automated notification rules for expiration events (e.g. warranties or software licenses). Logs are private-data exempt from standard audit trail triggers.
+Configure SMTP profiles (`email_smtp_configurations`), automated alert rules (`email_alert_rules`), and inspect outbound/inbound delivery logs (`emails`). The **`emails`** send log is private-data exempt from audit triggers; SMTP profiles and alert rules **are** audited.
 
 ## Private Contacts
 
-A secure, user-scoped contact directory with UK-focused localization. Private fields are vault-encrypted. Supports QR-based temporary secure share links.
+A secure, user-scoped contact directory. Private PII fields are vault-encrypted at rest. Supports QR-based temporary secure share links.
 
 ## Passwords
 
@@ -227,15 +242,41 @@ A monthly grid system to track physical server backup tape usage. Derives days o
 
 ## Ops Report
 
-A daily hotel operations report that aggregates figures, walk-rounds, food & beverage outlets, and guest feedback. Restricts editing on legacy reports (D-2) to administrators.
+A daily hotel operations report that aggregates figures, walk-rounds, food & beverage outlets, and guest feedback. Non-admins may edit **today and yesterday** only; dates older than D-2 are read-only unless the actor is an administrator.
 
 ## Calendar, Alerts & Events
 
 An integrated planning system. The calendar module aggregates data from alerts, events, ticket due dates, and equipment expirations. Supports importing third-party calendar feeds via ICS files.
 
-## Chatbot & Knowledge Base
+## Chatbot
 
-A floating IT support chatbot widget powered by tenant-scoped knowledge base articles. Standardizes input escaping and CSRF validation, and escalates to IT contacts on keyword triggers.
+A floating IT support chatbot widget (`js/chatbot.js`) powered by tenant-scoped Knowledge Base articles. Standardizes input escaping and CSRF validation, and escalates to IT contacts on keyword triggers.
+
+## Live Chat
+
+Agent conversations, waiting-room flows, and peer **Chat with** threads (`modules/live_chat/`, `modules/live_chat_conversations/`). Separate from the Knowledge Base chatbot widget.
+
+## Explorer
+
+**Sidebar:** Explorer → `modules/explorer/`
+
+Secure multi-tenant file storage anchored at `files/{company_id}/` with `Common/`, `Departments/{dept_id}/`, `Private/{username}_{employee_id}/`, and `Trash/` segments. Private paths require vault unlock. See `AGENTS.md` Explorer module section for ACL and upload hardening rules.
+
+## Appointments
+
+**Sidebar:** Planning → Appointments → `modules/appointments/`
+
+Employee self-service IT visit booking (visit reason, weekly slot modal, in-person or remote). Configuration lives in `modules/appointment_settings/`. API: `modules/appointments/api.php` (`week_slots`, `schedule`).
+
+## Reports Hub
+
+**Sidebar:** Reports → `modules/reports/`
+
+Aggregated reporting including saved filter/column presets from tickets, equipment, and expenses (`modules/saved_report_views/`). Supports scheduling and temporary public share links.
+
+## Guest booking portal
+
+Public hotel guest booking at `booking/` (no employee session). Separate from employee modules and from the **Hotel booking distribution** partner API (`modules/hotel_booking_api/`).
 
 ## License Management
 
