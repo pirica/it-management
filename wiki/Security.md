@@ -47,12 +47,13 @@ php scripts/analyze_database_health.php
 
 ## Secrets management (required)
 
-Move secrets out of source control. `config/config.php` may define DB credentials and API key constants inline, which is risky for leaks and rotation. Use environment variables (or a server-local config file excluded from git) and fail fast when required values are missing.
+Move secrets out of source control. `config/config.php` loads database credentials and optional API keys from environment variables (see `.env.example`). Do not commit production values in tracked PHP.
 
-Example inline constant pattern (replace with env loading in production):
+Example env loading (MailerLite / onboarding approval HMAC):
 
 ```php
-define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
+$itm_mailerlite_api_key = trim((string)getenv('MAILERLITE_API_KEY'));
+define('MAILERLITE_API_KEY', $itm_mailerlite_api_key);
 ```
 
 ### Environment variables (recommended)

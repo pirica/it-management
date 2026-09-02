@@ -95,7 +95,12 @@ if (!defined('SYSTEM_STATUS_DISABLE_TENANT_FALLBACK')) {
 define('APP_NAME', 'IT Management System');
 define('APP_VERSION', '1.0.0');
 define('APP_ENV', 'production'); // development or production
-define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
+// Why: Onboarding approval HMAC fallback secret — load from env only (ITM-PENTEST-016); never commit literals.
+$itm_mailerlite_api_key = trim((string)getenv('MAILERLITE_API_KEY'));
+if ($itm_mailerlite_api_key === '') {
+    $itm_mailerlite_api_key = trim((string)getenv('ITM_MAILERLITE_API_KEY'));
+}
+define('MAILERLITE_API_KEY', $itm_mailerlite_api_key);
 define('MAILERLITE_URL', 'https://connect.mailerlite.com/api/emails/single');
 
 // IP2WHOIS hosted-domains lookup (Network Discovery on IP Subnets). Set IP2WHOIS_API_KEY in `.env` or server env.
