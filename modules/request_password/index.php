@@ -55,7 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
     $token = $_GET['token'];
 
     // Verify token
-    $secret = 'request_password_secret_key_2024';
+    $secret = itm_request_password_approval_secret();
+    if ($secret === '') {
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Authorization link</title></head><body><p>Approval links are not configured. Contact your administrator.</p></body></html>';
+        exit;
+    }
     $expectedToken = hash_hmac('sha256', $recordId . $target . $decision, $secret);
 
     if (!hash_equals($expectedToken, $token)) {
@@ -111,7 +116,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email_action']))
     $applicantEmail = $record['work_email'] ?: $record['personal_email'];
 
     $subject = "Password Change Request - " . $applicantName;
-    $secret = 'request_password_secret_key_2024';
+    $secret = itm_request_password_approval_secret();
+    if ($secret === '') {
+        $_SESSION['crud_error'] = 'Approval email links are not configured. Set ITM_REQUEST_PASSWORD_APPROVAL_SECRET in .env.';
+        header('Location: index.php');
+        exit;
+    }
 
     if ($action == 'hr' || $action == 'hod') {
         $approveToken = hash_hmac('sha256', $recordId . $action . 'approve', $secret);

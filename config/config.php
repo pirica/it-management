@@ -357,6 +357,7 @@ require_once ROOT_PATH . 'includes/itm_ticket_settings.php';
 require_once ROOT_PATH . 'includes/itm_ticket_sla.php';
 require_once ROOT_PATH . 'includes/itm_ticket_survey.php';
 require_once ROOT_PATH . 'includes/itm_ticket_csat.php';
+require_once ROOT_PATH . 'includes/itm_request_password_approval.php';
 require_once ROOT_PATH . 'includes/itm_ticket_merge.php';
 require_once ROOT_PATH . 'includes/itm_employee_notifications.php';
 require_once ROOT_PATH . 'includes/itm_automation_rules.php';

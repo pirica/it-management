@@ -11,9 +11,9 @@
 
 The IT Management System is a large procedural PHP application (~2,643 PHP files, 272+ module entry points) with substantial defensive engineering: prepared-statement static auditing, CSRF coverage checks, upload-directory hardening, multi-tenant `company_id` enforcement in central bootstrap, role/module access gates, and targeted regression scripts for high-risk areas (Explorer ACL, QR share, API v2, hotel distribution).
 
-**Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase, but several **confirmed high-impact weaknesses** remain in workflow authentication (password-request email approvals), secrets management (hardcoded HMAC key, DB-password-derived encryption keys), and deployment defaults (seed administrator credentials). No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`. **ITM-PENTEST-006** (verbose error display default) was remediated — `enable_all_error_reporting` now defaults to `0`.
+**Overall posture:** Moderate — strong baseline controls for a legacy PHP codebase, but several **confirmed high-impact weaknesses** remain in workflow authentication (password-request email approvals), secrets management (DB-password-derived encryption keys), and deployment defaults (seed administrator credentials). No confirmed remote code execution or unauthenticated full-application takeover was identified in this read-only review; previously reported cancellation-policy RCE paths appear mitigated in current `includes/itm_hotel_booking.php`. **ITM-PENTEST-006** (verbose error display default) and **ITM-PENTEST-001** (hardcoded approval HMAC secret → `.env` `ITM_REQUEST_PASSWORD_APPROVAL_SECRET`) were remediated.
 
-**Primary risks:** forged or CSRF-triggered approval of password-reset requests; credential and secrets compromise via default accounts or database credential leakage; information disclosure through verbose PHP errors; phishing via intentional short-link redirects.
+**Primary risks:** CSRF-triggered approval of password-reset requests; credential and secrets compromise via default accounts or database credential leakage; phishing via intentional short-link redirects.
 
 ---
 
@@ -55,7 +55,7 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 | Severity      | Count |
 | ------------- | ----- |
 | Critical      | 0     |
-| High          | 4     |
+| High          | 3     |
 | Medium        | 8     |
 | Low           | 5     |
 | Informational | 6     |
@@ -66,8 +66,9 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 
 ### ITM-PENTEST-001 Hardcoded HMAC secret for password-request email approvals
 
+**Status:** **Remediated** — secret loaded from `.env` `ITM_REQUEST_PASSWORD_APPROVAL_SECRET` via `itm_request_password_approval_secret()`  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — hardcoded `$secret = 'request_password_secret_key_2024'` at `modules/request_password/index.php` line **58** (`hash_hmac` at line **59**); duplicated at `scripts/verify_request_password.php` line **158**. Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — no `request_password_secret_key_2024` in `modules/request_password/index.php` or `scripts/verify_request_password.php`; helper `getenv('ITM_REQUEST_PASSWORD_APPROVAL_SECRET')` at `includes/itm_request_password_approval.php` line **10**; approval handler uses helper at `modules/request_password/index.php` lines **58–65** and email token build at lines **119–125**. Regression: `php scripts/verify_pentest_report.php`, `php scripts/verify_request_password.php` (requires non-empty env).
 
 **Severity:** High  
 **OWASP Category:** A02:2021 – Cryptographic Failures / A07:2021 – Identification and Authentication Failures  
@@ -77,29 +78,34 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 **Affected Parameter:** `token`, `id`, `target`, `decision`
 
 **Description:**  
-HR/HOD approve/decline links use `hash_hmac('sha256', $recordId . $target . $decision, $secret)` with a **hardcoded** secret `request_password_secret_key_2024` embedded in application source (also duplicated in `scripts/verify_request_password.php`). Anyone with repository or deployed-source access can forge valid approval tokens for arbitrary record IDs.
+HR/HOD approve/decline links use `hash_hmac('sha256', $recordId . $target . $decision, $secret)`. **Previously** the secret was hardcoded in source (`request_password_secret_key_2024`). **Now** `$secret` comes from `ITM_REQUEST_PASSWORD_APPROVAL_SECRET` in project root `.env` through `itm_request_password_approval_secret()` in `includes/itm_request_password_approval.php`. Rotate the env value per environment; never commit production values.
 
-**Evidence:**
+**Evidence (current — remediated):**
 
-```58:59:modules/request_password/index.php
-    $secret = 'request_password_secret_key_2024';
+```10:16:includes/itm_request_password_approval.php
+        $env = getenv('ITM_REQUEST_PASSWORD_APPROVAL_SECRET');
+        if ($env !== false && $env !== '') {
+            return (string) $env;
+        }
+
+        return '';
+```
+
+```58:65:modules/request_password/index.php
+    $secret = itm_request_password_approval_secret();
+    if ($secret === '') {
+        ...
+    }
     $expectedToken = hash_hmac('sha256', $recordId . $target . $decision, $secret);
 ```
 
-**Proof of Concept (safe, offline):**
+**Proof of Concept (safe, offline):** With `ITM_REQUEST_PASSWORD_APPROVAL_SECRET` set in `.env`, generate tokens only on hosts that hold the env value — not from repository source alone.
 
-```php
-$secret = 'request_password_secret_key_2024';
-$recordId = 42;
-$token = hash_hmac('sha256', $recordId . 'hr' . 'approve', $secret);
-// URL: modules/request_password/index.php?approval_api=1&id=42&target=hr&decision=approve&token={$token}
-```
+**Impact:** Forging approval tokens requires the deployment secret (`.env` or process env), not cloned PHP source.
 
-**Impact:** Unauthorized approval or rejection of password-reset requests if an attacker can induce a logged-in user (same tenant `company_id`) to visit the forged URL, or if combined with predictable record IDs.
+**Attack Scenario:** Attacker with **only** repo access cannot derive valid tokens without the production env value.
 
-**Attack Scenario:** Attacker clones source, generates an HR-approve token for a pending request ID, sends the link to any authenticated employee in the victim company; the handler updates the row when `company_id` matches the session.
-
-**Recommendation:** Store per-tenant or per-request secrets in the database (or HMAC with a server-side key from environment), rotate on deploy, bind tokens to approver identity and expiry, and never commit secrets to source control. *(Documentation only — not implemented in this assessment.)*
+**Recommendation:** Keep a long random secret per environment; restrict `.env` file permissions; rotate after staff changes. *(Remediated for hardcoded source secret; ITM-PENTEST-002/003 remain open.)*
 
 ---
 
@@ -705,7 +711,7 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 | LDAP filter escaping | Effective | `ldap_escape()` in `itm_ldap_apply_user_filter()` |
 | Chatbot XSS | Effective | `escapeHtml()` before `innerHTML` in `js/chatbot.js` |
 | Security headers (CSP, XFO, HSTS) | **Not implemented** in app layer | ITM-PENTEST-007 |
-| Email approval workflow | **Weak** | ITM-PENTEST-001–003 |
+| Email approval workflow | **Weak** | ITM-PENTEST-001 remediated (env secret); ITM-PENTEST-002–003 remain |
 | Secrets at rest (integration) | **Moderate** | DB_PASS-derived keys — ITM-PENTEST-005 |
 | Error display defaults | **Effective** (default off) | ITM-PENTEST-006 remediated; admins may re-enable in Settings |
 
@@ -739,9 +745,9 @@ Unlike `modules/knowledge_base/chat_api.php` and paid API gateways, Explorer `ap
 
 **Overall rating: MEDIUM-HIGH** for a default deployment with seed data and factory UI settings; **MEDIUM** after mandatory credential rotation, rotating approval secrets, and hardening production ingress (verbose error display now defaults off per ITM-PENTEST-006).
 
-The application demonstrates mature security **process** (static gates, regression scripts, upload hardening, RBAC layering) uncommon in procedural PHP codebases. The highest **confirmed** technical risks are concentrated in the **Request Password approval workflow** (hardcoded secret, GET CSRF, missing approver binding) and **deployment hygiene** (default `Admin` password, DB-derived encryption keys). Verbose PHP error display defaults were remediated (ITM-PENTEST-006).
+The application demonstrates mature security **process** (static gates, regression scripts, upload hardening, RBAC layering) uncommon in procedural PHP codebases. The highest **confirmed** technical risks are concentrated in the **Request Password approval workflow** (GET CSRF, missing approver binding — ITM-PENTEST-002/003) and **deployment hygiene** (default `Admin` password, DB-derived encryption keys). Hardcoded approval HMAC secret (ITM-PENTEST-001) and verbose PHP error display defaults (ITM-PENTEST-006) were remediated.
 
-Addressing ITM-PENTEST-001 through ITM-PENTEST-004 should be prioritised before internet exposure. Defence-in-depth items (headers, rate limits, maintenance token policy) reduce blast radius from phishing and misconfiguration.
+Addressing ITM-PENTEST-002 through ITM-PENTEST-004 should be prioritised before internet exposure. Defence-in-depth items (headers, rate limits, maintenance token policy) reduce blast radius from phishing and misconfiguration.
 
 ---
 
