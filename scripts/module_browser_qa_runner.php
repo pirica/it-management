@@ -2850,9 +2850,7 @@ function mbqa_table_column_names(mysqli $conn, string $table): array
     }
 
     $cols = [];
-    $tableEsc = '`' . str_replace('`', '``', $table) . '`';
-    $res = mysqli_query($conn, 'SHOW COLUMNS FROM ' . $tableEsc);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
+    foreach (itm_crud_table_columns($conn, $table) as $row) {
         $field = (string)($row['Field'] ?? '');
         if ($field !== '' && itm_is_safe_identifier($field)) {
             $cols[$field] = true;
@@ -3910,8 +3908,7 @@ function mbqa_table_column_metas(mysqli $conn, string $table): array
     }
 
     $metas = [];
-    $res = mysqli_query($conn, 'DESCRIBE `' . str_replace('`', '``', $table) . '`');
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
+    foreach (itm_crud_table_columns($conn, $table) as $row) {
         $name = (string)($row['Field'] ?? '');
         if ($name === '' || !itm_is_safe_identifier($name)) {
             continue;

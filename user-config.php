@@ -123,10 +123,10 @@ $_SESSION['assignment_types'] = $assignment_types;
 // Why: Profile System Access Overview still needs the employee_system_access row (dashboard owns auto-insert).
 $system_access_overview = [];
 $systemAccessColumns = [];
-$systemAccessRes = mysqli_query($conn, 'DESCRIBE employee_system_access');
-if ($systemAccessRes) {
-    while ($systemAccessRow = mysqli_fetch_assoc($systemAccessRes)) {
-        $systemAccessColumns[] = $systemAccessRow['Field'];
+foreach (itm_crud_table_columns($conn, 'employee_system_access') as $systemAccessRow) {
+    $field = (string)($systemAccessRow['Field'] ?? '');
+    if ($field !== '') {
+        $systemAccessColumns[] = $field;
     }
 }
 $systemAccessFixed = [

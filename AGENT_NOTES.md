@@ -162,4 +162,4 @@ $stmt->execute();
 - **Recent Activity:** `{action} in {table_name}` with link to module or catalog href.
 - **Security flash messages:** Password, vault, and TOTP feedback at page top and above each section Save button.
 - **Audit:** Profile and security changes logged to `audit_logs` when applicable.
-- **System Access Overview:** `DESCRIBE employee_system_access` then SELECT existing columns only; meta/audit columns excluded from flag counts.
+- **System Access Overview:** `itm_crud_table_columns('employee_system_access')` (one cached DESCRIBE per request) then SELECT existing columns only; meta/audit columns excluded from flag counts.

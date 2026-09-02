@@ -72,8 +72,7 @@ foreach ($metadata as $moduleName => $info) {
 
     $columns = [];
     $hasCompanyId = false;
-    $res = mysqli_query($conn, "DESCRIBE `$table`");
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
+    foreach (itm_crud_table_columns($conn, $table) as $row) {
         if ($row['Field'] === 'id' || $row['Field'] === 'created_at' || $row['Field'] === 'updated_at') {
             continue;
         }
@@ -84,17 +83,7 @@ foreach ($metadata as $moduleName => $info) {
     }
 
     // Identify Foreign Keys
-    $fkMap = [];
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = '{$tableEsc}'
-              AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $resFk = mysqli_query($conn, $sql);
-    while ($resFk && ($rowFk = mysqli_fetch_assoc($resFk))) {
-        $fkMap[$rowFk['COLUMN_NAME']] = $rowFk;
-    }
+    $fkMap = itm_crud_fk_map($conn, $table);
 
     $testContent = "<?php
 
