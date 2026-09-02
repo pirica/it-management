@@ -23,7 +23,7 @@ Unit tests for shared helpers under `includes/` that are safe to exercise withou
 | `AppointmentModalitySampleTest.php` | `itm_appointment_regression_*` canonical Mon–Fri modality matrix (DB-free) |
 | `ItmDateFormatTest.php` | `includes/itm_date_format.php` (dd/mmm/yyyy parse/display; delegates display to `itm_ui_locale_format.php` when loaded); `itm_parse_datetime_input` UK `d/M/Y H:i`; `itm_datetime_input_local_value`; `itm_format_cell_scalar_display` money + ui_config date flip |
 | `UiLocaleFormatTest.php` | `includes/itm_ui_locale_format.php` (Settings `ui_configuration` money + date/time defaults, prefix/suffix mutual exclusion, datetime fallback, `itm_is_money_field_name`) |
-| `SecurityHeadersTest.php` | `includes/itm_security_headers.php` (`itm_build_content_security_policy()`, `itm_request_is_https()`; DB-free) |
+| `SecurityHeadersTest.php` | `includes/itm_security_headers.php` (`itm_build_content_security_policy()`, `itm_request_is_https()`, `itm_session_cookie_secure_from_config()`; DB-free) |
 | `ItmCrudScalarColumnSearchTest.php` | `includes/itm_crud_scalar_column_search.php` (scalar list search OR fragments) |
 | `CompanyModuleAccessDiscoveryTest.php` | `itm_ensure_registry_rows_for_module_slugs()`, `itm_sidebar_structure()` table discovery (requires MySQL) |
 | `SidebarSectionCollapseTest.php` | `itm_normalize_sidebar_collapsed_map()`, `itm_sidebar_section_collapse_feature_enabled()`, `itm_sidebar_is_valid_section_id()` |

@@ -409,18 +409,10 @@ if ($conn) {
 if (session_status() === PHP_SESSION_NONE) {
     // Why: Harden session cookies before the first session_start (fixation/XSS defenses).
     if (PHP_SAPI !== 'cli') {
-        $itmSessionSecure = (
-            (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
-            || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
-            || (
-                !empty($_SERVER['HTTP_X_FORWARDED_PROTO'])
-                && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https'
-            )
-        );
         session_set_cookie_params([
             'lifetime' => 0,
             'path' => ITM_SESSION_COOKIE_PATH,
-            'secure' => $itmSessionSecure,
+            'secure' => itm_session_cookie_secure(),
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
@@ -1136,18 +1128,9 @@ if (!function_exists('itm_csrf_cookie_params')) {
      */
     function itm_csrf_cookie_params()
     {
-        $secure = (
-            (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
-            || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
-            || (
-                !empty($_SERVER['HTTP_X_FORWARDED_PROTO'])
-                && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https'
-            )
-        );
-
         return [
             'path' => defined('ITM_SESSION_COOKIE_PATH') ? (string)ITM_SESSION_COOKIE_PATH : '/',
-            'secure' => $secure,
+            'secure' => itm_session_cookie_secure(),
             'httponly' => false,
             'samesite' => 'Lax',
         ];

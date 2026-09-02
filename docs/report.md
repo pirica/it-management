@@ -56,8 +56,8 @@ Exit code **0** means every finding still matches `docs/report.md` — **not** t
 
 | Label | Meaning | Findings |
 |-------|---------|----------|
-| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 012 |
-| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–011, 013–016 |
+| **`[PASS]`** | **Remediated** — documented fix still in place | 001–003, 006–007, 012, 014 |
+| **`[OPEN]`** | **Documented gap** — weakness or misconfiguration still present (do **not** treat as secure) | 004–005, 008–011, 013, 015–016 |
 | **`[INFO]`** | **Informational / positive control** — defensive measure confirmed working | 017–022 |
 | **`[FAIL]`** | Report and repository out of sync, or a regression check broke | — |
 
@@ -503,24 +503,29 @@ Public survey submission is gated by an unguessable token in the URL but POST re
 
 ### ITM-PENTEST-014 Session cookie `Secure` flag conditional on HTTPS detection
 
+**Status:** **Remediated** — `itm_session_cookie_secure()` forces `Secure` when `ITM_APP_URL` uses `https://`, with optional `ITM_SESSION_COOKIE_SECURE` override; otherwise falls back to per-request TLS detection.  
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `'secure' => $itmSessionSecure` in `session_set_cookie_params()` at `config/config.php` line **418** (`$itmSessionSecure` derived from HTTPS / `X-Forwarded-Proto` detection above). Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. `session_set_cookie_params()` and `itm_csrf_cookie_params()` use `itm_session_cookie_secure()` in `includes/itm_security_headers.php` (loaded from `config/config.php` before `session_start()`).
 
-**Severity:** Low  
+**Severity:** Low (was open; remediated)  
 **OWASP Category:** A07:2021 – Identification and Authentication Failures  
 **Affected Component:** Session bootstrap  
-**Affected File:** `config/config.php`  
-**Affected Function:** `session_set_cookie_params()`  
+**Affected File:** `config/config.php`, `includes/itm_security_headers.php`  
+**Affected Function:** `itm_session_cookie_secure()`, `session_set_cookie_params()`  
 **Affected Parameter:** Cookie `secure` flag
 
 **Description:**  
-`secure` is set only when HTTPS is detected (including `X-Forwarded-Proto`). Misconfigured TLS termination may issue session cookies without `Secure`, enabling interception on mixed HTTP paths.
+Previously `secure` was set only from inline HTTPS / `X-Forwarded-Proto` detection on each request. Misconfigured TLS termination could issue session cookies without `Secure`. Production installs should set `ITM_APP_URL` to an `https://` canonical URL so cookies always carry `Secure` regardless of proxy header drift.
 
-**Evidence:** Lines 406–420 in `config/config.php`.
+**Evidence (current — remediated):**
 
-**Impact:** Session hijack on networks where HTTP downgrade is possible.
+```php
+'secure' => itm_session_cookie_secure(),
+```
 
-**Recommendation:** Set `ITM_APP_URL` to HTTPS; force `secure => true` in production config. *(Documentation only.)*
+**Impact:** Session cookies on HTTPS production deployments remain `Secure` when `ITM_APP_URL` is configured; local HTTP dev without `ITM_APP_URL` still omits `Secure`.
+
+**Recommendation:** Set `ITM_APP_URL=https://…` in production `.env`; use `ITM_SESSION_COOKIE_SECURE=0` only for deliberate local HTTP testing. *(Remediated.)*
 
 ---
 
