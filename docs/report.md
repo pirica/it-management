@@ -416,25 +416,25 @@ WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW()
 ### ITM-PENTEST-011 Public unauthenticated information endpoints
 
 **Date updated:** 2026-09-02  
-**Verification:** **Confirmed** — `ITM_SCRIPT_NO_AUTH` allowlist in `config/config.php` lines **514–516** includes `count_db_tables.php` and `openapi.php` (no session required). Regression: `php scripts/verify_pentest_report.php`.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. Browser `ITM_SCRIPT_NO_AUTH` scripts (`count_db_tables.php`, `openapi.php`, `test_chatbot.php`) skip login only when `itm_script_browser_no_auth_client_allowed()` passes: loopback (`127.0.0.1` / `::1`), client IP on **`ITM_SCRIPT_NO_AUTH_ALLOWED_IPS`** (comma-separated IPv4/IPv6 or IPv4 CIDR), or valid **`ITM_MAINTENANCE_TOKEN`** (`?token=` / `X-ITM-Maintenance-Token` for reverse-proxy auth). Other clients receive HTTP **403** (no login redirect).
 
-**Severity:** Medium  
+**Severity:** Medium (was open; remediated)  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
 **Affected Component:** Diagnostics / API documentation  
-**Affected File:** `scripts/count_db_tables.php`, `scripts/openapi.php`  
-**Affected Function:** N/A  
-**Affected Parameter:** N/A
+**Affected File:** `scripts/count_db_tables.php`, `scripts/openapi.php`, `config/config.php`, `scripts/lib/itm_script_bootstrap.php`  
+**Affected Function:** `itm_script_browser_no_auth_client_allowed()`  
+**Affected Parameter:** `ITM_SCRIPT_NO_AUTH_ALLOWED_IPS`, `ITM_MAINTENANCE_TOKEN`
 
 **Description:**  
-`count_db_tables.php` (no login) returns live MySQL table count and writes `scripts/number_db_tables.txt`. `openapi.php?format=json` exposes full API v2 route catalog without authentication (by design).
+`count_db_tables.php` returns live MySQL table count (digits only). `openapi.php?format=json` exposes the API v2 route catalog. Both remain useful for deploy monitors and partner discoverability but are no longer reachable anonymously from arbitrary internet hosts unless their IP is allowlisted or the reverse proxy supplies a valid maintenance token.
 
-**Evidence:** `config/config.php` allowlist `ITM_SCRIPT_NO_AUTH` includes `count_db_tables.php`, `openapi.php`.
+**Evidence:** `config/config.php` calls `itm_script_browser_no_auth_client_allowed()` before setting `$itmSkipWebAuth` for `ITM_SCRIPT_NO_AUTH` scripts; allowlist env documented in `.env.example`.
 
-**Proof of Concept (safe):** [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php) (no auth); [openapi.php?format=json](http://localhost/it-management/scripts/openapi.php?format=json).
+**Proof of Concept (safe):** From loopback: [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php), [openapi.php?format=json](http://localhost/it-management/scripts/openapi.php?format=json). From a non-allowlisted remote IP without token → HTTP 403.
 
-**Impact:** Low-sensitivity reconnaissance (schema scale, API surface). Combined with other bugs, aids targeting.
+**Impact:** Low-sensitivity reconnaissance blocked for anonymous internet clients; monitors and trusted proxies configure `ITM_SCRIPT_NO_AUTH_ALLOWED_IPS` or token header.
 
-**Recommendation:** Restrict by IP, authentication, or move behind admin tools in production. *(Documentation only.)*
+**Recommendation:** Set `ITM_SCRIPT_NO_AUTH_ALLOWED_IPS` on production (monitor/office egress IPs). Optionally terminate at a reverse proxy that injects `X-ITM-Maintenance-Token`. *(Remediated.)*
 
 ---
 

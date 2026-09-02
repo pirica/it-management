@@ -41,7 +41,7 @@ If any script **destroys or corrupts** the live `itmanagement` database, seed da
 
 ### Detect destruction
 
-- Table count far below expected (see `scripts/number_db_tables.txt` / `CREATE TABLE` count in `db/03_triggers.sql`)
+- Table count far below expected (see `php scripts/count_db_tables.php` or `CREATE TABLE` count in `db/01_schema.sql`)
 - Seed admins / companies wiped; login broken
 - Constraint storms leaving tenants unusable
 - Core rows deleted beyond disposable test cleanup

@@ -29,7 +29,8 @@ if (!function_exists('itm_script_running_under_scripts_dir')) {
 
 if (!function_exists('itm_script_browser_no_auth_script_basenames')) {
     /**
-     * Read-only browser scripts that skip employee login from any host (ITM_SCRIPT_NO_AUTH).
+     * Read-only browser scripts that skip employee login when ITM_SCRIPT_NO_AUTH is set
+     * and the client passes itm_script_browser_no_auth_client_allowed() (loopback, IP allowlist, or maintenance token).
      *
      * @return string[]
      */
@@ -40,6 +41,141 @@ if (!function_exists('itm_script_browser_no_auth_script_basenames')) {
             'test_chatbot.php',
             'openapi.php',
         ];
+    }
+}
+
+if (!function_exists('itm_script_no_auth_allowed_ips_from_env')) {
+    /**
+     * Client IPs/CIDRs permitted to reach ITM_SCRIPT_NO_AUTH browser scripts (production monitors).
+     *
+     * @return string[]
+     */
+    function itm_script_no_auth_allowed_ips_from_env()
+    {
+        $raw = trim((string)getenv('ITM_SCRIPT_NO_AUTH_ALLOWED_IPS'));
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $raw)), 'strlen'));
+    }
+}
+
+if (!function_exists('itm_script_client_ip_is_loopback')) {
+    function itm_script_client_ip_is_loopback($ip)
+    {
+        $ip = strtolower(trim((string)$ip));
+        if ($ip === '127.0.0.1' || $ip === '::1') {
+            return true;
+        }
+
+        return str_starts_with($ip, '::ffff:127.0.0.1');
+    }
+}
+
+if (!function_exists('itm_script_client_ip_matches_allowlist_entry')) {
+    /**
+     * Exact IPv4/IPv6 match or IPv4 CIDR (e.g. 10.0.0.0/8).
+     */
+    function itm_script_client_ip_matches_allowlist_entry($clientIp, $allowedEntry)
+    {
+        $clientIp = trim((string)$clientIp);
+        $allowedEntry = trim((string)$allowedEntry);
+        if ($clientIp === '' || $allowedEntry === '') {
+            return false;
+        }
+
+        if (strpos($allowedEntry, '/') === false) {
+            return hash_equals($allowedEntry, $clientIp);
+        }
+
+        if (filter_var($clientIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+            return false;
+        }
+
+        $parts = explode('/', $allowedEntry, 2);
+        $subnet = trim((string)($parts[0] ?? ''));
+        $maskBits = (int)trim((string)($parts[1] ?? ''));
+        if ($subnet === '' || $maskBits < 0 || $maskBits > 32) {
+            return false;
+        }
+        if (filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+            return false;
+        }
+
+        $clientLong = ip2long($clientIp);
+        $subnetLong = ip2long($subnet);
+        if ($clientLong === false || $subnetLong === false) {
+            return false;
+        }
+
+        $maskLong = $maskBits === 0 ? 0 : (-1 << (32 - $maskBits));
+
+        return ($clientLong & $maskLong) === ($subnetLong & $maskLong);
+    }
+}
+
+if (!function_exists('itm_script_client_ip_matches_no_auth_allowlist')) {
+    /**
+     * @param string[] $allowedEntries
+     */
+    function itm_script_client_ip_matches_no_auth_allowlist($clientIp, array $allowedEntries)
+    {
+        foreach ($allowedEntries as $allowedEntry) {
+            if (itm_script_client_ip_matches_allowlist_entry($clientIp, $allowedEntry)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_script_maintenance_token_request_is_valid')) {
+    /**
+     * Reverse-proxy or monitor auth via shared ITM_MAINTENANCE_TOKEN (?token= or X-ITM-Maintenance-Token).
+     */
+    function itm_script_maintenance_token_request_is_valid()
+    {
+        $maintToken = trim((string)getenv('ITM_MAINTENANCE_TOKEN'));
+        if ($maintToken === '') {
+            return false;
+        }
+
+        $providedToken = (string)($_GET['token'] ?? $_SERVER['HTTP_X_ITM_MAINTENANCE_TOKEN'] ?? '');
+
+        return $providedToken !== '' && hash_equals($maintToken, $providedToken);
+    }
+}
+
+if (!function_exists('itm_script_browser_no_auth_client_allowed')) {
+    /**
+     * True when a no-auth browser script may skip employee login (loopback, IP allowlist, or maintenance token).
+     */
+    function itm_script_browser_no_auth_client_allowed()
+    {
+        if (itm_script_is_cli()) {
+            return true;
+        }
+
+        $clientIp = function_exists('itm_get_client_ip_address')
+            ? trim((string)itm_get_client_ip_address())
+            : trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+
+        if (itm_script_client_ip_is_loopback($clientIp)) {
+            return true;
+        }
+
+        if (itm_script_maintenance_token_request_is_valid()) {
+            return true;
+        }
+
+        $allowedIps = itm_script_no_auth_allowed_ips_from_env();
+        if ($allowedIps === []) {
+            return false;
+        }
+
+        return itm_script_client_ip_matches_no_auth_allowlist($clientIp, $allowedIps);
     }
 }
 

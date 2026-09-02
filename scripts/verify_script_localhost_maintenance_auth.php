@@ -106,6 +106,19 @@ if (!in_array('count_db_tables.php', $noAuthList, true)) {
     vsl_pass('count_db_tables.php listed for ITM_SCRIPT_NO_AUTH (no login, no Admin)');
 }
 
+if (strpos($bootstrapSource, 'itm_script_browser_no_auth_client_allowed') === false
+    || strpos($bootstrapSource, 'ITM_SCRIPT_NO_AUTH_ALLOWED_IPS') === false) {
+    vsl_fail('No-auth scripts must be gated by itm_script_browser_no_auth_client_allowed() + ITM_SCRIPT_NO_AUTH_ALLOWED_IPS');
+} else {
+    vsl_pass('No-auth browser scripts gated by loopback, IP allowlist, or maintenance token');
+}
+
+if (strpos($configSource, 'itm_script_browser_no_auth_client_allowed') === false) {
+    vsl_fail('config.php must call itm_script_browser_no_auth_client_allowed() before skipping web auth for ITM_SCRIPT_NO_AUTH');
+} else {
+    vsl_pass('config.php enforces no-auth IP / maintenance-token gate');
+}
+
 if (in_array('verify_attempts_view_rbac.php', $allowlist, true)
     || in_array('scripts.php', $allowlist, true)) {
     vsl_fail('General verify scripts and catalog must not be on maintenance allowlist');

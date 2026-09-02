@@ -505,7 +505,8 @@ if (defined('ITM_API_V2') && ITM_API_V2) {
     $itmSkipWebAuth = true;
 }
 
-// Why: Read-only aggregate diagnostics may run without a session when explicitly allowlisted.
+// Why: Read-only aggregate diagnostics may run without a session when explicitly allowlisted
+// and the client is loopback, on ITM_SCRIPT_NO_AUTH_ALLOWED_IPS, or presents ITM_MAINTENANCE_TOKEN.
 if (
     !$itmSkipWebAuth
     && PHP_SAPI !== 'cli'
@@ -522,7 +523,17 @@ if (
     $itmNoAuthScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
 
     if (in_array($itmNoAuthScript, $itmNoAuthScripts, true)) {
-        $itmSkipWebAuth = true;
+        if (function_exists('itm_script_browser_no_auth_client_allowed')
+            && itm_script_browser_no_auth_client_allowed()) {
+            $itmSkipWebAuth = true;
+        } else {
+            if (!headers_sent()) {
+                header('Content-Type: text/plain; charset=utf-8', true, 403);
+            }
+            http_response_code(403);
+            echo "Forbidden.\n";
+            exit;
+        }
     }
 }
 

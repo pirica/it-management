@@ -49,16 +49,29 @@ if ($scriptSource === '' || strpos($scriptSource, 'ITM_SCRIPT_NO_AUTH') === fals
 }
 
 $configSource = (string) file_get_contents(dirname(__DIR__) . '/config/config.php');
+$bootstrapSource = (string) file_get_contents(__DIR__ . '/lib/itm_script_bootstrap.php');
 if (strpos($configSource, "'count_db_tables.php'") === false) {
     vcd_fail('config.php no-auth allowlist must include count_db_tables.php');
 } else {
     vcd_pass('count_db_tables.php listed in config.php no-auth allowlist');
 }
 
+if (strpos($bootstrapSource, 'itm_script_browser_no_auth_client_allowed') === false) {
+    vcd_fail('No-auth scripts must use itm_script_browser_no_auth_client_allowed() IP/token gate');
+} else {
+    vcd_pass('No-auth IP allowlist gate present in itm_script_bootstrap.php');
+}
+
 if (preg_match('/TABLE_NAME|SHOW TABLES|DESCRIBE/i', $scriptSource) === 1) {
     vcd_fail('count_db_tables.php must not enumerate table names in SQL or output');
 } else {
     vcd_pass('Script source avoids table-name enumeration');
+}
+
+if (strpos($scriptSource, 'number_db_tables.txt') !== false || strpos($scriptSource, 'file_put_contents') !== false) {
+    vcd_fail('count_db_tables.php must not write number_db_tables.txt or other files');
+} else {
+    vcd_pass('Script outputs table count only (no file mirror)');
 }
 
 if (!function_exists('shell_exec')) {
@@ -78,18 +91,6 @@ if (!function_exists('shell_exec')) {
         vcd_fail('Table count must be positive on a seeded database');
     } else {
         vcd_pass('Live table count is positive (' . $count . ')');
-    }
-}
-
-$numberFile = __DIR__ . '/number_db_tables.txt';
-if (!is_file($numberFile)) {
-    vcd_fail('number_db_tables.txt missing after count_db_tables run');
-} else {
-    $fileBody = trim((string) file_get_contents($numberFile));
-    if (!preg_match('/^\d+$/', $fileBody)) {
-        vcd_fail('number_db_tables.txt must contain digits only');
-    } else {
-        vcd_pass('number_db_tables.txt stores digits-only mirror count');
     }
 }
 

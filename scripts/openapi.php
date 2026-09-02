@@ -1,6 +1,6 @@
 <?php
 /**
- * Public OpenAPI 3.0 spec for API v2 (no authentication).
+ * Public OpenAPI 3.0 spec for API v2 (no employee login from loopback, allowlisted IP, or maintenance token).
  *
  * CLI: php scripts/openapi.php
  * Browser: scripts/openapi.php?format=json

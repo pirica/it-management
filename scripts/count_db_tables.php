@@ -1,9 +1,9 @@
 <?php
 /**
  * Why: External monitors and deploy checks need a single table count without signing in.
- * Counts live tables in information_schema for DB_NAME and mirrors the value to number_db_tables.txt.
+ * Counts live tables in information_schema for DB_NAME and prints the total (browser or CLI only).
  *
- * Browser: open scripts/count_db_tables.php (no login).
+ * Browser: open scripts/count_db_tables.php (loopback or ITM_SCRIPT_NO_AUTH_ALLOWED_IPS; no employee login).
  * CLI: php scripts/count_db_tables.php
  */
 declare(strict_types=1);
@@ -23,9 +23,6 @@ if (!defined('ITM_SCRIPT_NO_AUTH')) {
 
 // Fix: absolute path, CLI-safe
 require_once realpath(__DIR__ . '/../config/config.php');
-
-// Debug: confirm DB connection
-// var_dump($conn);
 
 $schema = DB_NAME;
 $count = 0;
@@ -53,18 +50,6 @@ if ($res === false) {
 $row = $res->fetch_assoc();
 if (is_array($row) && isset($row['table_count'])) {
     $count = (int) $row['table_count'];
-}
-
-$outputPath = __DIR__ . '/number_db_tables.txt';
-$outputBody = (string) $count . "\n";
-
-// Fix: diagnose write failures in CLI
-$result = @file_put_contents($outputPath, $outputBody);
-if ($result === false) {
-    fwrite(STDOUT, "WRITE FAILED: $outputPath\n");
-    fwrite(STDOUT, "DIR: " . __DIR__ . "\n");
-    fwrite(STDOUT, "CWD: " . getcwd() . "\n");
-    exit(1);
 }
 
 if (PHP_SAPI !== 'cli' && !headers_sent()) {
