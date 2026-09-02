@@ -18,7 +18,7 @@ CSRF, SQLi, and security guardrail tests.
 - **VaultSecurityTest.php** — `itm_vault_reencrypt_password_entries()` rollback contract for vault master key changes (unchanged ciphertext + old-key decrypt); disposable user via `itm_script_test_employee_create()` (no `employees.active` column). Do not `assertFalse(itm_decrypt(..., wrongKey))` — OpenSSL often returns non-false garbage for a wrong AES key.
 - **TotpTest.php** — secret generation, encrypt/decrypt round-trip, employee-row verification, disabled skip path; disposable user via `itm_script_test_employee_create()`.
 - **SecurityFixesTest.php** — subprocess verification of fixed security paths; role-escalation and sensitive-import cases seed attackers via `itm_script_test_employee_create()` (no `employees.active` column).
-- **PentestReportTest.php** — subprocess runner for `scripts/verify_pentest_report.php` (`docs/report.md` ITM-PENTEST-001–022; expects `[PASS]`/`[OPEN]`/`[INFO]` labels; asserts ITM-PENTEST-007, ITM-PENTEST-009, ITM-PENTEST-010, ITM-PENTEST-012, ITM-PENTEST-013, ITM-PENTEST-014, and ITM-PENTEST-016 remediated).
+- **PentestReportTest.php** — subprocess runner for `scripts/verify_pentest_report.php` (`docs/report.md` ITM-PENTEST-001–022; expects `[PASS]`/`[OPEN]`/`[INFO]` labels; asserts ITM-PENTEST-007, ITM-PENTEST-009, ITM-PENTEST-010, ITM-PENTEST-011, ITM-PENTEST-012, ITM-PENTEST-013, ITM-PENTEST-014, and ITM-PENTEST-016 remediated).
 - **RequestPasswordApprovalTest.php** — `itm_request_password_approval_secret()` env helper; approver-bound HMAC sign/verify.
 
 ## 10. Common Pitfalls
