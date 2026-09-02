@@ -214,20 +214,10 @@ class SettingsApiKeyLastUsedTest extends TestCase
 
     public function testCrossTenantAdminResolvesTenantSeedAdminConfiguration(): void
     {
-        $admin4Stmt = mysqli_prepare(
-            $this->conn,
-            'SELECT id FROM employees WHERE company_id = 4 AND LOWER(username) = LOWER(?) AND deleted_at IS NULL LIMIT 1'
-        );
-        if (!$admin4Stmt) {
-            $this->markTestSkipped('Could not resolve Admin4 seed employee.');
-        }
-        $admin4Username = 'Admin4';
-        mysqli_stmt_bind_param($admin4Stmt, 's', $admin4Username);
-        mysqli_stmt_execute($admin4Stmt);
-        $admin4Res = mysqli_stmt_get_result($admin4Stmt);
-        $admin4Row = $admin4Res ? mysqli_fetch_assoc($admin4Res) : null;
-        mysqli_stmt_close($admin4Stmt);
-        $admin4Id = (int)($admin4Row['id'] ?? 0);
+        unset($_SESSION['company_id'], $_SESSION['employee_id'], $_SESSION['login_employee_id']);
+
+        $this->assertTrue(function_exists('itm_seed_resolve_tenant_seed_admin_employee_id'));
+        $admin4Id = itm_seed_resolve_tenant_seed_admin_employee_id($this->conn, 4);
         if ($admin4Id <= 0) {
             $this->markTestSkipped('Admin4 seed employee missing for company 4.');
         }

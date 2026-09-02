@@ -144,12 +144,17 @@ final class HotelBookingCheckoutOccupancyTest extends TestCase
         ];
         $room = ['hotel_id' => 1, 'price_per_night' => 100.0];
         $settings = [];
+        // Why: prepare_checkout_summary prefers draft occupancy when stay context matches (not URL alone).
+        $draftTwoAdults = $draft;
+        $draftTwoAdults['occupancy'] = ['rooms' => 2, 'adults' => 2, 'children' => 0, 'babies' => 0];
+        $draftOneAdult = $draft;
+        $draftOneAdult['occupancy'] = ['rooms' => 2, 'adults' => 1, 'children' => 0, 'babies' => 0];
         $preparedTwo = itm_hotel_booking_portal_prepare_checkout_summary(
             $conn,
             1,
             $room,
-            $draft,
-            ['rooms' => 2, 'adults' => 2, 'children' => 0, 'babies' => 0],
+            $draftTwoAdults,
+            $draftTwoAdults['occupancy'],
             '2026-09-30',
             1,
             $settings
@@ -158,8 +163,8 @@ final class HotelBookingCheckoutOccupancyTest extends TestCase
             $conn,
             1,
             $room,
-            $draft,
-            ['rooms' => 2, 'adults' => 1, 'children' => 0, 'babies' => 0],
+            $draftOneAdult,
+            $draftOneAdult['occupancy'],
             '2026-09-30',
             1,
             $settings
