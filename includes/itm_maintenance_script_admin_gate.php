@@ -3,13 +3,19 @@
  * Browser-only Admin gate for maintenance and security scripts.
  *
  * Why: CLI runners (smoke, MBQA, compare_database_sql_modules --json) stay usable
- * without a session; browser access to sensitive tools requires Admin.
+ * without a session; browser access to sensitive tools requires Admin unless the
+ * localhost / ITM_MAINTENANCE_TOKEN bypass applies to run_tests.php only (PHPUnit menu).
  */
 
 if (!function_exists('itm_enforce_maintenance_script_admin_browser')) {
     function itm_enforce_maintenance_script_admin_browser($conn)
     {
         if (PHP_SAPI === 'cli') {
+            return;
+        }
+
+        if (function_exists('itm_script_browser_maintenance_skip_admin_applies')
+            && itm_script_browser_maintenance_skip_admin_applies()) {
             return;
         }
 
