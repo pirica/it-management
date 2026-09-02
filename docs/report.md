@@ -416,7 +416,7 @@ WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW()
 ### ITM-PENTEST-011 Public unauthenticated information endpoints
 
 **Date updated:** 2026-09-02  
-**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. Browser `ITM_SCRIPT_NO_AUTH` scripts skip login when `itm_script_browser_no_auth_client_allowed()` passes: loopback, built-in hosts **`localhost`** + **`myhome.dynip.sapo.pt`**, optional **`ITM_SCRIPT_NO_AUTH_ALLOWED_HOSTS`** / **`ITM_SCRIPT_NO_AUTH_ALLOWED_IPS`** (built-in **`127.0.0.1`**), or valid **`ITM_MAINTENANCE_TOKEN`**. Other clients receive HTTP **403**.
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. Browser `ITM_SCRIPT_NO_AUTH` scripts skip login when `itm_script_browser_no_auth_client_allowed()` passes: loopback, built-in hosts **`localhost`**, **`127.0.0.1`**, **`myhome.dynip.sapo.pt`**, optional **`ITM_SCRIPT_NO_AUTH_ALLOWED_HOSTS`** / **`ITM_SCRIPT_NO_AUTH_ALLOWED_IPS`**, or valid **`ITM_MAINTENANCE_TOKEN`**. Other clients receive HTTP **403**.
 
 **Severity:** Medium (was open; remediated)  
 **OWASP Category:** A05:2021 – Security Misconfiguration  
