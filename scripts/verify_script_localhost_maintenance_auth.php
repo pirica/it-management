@@ -96,6 +96,13 @@ if (strpos($runTestsSource, 'itm_enforce_maintenance_script_admin_browser') === 
     vsl_pass('run_tests.php enforces Administrator browser gate');
 }
 
+if (strpos($runTestsSource, 'if ($isCli)') === false
+    || !preg_match('/if\s*\(\s*\$isCli\s*\)\s*\{[^}]*putenv\(\'ITM_SKIP_DB_TESTS=1\'\)/s', $runTestsSource)) {
+    vsl_fail('run_tests.php must set ITM_SKIP_DB_TESTS before config only on CLI (browser needs $conn for Admin gate)');
+} else {
+    vsl_pass('run_tests.php keeps DB connection on browser load for Administrator gate');
+}
+
 $mbqaSource = (string) file_get_contents(__DIR__ . '/module_browser_qa_runner.php');
 if (strpos($mbqaSource, 'itm_enforce_maintenance_script_admin_browser') === false) {
     vsl_fail('module_browser_qa_runner.php must call itm_enforce_maintenance_script_admin_browser()');

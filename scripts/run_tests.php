@@ -36,9 +36,11 @@ if ($runRequested) {
         : (($_GET['skip_db'] ?? '') === '1'));
 }
 
-// Why: We force skip during the parent's config.php load to avoid connection fatals.
-putenv('ITM_SKIP_DB_TESTS=1');
-$_ENV['ITM_SKIP_DB_TESTS'] = '1';
+// Why: CLI may skip DB during config load; browser needs $conn for Administrator gate (ITM-PENTEST-008).
+if ($isCli) {
+    putenv('ITM_SKIP_DB_TESTS=1');
+    $_ENV['ITM_SKIP_DB_TESTS'] = '1';
+}
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
@@ -336,8 +338,7 @@ $phpunit_xml = ROOT_PATH . 'phpunit/phpunit.xml';
 
 // Why: Browser SAPI (php-cgi) often lacks mbstring; PHPUnit runs in a CLI subprocess with PHP_EXE / Dunebox php.ini.
 
-// Why: Inline environment variables (VAR=val cmd) are not supported by Windows cmd.exe.
-// We rely on putenv('ITM_SKIP_DB_TESTS=1') called earlier in this script.
+// Why: Browser subprocess inherits putenv from above; CLI sets ITM_SKIP_DB_TESTS before config when skipping DB.
 $command = escapeshellarg($php_bin) . ' -d variables_order=EGPCS';
 if ($run_coverage_html) {
     $command .= ' ' . itm_run_tests_php_ini_memory_flag();
