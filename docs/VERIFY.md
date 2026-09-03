@@ -4,6 +4,17 @@ Code-only review of the IT Management System (~2,660 PHP files, ~270 module fold
 
 **Follow-up code verification (2026-09-03):** each **Status** row in **Security findings (code-based)** was re-checked against the current repository (static source read). `.env` HTTP deny was also checked via `php scripts/verify_pentest_report.php` (`ITM-PENTEST-023`) and optional `curl http://localhost/it-management/.env` → **403** when Apache honors root `.htaccess`. See **Code verification audit (2026-09-03)** below.
 
+**Operator / `.env` setup (not part of this register):** deployment profile keys `ITM_DEV` and `APP_ENV`, database keys, and the distinction from per-employee error display — [docs/ENV.md](ENV.md) (local example: `ITM_DEV=1`, `APP_ENV=development` in project-root `.env`).
+
+**Related registers (distinct from this file):**
+
+| Doc | Role |
+|-----|------|
+| [docs/report.md](report.md) | Live pentest findings ITM-PENTEST-001–023 + `php scripts/verify_pentest_report.php` |
+| [docs/ENV.md](ENV.md) | `.env` catalog, `ITM_DEV` / `APP_ENV`, sample templates |
+| [docs/todo.md](todo.md) | Security/platform backlog (e.g. auto-gating `display_errors` on production profile) |
+| [docs/security_assessment_report.md](security_assessment_report.md) | Deployment hardening checklist |
+
 ---
 
 ## Executive summary
@@ -104,7 +115,7 @@ The dominant engineering risk is **scale + duplication**: scaffold CRUD logic is
 
 - **CSP `unsafe-inline`** — weakens XSS mitigation; inline scripts everywhere.
 - **Legacy login password paths** — MD5/SHA1 verify still accepted once, then rehash (good migration, but extends weak-hash window).
-- **`APP_ENV` / `ITM_DEV` in `.env`** — `config/config.php` reads `APP_ENV` (`development`|`production`, default `production`) and `ITM_DEV=1` shortcut when `APP_ENV` is empty; **not** wired to `display_errors` (still `enable_all_error_reporting` per employee).
+- **`APP_ENV` / `ITM_DEV` in `.env`** — **INFO / by design:** `config/config.php` loads `APP_ENV` (`development`|`production`, default `production`) and `ITM_DEV=1` shortcut when `APP_ENV` is empty. Documents local profile in [docs/ENV.md](ENV.md) (`ITM_DEV=1`, `APP_ENV=development`). **Not** wired to `display_errors` — still `enable_all_error_reporting` per employee (see **High** tenant error display row, **INFO**).
 - **Hotel guest login sets `$_SESSION['company_id']`** (`booking/auth/login.php`) — same session namespace as employee app; separate entry points reduce risk, but shared browser profile could confuse tenant context.
 
 ### Positive security patterns observed
@@ -149,7 +160,7 @@ Static re-read of sources on `origin/master` after the **Status** column and `.e
 |------|---------|
 | CSP `unsafe-inline` | **Confirmed** — `includes/itm_security_headers.php` lines 114–115. |
 | Legacy MD5/SHA1 login | **Confirmed** — `login.php` lines 173–174 before bcrypt rehash. |
-| `APP_ENV` / `ITM_DEV` not driving errors | **Confirmed** — `APP_ENV` loaded from `.env` (`ITM_DEV=1` → `development` when unset); `display_errors` still driven by `enable_all_error_reporting` only. |
+| `APP_ENV` / `ITM_DEV` not driving errors | **Confirmed INFO** — `APP_ENV` from `.env`; `ITM_DEV=1` → `development` when unset; operator guide [docs/ENV.md](ENV.md). `display_errors` only via `enable_all_error_reporting`. |
 | Guest portal sets `$_SESSION['company_id']` | **Confirmed** — `booking/auth/login.php` line 28. |
 
 ### Positive patterns — spot-check
@@ -261,6 +272,7 @@ Open in a **new browser tab** (Admin session unless noted):
 | Chatbot API (session) | [modules/knowledge_base/chat_api.php](http://localhost/it-management/modules/knowledge_base/chat_api.php) |
 | API v2 (key auth) | [modules/api_v2/router.php](http://localhost/it-management/modules/api_v2/router.php) |
 | Scripts catalog (admin) | [scripts/scripts.php](http://localhost/it-management/scripts/scripts.php) |
+| `.env` / deployment profile | [docs/ENV.md](ENV.md) — verify CLI: `php -r 'require "config/config.php"; echo APP_ENV, "\n";'` |
 | Guest portal | [booking/auth/login.php](http://localhost/it-management/booking/auth/login.php) |
 
 ---

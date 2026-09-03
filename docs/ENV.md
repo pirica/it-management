@@ -14,6 +14,8 @@ Project-root `.env` is optional but recommended for local and production deploym
 
 **HTTP hardening:** root `.htaccess` denies web access to `.env` (`ITM-PENTEST-023` — `php scripts/verify_pentest_report.php`). Do not commit `.env`; restrict file permissions on the server.
 
+**Security code review register:** static findings and **Status** (`OPEN`/`FIXED`/`INFO`) for `display_errors`, `bypass_login.php`, and `.env` HTTP deny — [docs/VERIFY.md](VERIFY.md) (distinct from live pentest [docs/report.md](report.md)).
+
 ---
 
 ## Database
