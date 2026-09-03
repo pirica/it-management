@@ -104,6 +104,12 @@ See `.env.example` for the full list. Frequently used:
 
 Integration keys (`MAILERLITE_API_KEY`, `IP2WHOIS_API_KEY`, `RESEND_API_KEY`, `NVD_API_KEY`, etc.) are documented in `.env.example` and module docs (`docs/EMAIL_MANAGEMENT.md`, Network Discovery in README).
 
+### Undocumented app/runtime keys (strict drift)
+
+`php scripts/check_env_vars_in_use.php --strict` fails when keys are read in application or `api-examples/` code but missing from `.env.example`. As of **2026-09-03** there are **17** such keys (Mailpit, SNMP community, CSAT secret, Booking.com sandbox URL, API v2 / hotel distribution example credentials, PHPUnit memory, screenshot helpers, `MYSQL_BIN`). Default audit run is informational only.
+
+**Backlog:** resolve in [`docs/todo.md`](todo.md) item **#12** — add commented optional keys to `.env.example`, document example-only vars in module/api-examples docs, or classify intentional tooling keys in `scripts/lib/itm_env_vars_audit.php`.
+
 ---
 
 ## Apache `SetEnv` alternative
