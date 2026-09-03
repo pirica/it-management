@@ -12,7 +12,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_env_vars_in_use.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> on example-only or undocumented app drift. JSON: <code>--json</code> / <code>?json=1</code>. Includes an HTML table comparing live <code>.env</code> vs <code>.env.example</code> (secrets masked). Run when changing <code>.env.example</code>, <code>config/config.php</code>, or integration env reads.
+Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_env_vars_in_use.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> on example-only or undocumented app drift. JSON: <code>--json</code> / <code>?json=1</code>. Includes an HTML table comparing live <code>.env</code> vs <code>.env.example</code> (live column shows <code>(Not Empty)</code> only — no real values). Run when changing <code>.env.example</code>, <code>config/config.php</code>, or integration env reads.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 require_once __DIR__ . '/lib/itm_script_access_helpers.php';

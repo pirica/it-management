@@ -10,7 +10,7 @@ Project-root `.env` is optional but recommended for local and production deploym
 | `docs/examples/env.development.sample` | Local Laragon / Dunebox |
 | `docs/examples/env.production.sample` | Production-style |
 
-**Drift audit:** `php scripts/check_env_vars_in_use.php` — [check_env_vars_in_use.php?run=1](http://localhost/it-management/scripts/check_env_vars_in_use.php?run=1) (Admin session). Prints an HTML table comparing live `.env` vs `.env.example` (masked secrets) plus a code scan vs `.env.example`. Run after changing `.env.example` or `getenv()` reads in code.
+**Drift audit:** `php scripts/check_env_vars_in_use.php` — [check_env_vars_in_use.php?run=1](http://localhost/it-management/scripts/check_env_vars_in_use.php?run=1) (Admin session). Prints an HTML table comparing live `.env` vs `.env.example` (live column shows `(Not Empty)` / `(empty)` only — no real values) plus a code scan vs `.env.example`. Run after changing `.env.example` or `getenv()` reads in code.
 
 **HTTP hardening:** root `.htaccess` denies web access to `.env` (`ITM-PENTEST-023` — `php scripts/verify_pentest_report.php`). Do not commit `.env`; restrict file permissions on the server.
 
