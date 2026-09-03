@@ -104,10 +104,14 @@ Root `.htaccess` denies HTTP access to `.env` (`<Files ".env">` + `Require all d
 
 | Variable | Purpose |
 |----------|---------|
+| `APP_ENV` | Deployment label: `development` or `production` (default `production`) |
+| `ITM_DEV` | Local-dev shortcut: `1` / `true` / `yes` / `on` implies `development` when `APP_ENV` is empty |
 | `ITM_REQUEST_PASSWORD_APPROVAL_SECRET` | HMAC secret for Request Password email approval links |
 | `ITM_MAINTENANCE_TOKEN` | Optional token for no-auth maintenance scripts |
 | `MAILERLITE_API_KEY` | MailerLite integration (fallback email) |
 | `IP2WHOIS_API_KEY` / `ITM_IP2WHOIS_API_KEY` | Network Discovery hosted-domain lookups |
+
+`ITM_DEV` / `APP_ENV` label the deployment only — they do **not** turn on `display_errors`. Per-employee **enable all error reporting** in Settings controls verbose PHP output (default off). See `docs/ENV.md`.
 
 Set in Apache vhost (or systemd/container runtime) when needed:
 
@@ -119,6 +123,7 @@ SetEnv DB_PASS change_me
 SetEnv DB_NAME itmanagement
 SetEnv ITM_APP_URL https://itm.example.com/app/
 SetEnv ITM_ALLOWED_HOSTS itm.example.com,www.itm.example.com
+SetEnv APP_ENV production
 SetEnv IP2WHOIS_API_KEY your_ip2whois_key
 SetEnv ITM_REQUEST_PASSWORD_APPROVAL_SECRET your_long_random_secret
 ```

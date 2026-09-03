@@ -1126,7 +1126,7 @@ Catalog and extended notes: **`scripts/SCRIPTS.md`** → Pre-merge verification 
 ---
 
 ## 🛠 Setup & Debugging
-* **Dev Credentials:** Host `localhost` (or `127.0.0.1`) | user `root` | **password `secret`** (Dunebox default) or **`itmanagement`** (legacy Laragon) | database `itmanagement` — set via project root `.env` (`DB_HOST`, optional `DB_PORT` default **3307** with Dunebox MySQL 8.0, `DB_USER`, `DB_PASS`, `DB_NAME`). MySQL CLI: `-h 127.0.0.1 -P 3307 -u root -p` (Dunebox).
+* **Dev Credentials:** Host `localhost` (or `127.0.0.1`) | user `root` | **password `secret`** (Dunebox default) or **`itmanagement`** (legacy Laragon) | database `itmanagement` — set via project root `.env` (`DB_HOST`, optional `DB_PORT` default **3307** with Dunebox MySQL 8.0, `DB_USER`, `DB_PASS`, `DB_NAME`). MySQL CLI: `-h 127.0.0.1 -P 3307 -u root -p` (Dunebox). **Local profile:** optional `ITM_DEV=1` and `APP_ENV=development` in `.env` (labels deployment; does not auto-enable `display_errors` — see **`docs/ENV.md`**).
 * **Windows Dunebox + Laragon docroot — local paths (Nelson, verified):** Set `PHP_EXE` / `MYSQL_EXE` in `.env`, or use:
 
 | What | Local path |

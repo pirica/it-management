@@ -343,7 +343,7 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 
 1. Extract the project files into your web root.
 2. Import the database: `bash scripts/verify_database_sql_import.sh` (wraps `import_database_split.sh`) or run the split import directly. Both honour **`MYSQL_PORT`** — default **3307** (Dunebox); use `MYSQL_PORT=3306` when MySQL listens on the standard port (for example Laragon). See `db/AGENT_NOTES.md`.
-3. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, and `DB_NAME` (Dunebox: **`DB_PORT=3307`**; Laragon / many local installs: **3306** — see `.env.example`).
+3. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, and `DB_NAME` (Dunebox: **`DB_PORT=3307`**; Laragon / many local installs: **3306** — see `.env.example`). For local dev, add `ITM_DEV=1` and `APP_ENV=development` (see `docs/ENV.md`).
 4. Create an `images/` directory for equipment uploads.
 5. Create a `tickets_photos/` directory for ticket uploads.
 6. Create a `backups/` directory for backup files.
@@ -695,7 +695,7 @@ Register / plans: [IP2WHOIS](https://www.ip2whois.com/register) — free tier li
 
 <h2 align="center">Secrets Management (Required)</h2>
 
-Move secrets out of source control. Use a project-root `.env` file (from `.env.example`) or server environment variables; do not commit `.env`.
+Move secrets out of source control. Use a project-root `.env` file (from `.env.example`) or server environment variables; do not commit `.env`. Local profile: `ITM_DEV=1` and `APP_ENV=development` label development (see `docs/ENV.md`); they do not auto-enable `display_errors`.
 
 ### Example: `.env` (recommended)
 

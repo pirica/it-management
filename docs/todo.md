@@ -103,11 +103,11 @@ Living register of **still-valid** items migrated from the retired GitHub Wiki p
 
 ### 6. Restrict `display_errors` / web-root error log to development
 
-**Status:** **Open**
+**Status:** **Partial** — `ITM_DEV` / `APP_ENV` in `.env` label dev vs production (`docs/ENV.md`); **`display_errors` is not auto-gated** by those keys yet.
 
 **Problem:** `config/config.php` sets `ini_set('display_errors', '1')` and `error_log` to `ROOT_PATH . 'error_log.txt'` when UI setting `enable_all_error_reporting` is on (~lines 651–653). In production, errors can leak to browsers and a world-readable path under the docroot.
 
-**Acceptance:** Production profile logs outside document root; `display_errors` off unless explicit dev env (e.g. `.env` `ITM_DEV=1`).
+**Acceptance:** Production profile logs outside document root; `display_errors` off unless explicit dev env gates it (e.g. wire `APP_ENV=development` or `ITM_DEV=1` to block browser display even when Settings toggle is on) **or** operator discipline on Settings toggle only.
 
 ---
 

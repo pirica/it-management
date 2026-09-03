@@ -265,14 +265,19 @@ The file `db/03_triggers.sql` defines structured `AFTER INSERT`, `AFTER UPDATE`,
     *   `backups/` (SQL backup storage)
     *   `floor_plans/` (Drawing blueprints)
     *   `files/` (Secure multi-tenant file system storage)
-3.  **Local Environment Variables:** Copy the `.env.example` file to `.env` in the repository root and customize credentials:
+3.  **Local Environment Variables:** Copy the `.env.example` file to `.env` in the repository root and customize credentials (full reference: `docs/ENV.md`):
     ```env
     DB_HOST=127.0.0.1
     DB_PORT=3306
     DB_USER=root
     DB_PASS=your_local_password
     DB_NAME=itmanagement
+
+    # Local dev profile (optional — labels deployment as development)
+    ITM_DEV=1
+    APP_ENV=development
     ```
+    `ITM_DEV` / `APP_ENV` do not enable on-screen PHP errors; use Settings → **enable all error reporting** per employee when debugging (default off).
 4.  **Database Sizing:**
     *   Create a clean database named `itmanagement` with character set `utf8mb4` and collation `utf8mb4_unicode_ci`.
     *   Pipe the schema, seed data, and trigger definitions in order:
