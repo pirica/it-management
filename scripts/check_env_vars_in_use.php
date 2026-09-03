@@ -12,7 +12,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_env_vars_in_use.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> on example-only or undocumented app drift. JSON: <code>--json</code> / <code>?json=1</code>. Run when changing <code>.env.example</code>, <code>config/config.php</code>, or integration env reads.
+Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_env_vars_in_use.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> on example-only or undocumented app drift. JSON: <code>--json</code> / <code>?json=1</code>. Includes an HTML table comparing live <code>.env</code> vs <code>.env.example</code> (secrets masked). Run when changing <code>.env.example</code>, <code>config/config.php</code>, or integration env reads.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 require_once __DIR__ . '/lib/itm_script_access_helpers.php';
@@ -38,6 +38,7 @@ if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
 
 $root = itm_env_vars_audit_project_root();
 $report = itm_env_vars_audit_build_report($root);
+$envCompare = $report['env_compare'] ?? itm_env_vars_audit_compare_env_files($root);
 
 if ($asJson) {
     if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !headers_sent()) {
@@ -51,6 +52,19 @@ if ($asJson) {
 echo 'Environment variable audit' . $nl;
 echo 'Scanned: PHP, Python (.py), and shell (.sh) under project root (excludes vendor, phpunit/coverage, qa-reports).' . $nl;
 echo '.env.example: ' . str_replace('\\', '/', $report['env_example_path']) . $nl;
+echo $nl;
+
+if (itm_script_access_is_cli()) {
+    itm_env_vars_audit_print_env_compare_cli($envCompare, $nl);
+} else {
+    require_once __DIR__ . '/lib/script_cli_output.php';
+    itm_script_output_close_pre();
+    itm_env_vars_audit_echo_env_compare_html($envCompare);
+    echo '<pre style="font-family:Consolas,\'Courier New\',monospace;font-size:13px;margin:16px;line-height:1.4;white-space:pre-wrap;word-break:break-word;">';
+    $GLOBALS['itm_script_pre_closed'] = false;
+}
+
+echo 'Code scan vs .env.example' . $nl;
 echo $nl;
 
 echo '[IN USE + DOCUMENTED] (' . count($report['matched']) . ')' . $nl;
