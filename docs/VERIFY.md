@@ -12,7 +12,7 @@ Code-only review of the IT Management System (~2,660 PHP files, ~270 module fold
 |-----|------|
 | [docs/report.md](report.md) | Live pentest findings ITM-PENTEST-001–023 + `php scripts/verify_pentest_report.php` |
 | [docs/ENV.md](ENV.md) | `.env` catalog, `ITM_DEV` / `APP_ENV`, sample templates |
-| [docs/todo.md](todo.md) | Security/platform backlog (e.g. auto-gating `display_errors` on production profile) |
+| [docs/todo.md](todo.md) | Security/platform backlog (e.g. auto-gating `display_errors` on production profile; env drift **#12**) |
 | [docs/security_assessment_report.md](security_assessment_report.md) | Deployment hardening checklist |
 
 ---
