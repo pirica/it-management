@@ -14,7 +14,7 @@ Fresh import creates **248 tables** from `db/01_schema.sql` (verify with `php sc
 
 1. Extract the project files into your web root.
 2. Import `db/` into MySQL, **or** run `bash scripts/import_database_split.sh` for the generated `db/` split (order `01_schema` → `02_data` → `03_triggers` — see `db/AGENT_NOTES.md`). On Dunebox the import scripts default to **`MYSQL_PORT=3307`**; set `MYSQL_PORT=3306` when MySQL listens on the standard port (Laragon, GitHub Actions CI).
-3. Copy `.env.example` to `.env` and set database credentials (see **Configure database connection** below). Prefer `.env` over editing `config/config.php`.
+3. Copy `.env.example` to `.env` and set database credentials (see **Configure database connection** below). Prefer `.env` over editing `config/config.php`. For local dev, add **`ITM_DEV=1`** and **`APP_ENV=development`** (see **Application environment profile** below).
 4. Create an `images/` directory for equipment uploads.
 5. Create a `tickets_photos/` directory for ticket uploads.
 6. Create a `backups/` directory for backup files.
@@ -83,6 +83,26 @@ Set:
 `DB_HOST=127.0.0.1`, `DB_USER=root`, `DB_PASS=itmanagement`, `DB_NAME=itmanagement` (MySQL on port **3306**).
 
 See `.env.example` for commented examples (including a non-default port).
+
+## Application environment profile
+
+Optional keys **`ITM_DEV`** and **`APP_ENV`** label local vs production deployments. Loaded in `config/config.php` into the PHP constant `APP_ENV` (`development` or `production`; default **production** when unset).
+
+**Local example** (add to `.env` after database keys):
+
+```env
+# Local dev profile
+ITM_DEV=1
+APP_ENV=development
+```
+
+Full copy-paste template: `docs/examples/env.development.sample`. Canonical reference: `docs/ENV.md`.
+
+**Verify:** `php -r 'require "config/config.php"; echo APP_ENV, "\n";'` → `development`.
+
+**Does not auto-enable on-screen PHP errors.** Verbose errors still use Settings → UI Configuration → **enable all error reporting** per employee (default off). Use `ITM_DEV` to mark the host as development; toggle error display in Settings when debugging.
+
+Production: `APP_ENV=production` or omit both keys. Do not set `ITM_DEV=1` on production servers.
 
 ## Troubleshooting
 
