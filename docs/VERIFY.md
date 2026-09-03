@@ -78,7 +78,7 @@ The dominant engineering risk is **scale + duplication**: scaffold CRUD logic is
 
 ## Security findings (code-based)
 
-**Status column:** `OPEN` = not remediated in repository at review time; `FIXED` = remediated in code (regression verifier or static check when noted).
+**Status column:** `OPEN` = not remediated in repository at review time; `FIXED` = remediated in code (regression verifier or static check when noted); `INFO` = intentional design or acceptable operational tradeoff (not scheduled for remediation).
 
 ### High / should fix
 
@@ -86,7 +86,7 @@ The dominant engineering risk is **scale + duplication**: scaffold CRUD logic is
 |--------|--------|--------|--------|
 | **Stored / DOM XSS in webmail preview** | `js/webmail-compose.js` assigns `bodyEl.innerHTML = data.body_html` | Any HTML returned by the preview API is rendered unsanitized. Expected for webmail, but malicious inbound mail becomes active XSS in the admin UI. | OPEN |
 | **DOM XSS in CMDB impact graph** | `js/itm-cmdb-impact-graph.js` builds `innerHTML` from `n.ci_type_icon`, `n.name`, `n.ci_type_name` without escaping | If CI names/icons are user-controlled, this is XSS on graph views. | OPEN |
-| **Tenant error display toggle** | `config/config.php` + `ui_configuration.enable_all_error_reporting` | Per-employee setting can turn on `display_errors` globally for that user’s requests — leaks paths, queries, stack traces in production if mis-set. | OPEN |
+| **Tenant error display toggle** | `config/config.php` + `ui_configuration.enable_all_error_reporting` | **Intentional:** per-employee Settings toggle turns on `display_errors` for that user’s requests (default **off**). Supports admin/dev debugging without changing `php.ini`; operators should leave off in production unless actively troubleshooting. | INFO |
 | **`.env` not blocked in root `.htaccess`** | `.htaccess` at repo root | Root `.htaccess` now denies HTTP access via `<Files ".env">` + `Require all denied` (Apache 2.4) / `Deny from all` (2.2). Regression: `ITM-PENTEST-023` in `php scripts/verify_pentest_report.php`. | FIXED |
 
 ### Medium
@@ -98,7 +98,7 @@ The dominant engineering risk is **scale + duplication**: scaffold CRUD logic is
 | **Runtime schema migration on config load** | `includes/ui_config.php` `itm_ensure_ui_configuration_table()` | First `itm_get_ui_configuration()` per request can run `SHOW TABLES/COLUMNS` and many `ALTER TABLE` paths — risky on large DBs and blurs DDL vs `db/migrations/`. | OPEN |
 | **Vault session key derivation** | `includes/itm_vault_unlock.php` | `$_SESSION['vault_key'] = hash('sha256', $masterKey)` — deterministic from master key; session theft yields decrypt capability until lock. | OPEN |
 | **Encryption IV** | `config/config.php` `itm_encrypt()` | Uses `openssl_random_pseudo_bytes` instead of `random_bytes()` (PHP 7.4 has both). | OPEN |
-| **Dev session hijack tool** | `scripts/bypass_login.php` | CLI-only, admin-gated, but writes real `sess_*` with vault unlocked — dangerous if session files are readable on shared hosting. | OPEN |
+| **Dev session hijack tool** | `scripts/bypass_login.php` | **CLI-only** (`exit` on web SAPI), admin-gated. Requires shell access to the host — same trust boundary as deleting the project or reading `.env`; not a web attack surface. | INFO |
 
 ### Low / design tradeoffs
 
@@ -121,7 +121,7 @@ The dominant engineering risk is **scale + duplication**: scaffold CRUD logic is
 
 Static re-read of sources on `origin/master` after the **Status** column and `.env` **FIXED** update. **Verdict** confirms whether the register **Status** still matches code. Regression: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator session) → `[PASS] ITM-PENTEST-023`.
 
-**Summary:** all register **Status** values match the codebase. Three **High** items remain **OPEN** (webmail XSS, CMDB graph XSS, per-user `display_errors`). One **High** item is **FIXED** (root `.env` HTTP deny). Six **Medium** items remain **OPEN** (by design or structural tradeoff).
+**Summary:** all register **Status** values match the codebase. Two **High** items remain **OPEN** (webmail XSS, CMDB graph XSS). One **High** is **FIXED** (root `.env` HTTP deny). One **High** is **INFO** (per-user `display_errors` — intentional Settings toggle). Five **Medium** items remain **OPEN**; one **Medium** is **INFO** (`bypass_login.php` — CLI-only dev tool).
 
 ### High / should fix — verification
 
@@ -129,7 +129,7 @@ Static re-read of sources on `origin/master` after the **Status** column and `.e
 |--------|--------|---------------|---------|
 | **Stored / DOM XSS in webmail preview** | OPEN | `js/webmail-compose.js` line 142: `bodyEl.innerHTML = data.body_html` (from/to use `textContent`; body is raw HTML). | **Confirmed OPEN** |
 | **DOM XSS in CMDB impact graph** | OPEN | `js/itm-cmdb-impact-graph.js` lines 119–122: `icon`, `name`, `typeName` concatenated into `innerHTML` without escaping. | **Confirmed OPEN** |
-| **Tenant error display toggle** | OPEN | `config/config.php` lines 649–653: when `enable_all_error_reporting === 1`, sets `display_errors` to `1` and logs to `error_log.txt`. Default `0` in `itm_ui_config_defaults()`. | **Confirmed OPEN** (default off; mis-set UI flag still risky) |
+| **Tenant error display toggle** | INFO | `config/config.php` lines 649–653: when `enable_all_error_reporting === 1`, sets `display_errors` to `1` and logs to `error_log.txt`. Default `0` in `itm_ui_config_defaults()`. | **Confirmed INFO** (intentional per-employee debug toggle; default off) |
 | **`.env` not blocked in root `.htaccess`** | FIXED | Root `.htaccess`: `<Files ".env">` + `Require all denied` / `Deny from all`; [verify_pentest_report.php](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) `ITM-PENTEST-023`. | **Confirmed FIXED** |
 
 ### Medium — verification
@@ -141,7 +141,7 @@ Static re-read of sources on `origin/master` after the **Status** column and `.e
 | **Runtime schema migration on config load** | OPEN | `includes/ui_config.php` `itm_ensure_ui_configuration_table()` (~1652): `SHOW TABLES`, `CREATE TABLE IF NOT EXISTS`, per-column `ALTER TABLE` on first load (request-static cache after success). | **Confirmed OPEN** |
 | **Vault session key derivation** | OPEN | `includes/itm_vault_unlock.php` line 64: `$_SESSION['vault_key'] = hash('sha256', $masterKey)`. | **Confirmed OPEN** (documented tradeoff) |
 | **Encryption IV** | OPEN | `config/config.php` `itm_encrypt()` line 2454: `openssl_random_pseudo_bytes` for IV. | **Confirmed OPEN** |
-| **Dev session hijack tool** | OPEN | `scripts/bypass_login.php`: CLI-only exit for non-CLI; `itm_is_admin()` required (~line 79); writes real `sess_*` with vault unlocked. | **Confirmed OPEN** (dev tool; risky if session files readable) |
+| **Dev session hijack tool** | INFO | `scripts/bypass_login.php`: CLI-only exit for non-CLI; `itm_is_admin()` required (~line 79); writes real `sess_*` with vault unlocked. | **Confirmed INFO** (CLI-only; shell access already implies full host trust) |
 
 ### Low / design tradeoffs — spot-check
 
@@ -237,7 +237,7 @@ Matches **Frontend (sampled)** above: webmail and CMDB graph remain **risk**; ch
 1. **Sanitize or sandbox webmail HTML** — CSP sandbox iframe or strict server-side HTML cleaner before preview; don’t assign raw `body_html` to `innerHTML`.
 2. **Escape CMDB graph node fields** — use `textContent` or shared `escapeHtml` for `name`, `typeName`, icons in `itm-cmdb-impact-graph.js`.
 3. ~~**Deny `.env` at web root**~~ — **FIXED:** root `.htaccess` `<Files ".env">` deny; regression `ITM-PENTEST-023` (`php scripts/verify_pentest_report.php`).
-4. **Split error reporting** — never tie `display_errors` to per-user UI config in production; keep logging-only toggle.
+4. ~~**Split error reporting**~~ — **INFO / by design:** per-employee `enable_all_error_reporting` is an intentional Settings toggle (default off); document operator practice rather than removing the feature.
 5. **Reduce bootstrap weight** — lazy-require hotel/finance/distribution includes only from modules that need them.
 6. **Consolidate scaffold CRUD** — without going full MVC: shared `includes/crud_index_logic.php` included by thin `index.php` wrappers to stop 6-copy drift.
 7. **Move `ui_configuration` DDL** entirely to `db/migrations/`; remove runtime `ALTER` from `itm_ensure_ui_configuration_table()` after migration coverage.
@@ -267,7 +267,7 @@ Open in a **new browser tab** (Admin session unless noted):
 
 ## Bottom line
 
-The codebase shows **mature security thinking** in the shared layer (auth, CSRF, module access, explorer, webhook SSRF, upload policies). The main gaps found in **application JS** (webmail preview, CMDB graph) and **operational toggles** (display_errors via UI config) are fixable without architectural rewrites. Root `.env` HTTP deny is **FIXED** in repository `.htaccess` (`ITM-PENTEST-023`).
+The codebase shows **mature security thinking** in the shared layer (auth, CSRF, module access, explorer, webhook SSRF, upload policies). The main **OPEN** gaps are in **application JS** (webmail preview, CMDB graph). Per-user `display_errors` and CLI `bypass_login.php` are **INFO** (intentional dev/operator affordances). Root `.env` HTTP deny is **FIXED** in repository `.htaccess` (`ITM-PENTEST-023`).
 
 The largest structural risk is **maintaining ~270 near-copy modules and a monolithic bootstrap** — future bugs will likely come from **inconsistent copies**, not from missing security primitives in `config.php`.
 
