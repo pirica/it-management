@@ -94,7 +94,23 @@ if (!defined('SYSTEM_STATUS_DISABLE_TENANT_FALLBACK')) {
 // Application Settings
 define('APP_NAME', 'IT Management System');
 define('APP_VERSION', '1.0.0');
-define('APP_ENV', 'production'); // development or production
+// Why: Optional `.env` APP_ENV / ITM_DEV label dev vs production; default production when unset.
+$itmAppEnv = trim((string)getenv('APP_ENV'));
+$itmDevEnv = getenv('ITM_DEV');
+$itmDevEnabled = false;
+if ($itmDevEnv !== false && trim((string)$itmDevEnv) !== '') {
+    $itmDevEnabled = in_array(strtolower(trim((string)$itmDevEnv)), ['1', 'true', 'yes', 'on'], true);
+}
+if ($itmAppEnv === '' && $itmDevEnabled) {
+    $itmAppEnv = 'development';
+}
+if ($itmAppEnv === '') {
+    $itmAppEnv = 'production';
+}
+if (!in_array($itmAppEnv, ['development', 'production'], true)) {
+    $itmAppEnv = 'production';
+}
+define('APP_ENV', $itmAppEnv);
 // Why: Onboarding approval HMAC fallback secret — load from env only (ITM-PENTEST-016); never commit literals.
 $itm_mailerlite_api_key = trim((string)getenv('MAILERLITE_API_KEY'));
 if ($itm_mailerlite_api_key === '') {

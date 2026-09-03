@@ -104,7 +104,7 @@ The dominant engineering risk is **scale + duplication**: scaffold CRUD logic is
 
 - **CSP `unsafe-inline`** — weakens XSS mitigation; inline scripts everywhere.
 - **Legacy login password paths** — MD5/SHA1 verify still accepted once, then rehash (good migration, but extends weak-hash window).
-- **`APP_ENV` constant `'production'`** in `config/config.php` — not wired to error display; actual behavior driven by UI flag.
+- **`APP_ENV` / `ITM_DEV` in `.env`** — `config/config.php` reads `APP_ENV` (`development`|`production`, default `production`) and `ITM_DEV=1` shortcut when `APP_ENV` is empty; **not** wired to `display_errors` (still `enable_all_error_reporting` per employee).
 - **Hotel guest login sets `$_SESSION['company_id']`** (`booking/auth/login.php`) — same session namespace as employee app; separate entry points reduce risk, but shared browser profile could confuse tenant context.
 
 ### Positive security patterns observed
@@ -149,7 +149,7 @@ Static re-read of sources on `origin/master` after the **Status** column and `.e
 |------|---------|
 | CSP `unsafe-inline` | **Confirmed** — `includes/itm_security_headers.php` lines 114–115. |
 | Legacy MD5/SHA1 login | **Confirmed** — `login.php` lines 173–174 before bcrypt rehash. |
-| `APP_ENV` not driving errors | **Confirmed** — `config/config.php` line 97 constant `'production'`; errors driven by `enable_all_error_reporting`. |
+| `APP_ENV` / `ITM_DEV` not driving errors | **Confirmed** — `APP_ENV` loaded from `.env` (`ITM_DEV=1` → `development` when unset); `display_errors` still driven by `enable_all_error_reporting` only. |
 | Guest portal sets `$_SESSION['company_id']` | **Confirmed** — `booking/auth/login.php` line 28. |
 
 ### Positive patterns — spot-check
