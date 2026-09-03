@@ -2,7 +2,7 @@
 
 > **Scope:** Defensive architecture review and deployment hardening guidance — **not** the live penetration-test finding register.
 >
-> **Tracked findings / regression:** [`docs/report.md`](report.md) and `php scripts/verify_pentest_report.php` ([verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1), Administrator session).
+> **Tracked findings / regression:** [`docs/report.md`](report.md) and `php scripts/verify_pentest_report.php` ([verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1), Administrator session). ITM-PENTEST-001–023.
 >
 > **Last reviewed:** 2026-09-02 (checklist and **Live:** mitigation notes synced to repository).
 
@@ -285,7 +285,7 @@ Status key: `[x]` implemented in repository · `[~]` partial / ongoing disciplin
 | Domain | Hardening Action | Status | Evidence |
 |--------|------------------|--------|----------|
 | **Secrets** | Move database credentials and API tokens out of source files to `.env`. | [x] | `config/config.php` — `itm_load_dotenv_file()` |
-| **Secrets** | Deny HTTP access to `.env` files in root `.htaccess`. | [ ] | Root `.htaccess` has no `<Files ".env">` — deployment task |
+| **Secrets** | Deny HTTP access to `.env` files in root `.htaccess`. | [x] | Root `.htaccess` — `<Files ".env">` + `Require all denied` (Apache 2.4) / `Deny from all` (2.2); regression `ITM-PENTEST-023` |
 | **Filesystem** | Place an empty `index.html` file in *every* directory under the repository. | [x] | `itm_upload_directory_empty_index_html()`, `php scripts/empty_folders.php` |
 | **Filesystem** | Implement the `upload` policy `.htaccess` in `images/` and `tickets_photos/`. | [x] | `itm_ensure_upload_directory()` / `itm_upload_directory_policy_body('upload')` |
 | **Filesystem** | Implement the `deny_all` policy `.htaccess` in `backups/`. | [x] | `itm_upload_directory_policy_body('deny_all')` |
