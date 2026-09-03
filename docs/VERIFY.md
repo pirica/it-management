@@ -76,25 +76,27 @@ The dominant engineering risk is **scale + duplication**: scaffold CRUD logic is
 
 ## Security findings (code-based)
 
+**Status column:** `OPEN` = not remediated in repository at review time; `FIXED` = remediated in code (regression verifier or static check when noted).
+
 ### High / should fix
 
-| Issue | Where | Notes |
-|--------|--------|--------|
-| **Stored / DOM XSS in webmail preview** | `js/webmail-compose.js` assigns `bodyEl.innerHTML = data.body_html` | Any HTML returned by the preview API is rendered unsanitized. Expected for webmail, but malicious inbound mail becomes active XSS in the admin UI. |
-| **DOM XSS in CMDB impact graph** | `js/itm-cmdb-impact-graph.js` builds `innerHTML` from `n.ci_type_icon`, `n.name`, `n.ci_type_name` without escaping | If CI names/icons are user-controlled, this is XSS on graph views. |
-| **Tenant error display toggle** | `config/config.php` + `ui_configuration.enable_all_error_reporting` | Per-employee setting can turn on `display_errors` globally for that user’s requests — leaks paths, queries, stack traces in production if mis-set. |
-| **`.env` not blocked in root `.htaccess`** | `.htaccess` at repo root | `.env` is gitignored but not denied at the web layer in code; misconfigured Apache could expose credentials. |
+| Issue | Where | Notes | Status |
+|--------|--------|--------|--------|
+| **Stored / DOM XSS in webmail preview** | `js/webmail-compose.js` assigns `bodyEl.innerHTML = data.body_html` | Any HTML returned by the preview API is rendered unsanitized. Expected for webmail, but malicious inbound mail becomes active XSS in the admin UI. | OPEN |
+| **DOM XSS in CMDB impact graph** | `js/itm-cmdb-impact-graph.js` builds `innerHTML` from `n.ci_type_icon`, `n.name`, `n.ci_type_name` without escaping | If CI names/icons are user-controlled, this is XSS on graph views. | OPEN |
+| **Tenant error display toggle** | `config/config.php` + `ui_configuration.enable_all_error_reporting` | Per-employee setting can turn on `display_errors` globally for that user’s requests — leaks paths, queries, stack traces in production if mis-set. | OPEN |
+| **`.env` not blocked in root `.htaccess`** | `.htaccess` at repo root | Root `.htaccess` now denies HTTP access via `<Files ".env">` + `Require all denied` (Apache 2.4) / `Deny from all` (2.2). Regression: `ITM-PENTEST-023` in `php scripts/verify_pentest_report.php`. | FIXED |
 
 ### Medium
 
-| Issue | Where | Notes |
-|--------|--------|--------|
-| **Free-tier API = unlimited + session** | `includes/itm_api_rate_limit.php` | Authenticated Free tier has no hourly cap; enables scraping/automation at session cost. By design in code, but operationally heavy. |
-| **Dynamic SQL still widespread** | Scaffold `index.php` (e.g. `modules/departments/index.php`) | Sort columns whitelisted; search uses `mysqli_real_escape_string` + `LIKE` — safer than raw input, but not prepared statements; FK search helpers add more dynamic SQL. |
-| **Runtime schema migration on config load** | `includes/ui_config.php` `itm_ensure_ui_configuration_table()` | First `itm_get_ui_configuration()` per request can run `SHOW TABLES/COLUMNS` and many `ALTER TABLE` paths — risky on large DBs and blurs DDL vs `db/migrations/`. |
-| **Vault session key derivation** | `includes/itm_vault_unlock.php` | `$_SESSION['vault_key'] = hash('sha256', $masterKey)` — deterministic from master key; session theft yields decrypt capability until lock. |
-| **Encryption IV** | `config/config.php` `itm_encrypt()` | Uses `openssl_random_pseudo_bytes` instead of `random_bytes()` (PHP 7.4 has both). |
-| **Dev session hijack tool** | `scripts/bypass_login.php` | CLI-only, admin-gated, but writes real `sess_*` with vault unlocked — dangerous if session files are readable on shared hosting. |
+| Issue | Where | Notes | Status |
+|--------|--------|--------|--------|
+| **Free-tier API = unlimited + session** | `includes/itm_api_rate_limit.php` | Authenticated Free tier has no hourly cap; enables scraping/automation at session cost. By design in code, but operationally heavy. | OPEN |
+| **Dynamic SQL still widespread** | Scaffold `index.php` (e.g. `modules/departments/index.php`) | Sort columns whitelisted; search uses `mysqli_real_escape_string` + `LIKE` — safer than raw input, but not prepared statements; FK search helpers add more dynamic SQL. | OPEN |
+| **Runtime schema migration on config load** | `includes/ui_config.php` `itm_ensure_ui_configuration_table()` | First `itm_get_ui_configuration()` per request can run `SHOW TABLES/COLUMNS` and many `ALTER TABLE` paths — risky on large DBs and blurs DDL vs `db/migrations/`. | OPEN |
+| **Vault session key derivation** | `includes/itm_vault_unlock.php` | `$_SESSION['vault_key'] = hash('sha256', $masterKey)` — deterministic from master key; session theft yields decrypt capability until lock. | OPEN |
+| **Encryption IV** | `config/config.php` `itm_encrypt()` | Uses `openssl_random_pseudo_bytes` instead of `random_bytes()` (PHP 7.4 has both). | OPEN |
+| **Dev session hijack tool** | `scripts/bypass_login.php` | CLI-only, admin-gated, but writes real `sess_*` with vault unlocked — dangerous if session files are readable on shared hosting. | OPEN |
 
 ### Low / design tradeoffs
 
@@ -180,7 +182,7 @@ The dominant engineering risk is **scale + duplication**: scaffold CRUD logic is
 
 1. **Sanitize or sandbox webmail HTML** — CSP sandbox iframe or strict server-side HTML cleaner before preview; don’t assign raw `body_html` to `innerHTML`.
 2. **Escape CMDB graph node fields** — use `textContent` or shared `escapeHtml` for `name`, `typeName`, icons in `itm-cmdb-impact-graph.js`.
-3. **Deny `.env` at web root** — Apache rule in root `.htaccess` (or vhost): deny dotfiles.
+3. ~~**Deny `.env` at web root**~~ — **FIXED:** root `.htaccess` `<Files ".env">` deny; regression `ITM-PENTEST-023` (`php scripts/verify_pentest_report.php`).
 4. **Split error reporting** — never tie `display_errors` to per-user UI config in production; keep logging-only toggle.
 5. **Reduce bootstrap weight** — lazy-require hotel/finance/distribution includes only from modules that need them.
 6. **Consolidate scaffold CRUD** — without going full MVC: shared `includes/crud_index_logic.php` included by thin `index.php` wrappers to stop 6-copy drift.
@@ -211,7 +213,7 @@ Open in a **new browser tab** (Admin session unless noted):
 
 ## Bottom line
 
-The codebase shows **mature security thinking** in the shared layer (auth, CSRF, module access, explorer, webhook SSRF, upload policies). The main gaps found in **application JS** (webmail preview, CMDB graph) and **operational toggles** (display_errors via UI config, `.env` web exposure) are fixable without architectural rewrites.
+The codebase shows **mature security thinking** in the shared layer (auth, CSRF, module access, explorer, webhook SSRF, upload policies). The main gaps found in **application JS** (webmail preview, CMDB graph) and **operational toggles** (display_errors via UI config) are fixable without architectural rewrites. Root `.env` HTTP deny is **FIXED** in repository `.htaccess` (`ITM-PENTEST-023`).
 
 The largest structural risk is **maintaining ~270 near-copy modules and a monolithic bootstrap** — future bugs will likely come from **inconsistent copies**, not from missing security primitives in `config.php`.
 
