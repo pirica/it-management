@@ -398,6 +398,26 @@ if (!function_exists('itm_env_vars_audit_is_sensitive_env_name')) {
     }
 }
 
+if (!function_exists('itm_env_vars_audit_format_live_env_value_display')) {
+    /**
+     * Live `.env` column — never echo real values (only presence).
+     *
+     * @param string|null $value null = key absent in live file
+     */
+    function itm_env_vars_audit_format_live_env_value_display($value)
+    {
+        if ($value === null) {
+            return '—';
+        }
+
+        if ($value === '') {
+            return '(empty)';
+        }
+
+        return '(Not Empty)';
+    }
+}
+
 if (!function_exists('itm_env_vars_audit_format_env_value_display')) {
     /**
      * Safe display for audit tables — masks secrets; never echo raw passwords/keys in browser.
@@ -430,7 +450,7 @@ if (!function_exists('itm_env_vars_audit_format_env_value_display')) {
 
 if (!function_exists('itm_env_vars_audit_compare_env_files')) {
     /**
-     * Row-by-row compare of live `.env` vs `.env.example` (values masked for secrets).
+     * Row-by-row compare of live `.env` vs `.env.example` (live values never shown in output).
      *
      * @param string $root
      * @return array<string,mixed>
@@ -490,9 +510,9 @@ if (!function_exists('itm_env_vars_audit_compare_env_files')) {
                 'in_example' => $inExample,
                 'in_live' => $inLive,
                 'example_value' => $exampleValue,
-                'live_value' => $liveValue,
+                'live_nonempty' => $inLive && $liveValue !== '',
                 'example_display' => itm_env_vars_audit_format_env_value_display($name, $exampleValue),
-                'live_display' => itm_env_vars_audit_format_env_value_display($name, $liveValue),
+                'live_display' => itm_env_vars_audit_format_live_env_value_display($liveValue),
                 'status' => $status,
             ];
         }

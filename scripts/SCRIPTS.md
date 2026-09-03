@@ -1535,7 +1535,7 @@ php scripts/check_env_vars_in_use.php
 php scripts/check_env_vars_in_use.php --strict   # fail on example-only or undocumented app keys
 ```
 
-Scans PHP (`getenv`, `$_ENV`, `foreach ([…] as $x) { getenv($x) }` alias lists), Python (`os.environ`), and shell (`${VAR}`) under the repo (excludes `vendor/`, `phpunit/coverage/`, `qa-reports/`). Browser report includes an HTML table comparing live `.env` vs `.env.example` (passwords/keys shown as length only). Shared lib: `scripts/lib/itm_env_vars_audit.php`. JSON: `--json` / `?json=1` (includes `env_compare` rows).
+Scans PHP (`getenv`, `$_ENV`, `foreach ([…] as $x) { getenv($x) }` alias lists), Python (`os.environ`), and shell (`${VAR}`) under the repo (excludes `vendor/`, `phpunit/coverage/`, `qa-reports/`). Browser report includes an HTML table comparing live `.env` vs `.env.example` (live column: `(Not Empty)` / `(empty)` only; example column may show template values with secrets as length). Shared lib: `scripts/lib/itm_env_vars_audit.php`. JSON: `--json` / `?json=1` (includes `env_compare` rows; no raw `live_value`).
 
 **UI action emoji (NO MIXED):** after any change to buttons, links, form actions, modals, or page headings (`<h1>`–`<h3>`), run:
 
