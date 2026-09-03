@@ -117,6 +117,7 @@ Module-specific JSON/import endpoints are documented in `scripts/api.php` and pe
 - `db/` tenant replicas must resolve FK seeds by `company_id` + business key, not assumed shared auto-increment ids. [Cursor-Fixed]
 - **Auto-scaffold pollution:** `SHOW TABLES` / MBQA may create stub `modules/{table}/` dirs — use `itm_module_dir_is_standard_crud_scaffold()` to detect; `list_active_and_checkboxes` skips stubs and bespoke slugs from `docs/list_bespoke_UI.txt`. [Cursor-Valid]
 - **Directory listing / uploads:** Every repo folder needs `index.html`; upload trees need `itm_ensure_upload_directory()` policies (`upload`, `deny_http`, `deny_all`) — see `AGENTS.md` and `scripts/AGENT_NOTES.md`.
+- **Root `.env` HTTP deny:** Repository root `.htaccess` must include `<Files ".env">` with `Require all denied` (and Apache 2.2 `Deny from all` fallback) so misconfigured docroots cannot serve credentials; regression `ITM-PENTEST-023` in `php scripts/verify_pentest_report.php`.
 
 ---
 

@@ -30,7 +30,7 @@ On Dunebox (Windows), use `MYSQL_PORT=3307` and the full PHP 7.4.33 binary path 
 
 ## Penetration test report
 
-Canonical assessment: `docs/report.md` (findings ITM-PENTEST-001–022).
+Canonical assessment: `docs/report.md` (findings ITM-PENTEST-001–023).
 
 Regression verifier:
 
@@ -97,6 +97,8 @@ define('MAILERLITE_API_KEY', $itm_mailerlite_api_key);
 The application reads optional settings from a project-root `.env` file (see `itm_load_dotenv_file()` in `config/config.php`) and from the process environment. Database credentials are loaded into `DB_HOST`, `DB_PORT` (default `3306` when empty), `DB_USER`, `DB_PASS`, and `DB_NAME`, then used by `itm_mysqli_connect()`.
 
 Copy `.env.example` to `.env` and set database keys there (do not commit `.env`). `DB_CONNECTION` is not used.
+
+Root `.htaccess` denies HTTP access to `.env` (`<Files ".env">` + `Require all denied`) when the repository is under the web docroot — regression `ITM-PENTEST-023` in `php scripts/verify_pentest_report.php`.
 
 **Security-related variables:**
 

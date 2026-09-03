@@ -47,7 +47,7 @@ The IT Management System is a large procedural PHP application (~2,643 PHP files
 3. **Manual source review** — authentication, approval workflows, encryption key derivation, upload validation, public join/share tokens, webhook signature verification, security headers, error-handling defaults.
 4. **Cross-reference** — prior internal notes (`docs/security_assessment_report.md`) and Explorer profile-photo regressions (`verify_explorer_profile_photo_acl.php`, `verify_user_config_profile.php`) verified against current code; stale/theoretical items re-validated or excluded.
 5. **Safe proof-of-concept** — logical PoCs derived from code (token forgery formulas, header absence, config flags); no live exploitation or data modification.
-6. **Regression verifier** — `php scripts/verify_pentest_report.php` (static line-level checks for ITM-PENTEST-001–022; PHPUnit: `--filter PentestReport`). Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator session).
+6. **Regression verifier** — `php scripts/verify_pentest_report.php` (static line-level checks for ITM-PENTEST-001–023; PHPUnit: `--filter PentestReport`). Browser: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator session).
 
 ---
 
@@ -655,6 +655,21 @@ define('MAILERLITE_API_KEY', $itm_mailerlite_api_key);
 **Affected Component:** Hotel booking  
 **Affected File:** `includes/itm_hotel_booking.php`  
 **Evidence:** `itm_hotel_booking_normalize_cancellation_policy_url()` rejects extensions other than `html`, `htm`, `txt` and blocks `..` sequences (lines 1588–1593).
+
+---
+
+### ITM-PENTEST-023 Root `.htaccess` denies HTTP access to `.env`
+
+**Date updated:** 2026-09-03  
+**Verification:** **Remediated** — expect **`[PASS]`** in `php scripts/verify_pentest_report.php`. Root `.htaccess` blocks direct HTTP reads of project-root `.env` via `<Files ".env">` with `Require all denied` (Apache 2.4+) and `Deny from all` fallback (2.2). `.env` remains gitignored; this rule hardens misconfigured docroots that map the repository root.
+
+**Severity:** Medium (deployment hygiene)  
+**OWASP Category:** A02:2021 — Cryptographic Failures / sensitive data exposure  
+**Affected Component:** Web server configuration  
+**Affected File:** `.htaccess` (repository root)  
+**Evidence:** `itm_load_dotenv_file()` in `config/config.php` reads `.env` from disk; without the Files block, Apache could serve credentials when the app alias points at the repo root.
+
+**Recommendation:** Keep `.env` outside the public docroot on production when possible; retain the `.htaccess` deny as defence-in-depth when `.env` lives under the served tree.
 
 ---
 
