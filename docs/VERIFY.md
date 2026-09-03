@@ -1,6 +1,8 @@
 ## Scope
 
-Code-only review of the IT Management System (~2,660 PHP files, ~270 module folders, 248 `CREATE TABLE` entries in `db/01_schema.sql`). No documentation, PHPUnit, or `scripts/verify_*` suites were used as evidence.
+Code-only review of the IT Management System (~2,660 PHP files, ~270 module folders, 248 `CREATE TABLE` entries in `db/01_schema.sql`). The **original register** below used static reading of PHP/JS/SQL only — no PHPUnit or `scripts/verify_*` suites as evidence.
+
+**Follow-up code verification (2026-09-03):** each **Status** row in **Security findings (code-based)** was re-checked against the current repository (static source read). `.env` HTTP deny was also checked via `php scripts/verify_pentest_report.php` (`ITM-PENTEST-023`) and optional `curl http://localhost/it-management/.env` → **403** when Apache honors root `.htaccess`. See **Code verification audit (2026-09-03)** below.
 
 ---
 
@@ -115,6 +117,58 @@ The dominant engineering risk is **scale + duplication**: scaffold CRUD logic is
 
 ---
 
+## Code verification audit (2026-09-03)
+
+Static re-read of sources on `origin/master` after the **Status** column and `.env` **FIXED** update. **Verdict** confirms whether the register **Status** still matches code. Regression: [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Administrator session) → `[PASS] ITM-PENTEST-023`.
+
+**Summary:** all register **Status** values match the codebase. Three **High** items remain **OPEN** (webmail XSS, CMDB graph XSS, per-user `display_errors`). One **High** item is **FIXED** (root `.env` HTTP deny). Six **Medium** items remain **OPEN** (by design or structural tradeoff).
+
+### High / should fix — verification
+
+| Issue | Status | Code evidence | Verdict |
+|--------|--------|---------------|---------|
+| **Stored / DOM XSS in webmail preview** | OPEN | `js/webmail-compose.js` line 142: `bodyEl.innerHTML = data.body_html` (from/to use `textContent`; body is raw HTML). | **Confirmed OPEN** |
+| **DOM XSS in CMDB impact graph** | OPEN | `js/itm-cmdb-impact-graph.js` lines 119–122: `icon`, `name`, `typeName` concatenated into `innerHTML` without escaping. | **Confirmed OPEN** |
+| **Tenant error display toggle** | OPEN | `config/config.php` lines 649–653: when `enable_all_error_reporting === 1`, sets `display_errors` to `1` and logs to `error_log.txt`. Default `0` in `itm_ui_config_defaults()`. | **Confirmed OPEN** (default off; mis-set UI flag still risky) |
+| **`.env` not blocked in root `.htaccess`** | FIXED | Root `.htaccess`: `<Files ".env">` + `Require all denied` / `Deny from all`; [verify_pentest_report.php](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) `ITM-PENTEST-023`. | **Confirmed FIXED** |
+
+### Medium — verification
+
+| Issue | Status | Code evidence | Verdict |
+|--------|--------|---------------|---------|
+| **Free-tier API = unlimited + session** | OPEN | `includes/itm_api_rate_limit.php`: `itm_api_tier_is_unlimited('Free')`; session resolve on Free tier. | **Confirmed OPEN** (by design) |
+| **Dynamic SQL still widespread** | OPEN | e.g. `modules/departments/index.php` lines 814–821: `mysqli_real_escape_string` + `LIKE` on whitelisted columns. | **Confirmed OPEN** |
+| **Runtime schema migration on config load** | OPEN | `includes/ui_config.php` `itm_ensure_ui_configuration_table()` (~1652): `SHOW TABLES`, `CREATE TABLE IF NOT EXISTS`, per-column `ALTER TABLE` on first load (request-static cache after success). | **Confirmed OPEN** |
+| **Vault session key derivation** | OPEN | `includes/itm_vault_unlock.php` line 64: `$_SESSION['vault_key'] = hash('sha256', $masterKey)`. | **Confirmed OPEN** (documented tradeoff) |
+| **Encryption IV** | OPEN | `config/config.php` `itm_encrypt()` line 2454: `openssl_random_pseudo_bytes` for IV. | **Confirmed OPEN** |
+| **Dev session hijack tool** | OPEN | `scripts/bypass_login.php`: CLI-only exit for non-CLI; `itm_is_admin()` required (~line 79); writes real `sess_*` with vault unlocked. | **Confirmed OPEN** (dev tool; risky if session files readable) |
+
+### Low / design tradeoffs — spot-check
+
+| Item | Verdict |
+|------|---------|
+| CSP `unsafe-inline` | **Confirmed** — `includes/itm_security_headers.php` lines 114–115. |
+| Legacy MD5/SHA1 login | **Confirmed** — `login.php` lines 173–174 before bcrypt rehash. |
+| `APP_ENV` not driving errors | **Confirmed** — `config/config.php` line 97 constant `'production'`; errors driven by `enable_all_error_reporting`. |
+| Guest portal sets `$_SESSION['company_id']` | **Confirmed** — `booking/auth/login.php` line 28. |
+
+### Positive patterns — spot-check
+
+| Claim | Verdict |
+|-------|---------|
+| `modules/select_options_api.php` whitelist + RBAC + CSRF | **Confirmed** — `so_require_valid_csrf_token()`, `itm_require_crud_role_module_permission(..., 'create', ...)`. |
+| `modules/visitors_access_log/index.php` field whitelist + today guard | **Confirmed** — `$allowedFields`, `val_is_today()`, `company_id` on queries. |
+| `modules/companies/view.php` admin-only | **Confirmed** — `itm_is_admin()` at line 10. |
+| `modules/private_contacts/view.php` `employee_id` scope | **Confirmed** — `WHERE id = ? AND employee_id = ?`. |
+| No `include($_GET…)` in application PHP | **Confirmed** — no matches in `*.php`. |
+| `js/chatbot.js` escapes before `innerHTML` | **Confirmed** — `escapeHtml()` then markdown replace. |
+
+### Frontend table cross-check
+
+Matches **Frontend (sampled)** above: webmail and CMDB graph remain **risk**; chatbot and appointment use escaping.
+
+---
+
 ## Multi-tenancy & IDOR (sampled from code)
 
 **Good:** Most scaffold `view.php` files use `WHERE id = ? AND company_id = ?` (e.g. bookmarks, equipment-style modules).
@@ -217,4 +271,4 @@ The codebase shows **mature security thinking** in the shared layer (auth, CSRF,
 
 The largest structural risk is **maintaining ~270 near-copy modules and a monolithic bootstrap** — future bugs will likely come from **inconsistent copies**, not from missing security primitives in `config.php`.
 
-I did not run the application or tests for this review; findings are from static reading of PHP/JS/SQL sources only. If you want a follow-up, I can deep-dive a single area (e.g. only IDOR across all `view.php`, or only `modules/equipment/` + IDF sync) with the same code-only method.
+The **original register** did not run the application or automated suites. The **2026-09-03 verification pass** re-read sources statically and ran [verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) for `ITM-PENTEST-023` (optional HTTP `.env` probe → 403). For a deeper follow-up, scope a single area (e.g. IDOR across all `view.php`, or `modules/equipment/` + IDF sync) with the same method.
