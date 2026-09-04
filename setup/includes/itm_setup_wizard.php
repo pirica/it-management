@@ -32,7 +32,7 @@ if (!function_exists('itm_setup_wizard_steps')) {
             4 => ['slug' => 'extensions', 'title' => 'PHP extensions', 'subtitle' => 'Runtime and optional PHPUnit extensions'],
             5 => ['slug' => 'settings', 'title' => 'Environment settings', 'subtitle' => 'Development vs production profile'],
             6 => ['slug' => 'admin', 'title' => 'Administrator', 'subtitle' => 'Create or secure the primary admin account'],
-            7 => ['slug' => 'sample_data', 'title' => 'Sample data', 'subtitle' => 'Optional demo rows for company 1'],
+            7 => ['slug' => 'sample_data', 'title' => 'Sample data', 'subtitle' => 'Optional demo rows per company'],
             8 => ['slug' => 'finish', 'title' => 'Finish', 'subtitle' => 'Lock installer and remove setup entry point'],
         ];
     }
@@ -473,9 +473,33 @@ if (!function_exists('itm_setup_wizard_localhost_port_status_rows')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_detect_open_mysql_loopback_port')) {
+    /**
+     * Return the sole open MySQL loopback port, or 3306 when both are open; null when neither is open.
+     */
+    function itm_setup_wizard_detect_open_mysql_loopback_port(): ?int
+    {
+        $host = '127.0.0.1';
+        $open3306 = itm_setup_wizard_probe_localhost_port($host, 3306) === 'open';
+        $open3307 = itm_setup_wizard_probe_localhost_port($host, 3307) === 'open';
+
+        if ($open3306 && !$open3307) {
+            return 3306;
+        }
+        if ($open3307 && !$open3306) {
+            return 3307;
+        }
+        if ($open3306 && $open3307) {
+            return 3306;
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('itm_setup_wizard_default_db_port')) {
     /**
-     * Suggest MySQL port for step 1 / step 3 defaults (session and .env win over TCP probe).
+     * Suggest MySQL port for step 1 / step 3 defaults (saved session values win; open loopback probe beats .env).
      */
     function itm_setup_wizard_default_db_port(?int $sessionPort = null, array $envFile = [], ?int $step1MysqlPort = null): int
     {
@@ -486,26 +510,17 @@ if (!function_exists('itm_setup_wizard_default_db_port')) {
             return $step1MysqlPort;
         }
 
+        $openPort = itm_setup_wizard_detect_open_mysql_loopback_port();
+        if ($openPort !== null) {
+            return $openPort;
+        }
+
         $envPort = getenv('DB_PORT');
         if ($envPort !== false && $envPort !== '') {
             return max(1, (int)$envPort);
         }
         if (!empty($envFile['DB_PORT'])) {
             return max(1, (int)$envFile['DB_PORT']);
-        }
-
-        // Why: Dunebox MySQL listens on 3307; Laragon/CI often use 3306.
-        $host = '127.0.0.1';
-        $open3307 = itm_setup_wizard_probe_localhost_port($host, 3307) === 'open';
-        $open3306 = itm_setup_wizard_probe_localhost_port($host, 3306) === 'open';
-        if ($open3307 && !$open3306) {
-            return 3307;
-        }
-        if ($open3306 && !$open3307) {
-            return 3306;
-        }
-        if ($open3307) {
-            return 3307;
         }
 
         return 3306;
@@ -2324,6 +2339,34 @@ if (!function_exists('itm_setup_wizard_save_admin')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_list_seed_companies')) {
+    /**
+     * @return array<int, array{id:int,name:string}>
+     */
+    function itm_setup_wizard_list_seed_companies(mysqli $conn): array
+    {
+        $rows = [];
+        $sql = 'SELECT id, company FROM companies WHERE active = 1 AND deleted_at IS NULL ORDER BY id ASC';
+        $result = mysqli_query($conn, $sql);
+        if (!$result) {
+            return $rows;
+        }
+
+        while ($row = mysqli_fetch_assoc($result)) {
+            $id = (int)($row['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $rows[] = [
+                'id' => $id,
+                'name' => trim((string)($row['company'] ?? '')),
+            ];
+        }
+
+        return $rows;
+    }
+}
+
 if (!function_exists('itm_setup_wizard_install_sample_data')) {
     /**
      * @return array{ok:bool,message:string,detail:string}
@@ -2347,6 +2390,74 @@ if (!function_exists('itm_setup_wizard_install_sample_data')) {
             'ok' => true,
             'message' => 'Sample data installed for company ' . $companyId,
             'detail' => $seeded . ' table(s) seeded',
+        ];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_install_sample_data_for_companies')) {
+    /**
+     * @param array<int, int|string> $companyIds
+     * @return array{ok:bool,message:string,detail:string}
+     */
+    function itm_setup_wizard_install_sample_data_for_companies(mysqli $conn, array $companyIds): array
+    {
+        $normalized = [];
+        foreach ($companyIds as $rawId) {
+            $id = (int)$rawId;
+            if ($id > 0) {
+                $normalized[$id] = $id;
+            }
+        }
+        $normalized = array_values($normalized);
+        if ($normalized === []) {
+            return ['ok' => false, 'message' => 'Select at least one company', 'detail' => ''];
+        }
+
+        $successes = [];
+        $failures = [];
+        $totalTables = 0;
+        $lastSuccessMessage = '';
+        $lastSuccessDetail = '';
+        foreach ($normalized as $companyId) {
+            $seed = itm_setup_wizard_install_sample_data($conn, $companyId);
+            if (!$seed['ok']) {
+                $failures[] = 'Company ' . $companyId . ': ' . $seed['message'];
+                continue;
+            }
+
+            $successes[] = (int)$companyId;
+            $lastSuccessMessage = (string)$seed['message'];
+            $lastSuccessDetail = (string)$seed['detail'];
+            if (preg_match('/(\d+)\s+table\(s\)\s+seeded/i', $lastSuccessDetail, $matches)) {
+                $totalTables += (int)$matches[1];
+            }
+        }
+
+        if ($successes === []) {
+            return [
+                'ok' => false,
+                'message' => implode('; ', $failures),
+                'detail' => '',
+            ];
+        }
+
+        if (count($successes) === 1) {
+            return [
+                'ok' => true,
+                'message' => $lastSuccessMessage,
+                'detail' => $lastSuccessDetail,
+            ];
+        }
+
+        $message = 'Sample data installed for companies ' . implode(', ', $successes);
+        if ($failures !== []) {
+            $message .= ' — partial failures: ' . implode('; ', $failures);
+        }
+
+        return [
+            'ok' => true,
+            'message' => $message,
+            'detail' => $totalTables . ' table seed pass(es) across ' . count($successes) . ' companies',
         ];
     }
 }

@@ -38,17 +38,58 @@ if (itm_setup_wizard_is_safe_database_name('bad-name')) {
     setup_db_pass('Unsafe database names are rejected');
 }
 
-$defaultFromEnv = itm_setup_wizard_default_db_port(null, ['DB_PORT' => '3307']);
-if ($defaultFromEnv !== 3307) {
-    setup_db_fail('default_db_port must use .env DB_PORT when session port unset');
+$detectedOpenMysql = itm_setup_wizard_detect_open_mysql_loopback_port();
+if ($detectedOpenMysql !== null) {
+    $conflictingEnvPort = $detectedOpenMysql === 3306 ? '3307' : '3306';
+    $defaultFromProbe = itm_setup_wizard_default_db_port(null, ['DB_PORT' => $conflictingEnvPort]);
+    if ($defaultFromProbe !== $detectedOpenMysql) {
+        setup_db_fail('default_db_port must prefer open loopback probe over conflicting .env DB_PORT');
+    } else {
+        setup_db_pass('default_db_port prefers open loopback probe over .env');
+    }
 } else {
-    setup_db_pass('default_db_port honours .env DB_PORT');
+    $defaultFromEnv = itm_setup_wizard_default_db_port(null, ['DB_PORT' => '3307']);
+    if ($defaultFromEnv !== 3307) {
+        setup_db_fail('default_db_port must use .env DB_PORT when no loopback listener is open');
+    } else {
+        setup_db_pass('default_db_port honours .env DB_PORT when probe finds no open listener');
+    }
 }
 
 if (itm_setup_wizard_default_db_port(3308) !== 3308) {
     setup_db_fail('default_db_port must prefer explicit session port');
 } else {
     setup_db_pass('default_db_port prefers session port');
+}
+
+$host = getenv('DB_HOST') ?: '127.0.0.1';
+$port = (int)(getenv('DB_PORT') ?: '3306');
+$user = getenv('DB_USER') ?: 'root';
+$pass = getenv('DB_PASS') ?: 'itmanagement';
+$dbName = getenv('DB_NAME') ?: 'itmanagement';
+$listConn = @mysqli_connect($host, $user, $pass, $dbName, $port);
+if (!$listConn) {
+    fwrite(STDOUT, '[SKIP] Sample company list test skipped — MySQL unavailable.' . PHP_EOL);
+} else {
+    $emptyBatch = itm_setup_wizard_install_sample_data_for_companies($listConn, []);
+    if ($emptyBatch['ok']) {
+        setup_db_fail('install_sample_data_for_companies must reject empty company selection');
+    } else {
+        setup_db_pass('install_sample_data_for_companies rejects empty selection');
+    }
+
+    $companyRows = itm_setup_wizard_list_seed_companies($listConn);
+    if ($companyRows === []) {
+        setup_db_fail('list_seed_companies must return active companies after schema import');
+    } else {
+        $firstId = (int)($companyRows[0]['id'] ?? 0);
+        if ($firstId < 1 || trim((string)($companyRows[0]['name'] ?? '')) === '') {
+            setup_db_fail('list_seed_companies rows must include id and company name');
+        } else {
+            setup_db_pass('list_seed_companies returns active company rows');
+        }
+    }
+    mysqli_close($listConn);
 }
 
 $rewritten = itm_setup_wizard_rewrite_sql_for_database("USE `itmanagement`;\n", 'itmanagement3');
@@ -63,11 +104,6 @@ if (strpos(itm_setup_wizard_rewrite_sql_for_database('USE `itmanagement`;', 'itm
 } else {
     setup_db_pass('SQL rewrite is a no-op for canonical database name');
 }
-
-$host = getenv('DB_HOST') ?: '127.0.0.1';
-$port = (int)(getenv('DB_PORT') ?: '3306');
-$user = getenv('DB_USER') ?: 'root';
-$pass = getenv('DB_PASS') ?: 'itmanagement';
 
 $semicolonDropSample = '';
 $triggersPath = ROOT_PATH . 'db/03_triggers.sql';

@@ -68,7 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($appUrl === '/') {
             $appUrl = itm_setup_wizard_detect_paths()['base_url'];
         }
-        $mysqlPort = max(1, min(65535, (int)($_POST['mysql_port'] ?? 3306)));
+        $mysqlPort = max(1, min(65535, (int)($_POST['mysql_port'] ?? itm_setup_wizard_default_db_port(
+            null,
+            itm_setup_wizard_read_env_file()
+        ))));
         $successMessage = $rootCheck['message'] !== ''
             ? $rootCheck['message']
             : 'Install folder confirmed.';
@@ -357,8 +360,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ' . BASE_URL . 'setup/index.php?step=3');
             exit;
         }
-        $companyId = max(1, (int)($_POST['sample_company_id'] ?? 1));
-        $seed = itm_setup_wizard_install_sample_data($connSample, $companyId);
+        $companyIds = [];
+        if (isset($_POST['sample_company_ids']) && is_array($_POST['sample_company_ids'])) {
+            foreach ($_POST['sample_company_ids'] as $rawCompanyId) {
+                $companyId = (int)$rawCompanyId;
+                if ($companyId > 0) {
+                    $companyIds[] = $companyId;
+                }
+            }
+        }
+        if ($companyIds === []) {
+            itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => 'Select at least one company for sample data.']]);
+            header('Location: ' . BASE_URL . 'setup/index.php?step=7');
+            exit;
+        }
+        $seed = itm_setup_wizard_install_sample_data_for_companies($connSample, $companyIds);
         if ($seed['ok']) {
             $envWrite = itm_setup_wizard_persist_env_from_state();
             if (!$envWrite['ok']) {
@@ -369,6 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             itm_setup_wizard_mark_step_done(7);
             itm_setup_wizard_set_step(8);
             itm_setup_wizard_state_set([
+                'sample_company_ids' => $companyIds,
                 'flash' => [
                     'type' => 'success',
                     'message' => $seed['message'] . ($seed['detail'] !== '' ? ' — ' . $seed['detail'] : '') . ' — ' . $envWrite['message'],
@@ -377,7 +394,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ' . BASE_URL . 'setup/index.php?step=8');
             exit;
         }
-        itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $seed['message'] . ($seed['detail'] !== '' ? ' — ' . $seed['detail'] : '')]]);
+        itm_setup_wizard_state_set([
+            'sample_company_ids' => $companyIds,
+            'flash' => ['type' => 'error', 'message' => $seed['message'] . ($seed['detail'] !== '' ? ' — ' . $seed['detail'] : '')],
+        ]);
         header('Location: ' . BASE_URL . 'setup/index.php?step=7');
         exit;
     }
@@ -419,7 +439,9 @@ $dbPort = itm_setup_wizard_default_db_port(
     $envFile,
     $step1MysqlPort
 );
-$step1MysqlPortValue = $step1MysqlPort !== null && $step1MysqlPort > 0 ? $step1MysqlPort : $dbPort;
+$step1MysqlPortValue = $step1MysqlPort !== null && $step1MysqlPort > 0
+    ? $step1MysqlPort
+    : itm_setup_wizard_default_db_port(null, $envFile);
 $dbUser = (string)($dbDefaults['user'] ?? 'root');
 $dbPass = (string)($dbDefaults['pass'] ?? '');
 $dbName = (string)($dbDefaults['name'] ?? 'itmanagement');
@@ -444,6 +466,26 @@ $folderProbe = isset($state['folder_probe']) && is_array($state['folder_probe'])
 $folderNeedsReplaceConfirm = !empty($folderProbe['needs_replace_confirm']);
 $setupLoginUrl = rtrim(BASE_URL, '/') . '/login.php';
 $setupProdHardeningUrl = rtrim(BASE_URL, '/') . '/scripts/check_prod_hardening.php?run=1&enforce=1';
+$sampleCompanyOptions = [];
+$sampleCompanyDefaultIds = [1];
+if (isset($state['sample_company_ids']) && is_array($state['sample_company_ids'])) {
+    $sampleCompanyDefaultIds = [];
+    foreach ($state['sample_company_ids'] as $rawCompanyId) {
+        $companyId = (int)$rawCompanyId;
+        if ($companyId > 0) {
+            $sampleCompanyDefaultIds[] = $companyId;
+        }
+    }
+    if ($sampleCompanyDefaultIds === []) {
+        $sampleCompanyDefaultIds = [1];
+    }
+}
+if ($currentStep === 7) {
+    $connSampleList = itm_setup_wizard_reload_connection();
+    if ($connSampleList instanceof mysqli) {
+        $sampleCompanyOptions = itm_setup_wizard_list_seed_companies($connSampleList);
+    }
+}
 $csrfToken = itm_get_csrf_token();
 
 header('Content-Type: text/html; charset=utf-8');
@@ -506,6 +548,9 @@ header('Content-Type: text/html; charset=utf-8');
         .setup-step1-localhost-ports .sub { margin-bottom: 8px; }
         .setup-step1-localhost-ports table { margin-top: 0; }
         .setup-step1-port-legend { color: var(--muted); font-size: .9rem; }
+        .setup-sample-companies { margin-top: 8px; }
+        .setup-sample-companies .itm-checkbox-control { display: block; margin: 8px 0; font-weight: normal; }
+        .setup-sample-company-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
         .setup-project-root-row { display:flex; gap:8px; align-items:stretch; }
         .setup-project-root-row input[type=text] { flex:1; margin:0; }
         .setup-project-root-row .btn { flex:0 0 auto; min-width:48px; }
@@ -792,13 +837,33 @@ header('Content-Type: text/html; charset=utf-8');
 
             <?php elseif ($currentStep === 7): ?>
                 <h2>7. Sample data (optional)</h2>
-                <p>Install demo rows from <code>db/02_data_sample.sql</code> for company 1 (TechCorp). Safe to skip for production. Continuing writes <code>.env</code> with database and environment settings from earlier steps.</p>
-                <form method="post">
+                <p>Install demo rows from <code>db/02_data_sample.sql</code> for one or more seed companies. Safe to skip for production. Continuing writes <code>.env</code> with database and environment settings from earlier steps.</p>
+                <form method="post" id="setup-step7-sample-form">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step7_install">
                     <input type="hidden" name="step" value="7">
-                    <label for="sample_company_id">Company ID</label>
-                    <input type="number" id="sample_company_id" name="sample_company_id" value="1" min="1">
+                    <label>Companies</label>
+                    <div class="setup-sample-company-toolbar">
+                        <button type="button" class="btn btn-sm" id="setup-sample-select-all">Select All</button>
+                        <button type="button" class="btn btn-sm" id="setup-sample-unselect-all" style="display:none;">Unselect All</button>
+                    </div>
+                    <div class="setup-sample-companies" id="setup-sample-companies">
+                        <?php if ($sampleCompanyOptions === []): ?>
+                            <p class="sub">No active companies found — complete database import on step 3 first.</p>
+                            <label class="itm-checkbox-control">
+                                <input type="checkbox" name="sample_company_ids[]" value="1" <?php echo in_array(1, $sampleCompanyDefaultIds, true) ? 'checked' : ''; ?>>
+                                <span>1 — TechCorp Global (fallback)</span>
+                            </label>
+                        <?php else: ?>
+                            <?php foreach ($sampleCompanyOptions as $companyRow): ?>
+                                <?php $companyOptionId = (int)($companyRow['id'] ?? 0); ?>
+                                <label class="itm-checkbox-control">
+                                    <input type="checkbox" name="sample_company_ids[]" value="<?php echo $companyOptionId; ?>" <?php echo in_array($companyOptionId, $sampleCompanyDefaultIds, true) ? 'checked' : ''; ?>>
+                                    <span><?php echo (int)$companyOptionId; ?> — <?php echo itm_setup_wizard_h((string)($companyRow['name'] ?? '')); ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
                     <div class="actions">
                         <a class="btn" href="?step=6" title="Back">◀️</a>
                         <button class="btn btn-primary" type="submit" title="Install sample data">Install sample data</button>
@@ -985,6 +1050,54 @@ header('Content-Type: text/html; charset=utf-8');
             confirmField.value = '1';
         }
     });
+})();
+</script>
+<?php elseif ($currentStep === 7): ?>
+<script>
+(function () {
+    var container = document.getElementById('setup-sample-companies');
+    var selectAllBtn = document.getElementById('setup-sample-select-all');
+    var unselectAllBtn = document.getElementById('setup-sample-unselect-all');
+    if (!container || !selectAllBtn || !unselectAllBtn) {
+        return;
+    }
+
+    function companyCheckboxes() {
+        return container.querySelectorAll('input[type="checkbox"][name="sample_company_ids[]"]');
+    }
+
+    function refreshToolbar() {
+        var boxes = companyCheckboxes();
+        var checkedCount = 0;
+        boxes.forEach(function (box) {
+            if (box.checked) {
+                checkedCount++;
+            }
+        });
+        var allChecked = boxes.length > 0 && checkedCount === boxes.length;
+        selectAllBtn.style.display = allChecked ? 'none' : '';
+        unselectAllBtn.style.display = allChecked ? '' : 'none';
+    }
+
+    selectAllBtn.addEventListener('click', function () {
+        companyCheckboxes().forEach(function (box) {
+            box.checked = true;
+        });
+        refreshToolbar();
+    });
+
+    unselectAllBtn.addEventListener('click', function () {
+        companyCheckboxes().forEach(function (box) {
+            box.checked = false;
+        });
+        refreshToolbar();
+    });
+
+    companyCheckboxes().forEach(function (box) {
+        box.addEventListener('change', refreshToolbar);
+    });
+
+    refreshToolbar();
 })();
 </script>
 <?php endif; ?>
