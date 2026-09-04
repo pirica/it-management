@@ -21,11 +21,18 @@ if (!function_exists('itm_run_tests_browser_coverage_ensure_qa_dir')) {
 }
 
 if (!function_exists('itm_run_tests_browser_coverage_spawn_cli_job')) {
-    function itm_run_tests_browser_coverage_spawn_cli_job(string $phpBin, bool $skipDb, string $rootPath): bool
+    function itm_run_tests_browser_coverage_spawn_cli_job(string $phpBin, bool $skipDb, string $rootPath, string $filter = ''): bool
     {
         itm_run_tests_browser_coverage_ensure_qa_dir();
         $logFile = itm_run_tests_browser_coverage_log_path();
         $started = gmdate('Y-m-d H:i:s') . ' UTC';
+        $filter = function_exists('itm_run_tests_normalize_browser_filter')
+            ? itm_run_tests_normalize_browser_filter($filter)
+            : trim($filter);
+        $filterArgs = '';
+        if ($filter !== '') {
+            $filterArgs = ' --filter ' . escapeshellarg($filter);
+        }
         file_put_contents(
             $logFile,
             "=== ITM browser coverage job started {$started} ===\n",
@@ -41,7 +48,7 @@ if (!function_exists('itm_run_tests_browser_coverage_spawn_cli_job')) {
             $line = 'set ITM_SKIP_DB_TESTS=' . $skipFlag
                 . '&& ' . escapeshellarg($phpBin)
                 . ' ' . escapeshellarg($runner)
-                . ' --coverage >> ' . $logEsc . ' 2>&1';
+                . ' --coverage' . $filterArgs . ' >> ' . $logEsc . ' 2>&1';
             $cmd = 'cmd /C start "" /B ' . $line;
             $handle = @popen($cmd, 'r');
             if ($handle === false) {
@@ -55,7 +62,7 @@ if (!function_exists('itm_run_tests_browser_coverage_spawn_cli_job')) {
         $env = 'ITM_SKIP_DB_TESTS=' . $skipFlag;
         $cmd = $env . ' ' . escapeshellarg($phpBin)
             . ' ' . escapeshellarg($runner)
-            . ' --coverage >> ' . escapeshellarg($logFile) . ' 2>&1 &';
+            . ' --coverage' . $filterArgs . ' >> ' . escapeshellarg($logFile) . ' 2>&1 &';
         exec($cmd);
 
         return true;
@@ -107,13 +114,17 @@ if (!function_exists('itm_run_tests_browser_coverage_job_likely_running')) {
 }
 
 if (!function_exists('itm_run_tests_browser_coverage_render_intro_page')) {
-    function itm_run_tests_browser_coverage_render_intro_page(bool $skipDb, string $phpBin): void
+    function itm_run_tests_browser_coverage_render_intro_page(bool $skipDb, string $phpBin, string $filter = ''): void
     {
         require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
         itm_script_output_begin('PHPUnit HTML coverage (background)');
 
         $skipQ = $skipDb ? '&skip_db=1' : '';
-        $startUrl = 'run_tests.php?run=1&mode=coverage&coverage_start=1' . $skipQ;
+        $filter = function_exists('itm_run_tests_normalize_browser_filter')
+            ? itm_run_tests_normalize_browser_filter($filter)
+            : trim($filter);
+        $filterQ = ($filter !== '') ? '&filter=' . rawurlencode($filter) : '';
+        $startUrl = 'run_tests.php?run=1&mode=coverage&coverage_start=1' . $skipQ . $filterQ;
         $jobUrl = 'run_tests.php?coverage_job=1';
 
         echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
@@ -121,6 +132,9 @@ if (!function_exists('itm_run_tests_browser_coverage_render_intro_page')) {
         echo '<p><a href="run_tests.php">← Choose another run mode</a></p>';
         echo '<p>Running <strong>~800 tests</strong> with <strong>Xdebug coverage</strong> inside Apache often triggers <strong>Gateway Timeout</strong> (504) after 60–120 seconds. ';
         echo 'The suite can take <strong>several minutes</strong> in coverage mode.</p>';
+        if ($filter !== '') {
+            echo '<p>Filter: <code>' . htmlspecialchars($filter, ENT_QUOTES, 'UTF-8') . '</code> (PHPUnit <code>--filter</code>)</p>';
+        }
         echo '<p>Start a <strong>detached CLI job</strong> (same as <code>php scripts/run_tests.php --coverage</code>) and monitor the log below. ';
         echo 'CLI PHP: <code>' . htmlspecialchars($phpBin, ENT_QUOTES, 'UTF-8') . '</code></p>';
         echo '<p><a class="btn btn-primary" href="' . htmlspecialchars($startUrl, ENT_QUOTES, 'UTF-8') . '" style="display:inline-block;padding:10px 16px;font-weight:600;">Start background coverage run</a> ';

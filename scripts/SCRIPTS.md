@@ -749,6 +749,8 @@ Central runner for the suite under `phpunit/tests/Unit/` using `phpunit/phpunit.
 
 **CLI Argument Forwarding:** Additional command-line arguments (such as `--filter <pattern>` or single test files) are automatically forwarded to the underlying PHPUnit CLI binary, enabling targeted test executions directly through the runner script. Example: `php scripts/run_tests.php --filter CompanyModuleAccessDiscoveryTest`.
 
+**Browser filter:** optional `filter` query param (or the menu text field) maps to PHPUnit `--filter` — same pattern as CLI. Example: [run_tests.php?run=1&mode=standard&skip_db=1&filter=CsrfPostGuard](http://localhost/it-management/scripts/run_tests.php?run=1&mode=standard&skip_db=1&filter=CsrfPostGuard) (Administrator session). HTML coverage background jobs honour `filter` on the intro/start URL as well.
+
 **Scaffolding cleanup:** Auto-scaffolding during PHPUnit (for example `CompanyModuleAccessDiscoveryTest` with `enable_auto_scaffolding`) must not leave probe folders under `modules/`. Tests call `itm_sidebar_discovery_probe_cleanup()` for the probe slug (`mbqa_phpunit_sidebar_probe`), which drops the probe table, registry rows, and recursively removes `modules/{slug}/`. Do **not** use blanket `git clean -fd modules/` — that can delete unrelated uncommitted module work.
 
 **PHP extensions (mandatory — every run):** PHPUnit 9 exits immediately unless the **CLI** `php.exe` subprocess loads **all** of:
@@ -776,6 +778,7 @@ Expect **mbstring** plus **xdebug** (or **pcov**) before running **HTML coverage
 
 **Browser gateway timeout (504):** do **not** run the full Xdebug suite inside Apache. `run=1&mode=coverage` shows a **Start background coverage run** page that spawns `php scripts/run_tests.php --coverage` detached and tracks **`qa-reports/run_tests_browser_coverage.log`**. Monitor at `scripts/run_tests.php?coverage_job=1`. **Standard** browser mode still streams output inline (~25s); use CLI if that times out too.
 | **Skip DB tests** | Checkbox **Skip database tests** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` |
+| **PHPUnit filter** | Optional **PHPUnit filter** text field (or `filter=` query param) | `php scripts/run_tests.php --filter TotpTest` |
 
 **Coverage report:** after a successful HTML coverage run, open **`phpunit/coverage/html/coverage.html`** (PHPUnit writes `index.html`; `run_tests.php` renames it to `coverage.html`). The browser menu and post-run output link to this path when the file exists.
 
@@ -788,6 +791,8 @@ Expect **mbstring** plus **xdebug** (or **pcov**) before running **HTML coverage
 | HTML coverage | `scripts/run_tests.php?run=1&mode=coverage` (intro → background job) |
 | Coverage job log | `scripts/run_tests.php?coverage_job=1` |
 | Skip DB + coverage | `scripts/run_tests.php?run=1&mode=coverage&skip_db=1` |
+| Filtered standard run | `scripts/run_tests.php?run=1&mode=standard&skip_db=1&filter=CsrfPostGuard` |
+| Filtered coverage intro | `scripts/run_tests.php?run=1&mode=coverage&skip_db=1&filter=ApiV2` |
 
 **Coverage driver:** `run_tests.php` resolves a **CLI** `php.exe` via `itm_resolve_phpunit_cli_binary()` (`includes/itm_cli_binary.php` — honours `.env` **`PHP_EXE`**, Dunebox default under **`D:\dunebox-v1.0.6`**, then Laragon portable `bin/php/php-7.4.33-…/php.exe`). It checks that subprocess for Xdebug/PCOV before `--coverage-html`. Stock Dunebox PHP has no `php.ini` (no **mbstring** / Xdebug) until you run:
 
