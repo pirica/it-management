@@ -260,6 +260,7 @@ if (!function_exists('itm_setup_wizard_step1_preview_config')) {
     {
         $runtime = itm_setup_wizard_detected_project_root();
         $parent = dirname($runtime);
+        $baseUrl = defined('BASE_URL') ? rtrim((string)BASE_URL, '/') . '/' : '';
 
         return [
             'runtimeRoot' => itm_setup_wizard_preview_project_root_path($runtime),
@@ -267,6 +268,8 @@ if (!function_exists('itm_setup_wizard_step1_preview_config')) {
             'parentCollapsed' => itm_setup_wizard_collapse_path_token($parent),
             'baseName' => basename($runtime),
             'baseCollapsed' => itm_setup_wizard_collapse_path_token(basename($runtime)),
+            'runtimeBaseName' => basename($runtime),
+            'baseUrl' => $baseUrl,
             'documentRoot' => itm_setup_wizard_preview_project_root_path((string)($_SERVER['DOCUMENT_ROOT'] ?? '')),
         ];
     }

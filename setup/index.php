@@ -382,7 +382,7 @@ header('Content-Type: text/html; charset=utf-8');
                     <table>
                         <tr><th>Auto-detect</th><td><code id="setup-auto-detect-path"><?php echo sanitize($projectRootPreview); ?></code></td></tr>
                         <tr><th>Document root</th><td><code id="setup-document-root-path"><?php echo sanitize($paths['document_root'] !== '' ? $paths['document_root'] : '(not detected)'); ?></code></td></tr>
-                        <tr><th>Detected BASE_URL</th><td><code><?php echo sanitize($paths['base_url']); ?></code></td></tr>
+                        <tr><th>Detected BASE_URL</th><td><code id="setup-detected-base-url"><?php echo sanitize($paths['base_url']); ?></code></td></tr>
                         <tr><th>Docroot aligned</th><td id="setup-docroot-aligned"><?php echo $paths['docroot_aligned'] === 'yes' ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
                     </table>
                     <label for="itm_app_url">Public application URL (ITM_APP_URL)</label>
@@ -599,6 +599,8 @@ header('Content-Type: text/html; charset=utf-8');
     var input = document.getElementById('project_root');
     var preview = document.getElementById('setup-auto-detect-path');
     var aligned = document.getElementById('setup-docroot-aligned');
+    var appUrlInput = document.getElementById('itm_app_url');
+    var detectedBaseUrl = document.getElementById('setup-detected-base-url');
     if (!input || !preview) {
         return;
     }
@@ -664,9 +666,65 @@ header('Content-Type: text/html; charset=utf-8');
         return drive + ':\\' + rest;
     }
 
+    function basenameFromPath(path) {
+        var normalized = String(path || '').replace(/\\/g, '/').replace(/\/+$/, '');
+        if (!normalized) {
+            return '';
+        }
+        var parts = normalized.split('/');
+        return parts[parts.length - 1] || '';
+    }
+
+    function ensureTrailingSlash(url) {
+        return String(url || '').replace(/\/?$/, '/');
+    }
+
+    function deriveAppUrl(repairedPath) {
+        var baseUrl = String(cfg.baseUrl || '');
+        var runtimeBase = String(cfg.runtimeBaseName || cfg.baseName || '');
+        var newBase = basenameFromPath(repairedPath);
+        if (!baseUrl || !newBase) {
+            return baseUrl;
+        }
+        if (!runtimeBase || newBase === runtimeBase) {
+            return ensureTrailingSlash(baseUrl);
+        }
+        try {
+            var parsed = new URL(baseUrl);
+            var path = parsed.pathname || '/';
+            var escaped = runtimeBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            var pattern = new RegExp('(^|/)' + escaped + '(?=/|$)');
+            if (pattern.test(path)) {
+                parsed.pathname = path.replace(pattern, '$1' + newBase);
+            } else {
+                var segments = path.split('/').filter(Boolean);
+                if (segments.length === 0) {
+                    parsed.pathname = '/' + newBase + '/';
+                } else {
+                    segments[segments.length - 1] = newBase;
+                    parsed.pathname = '/' + segments.join('/') + '/';
+                }
+            }
+            return ensureTrailingSlash(parsed.toString());
+        } catch (e) {
+            var idx = baseUrl.lastIndexOf(runtimeBase);
+            if (idx !== -1) {
+                return ensureTrailingSlash(baseUrl.slice(0, idx) + newBase + baseUrl.slice(idx + runtimeBase.length));
+            }
+            return ensureTrailingSlash(baseUrl);
+        }
+    }
+
     function updatePreview() {
         var repaired = repairWindowsPath(input.value);
         preview.textContent = repaired || '—';
+        var nextAppUrl = deriveAppUrl(repaired);
+        if (appUrlInput && nextAppUrl) {
+            appUrlInput.value = nextAppUrl;
+        }
+        if (detectedBaseUrl && nextAppUrl) {
+            detectedBaseUrl.textContent = nextAppUrl;
+        }
         if (aligned && cfg.documentRoot) {
             var docRoot = String(cfg.documentRoot).replace(/\\/g, '/').replace(/\/$/, '');
             var project = String(repaired).replace(/\\/g, '/');
