@@ -1806,7 +1806,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="check_create_post_prepared_statements.php" target="_blank" rel="nofollow noreferrer">check_create_post_prepared_statements.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Static inventory of <code>modules/*/create.php</code> POST save SQL: flags <code>escape_sql()</code>, flattened CRUD <code>$sqlValues</code> string INSERT/UPDATE, bespoke string saves, and <code>mysqli_prepare</code> handlers. Default informational; <code>--strict</code> fails when legacy paths remain. Complements <code>check_sql_injection_coverage.php</code>.</td>
+                    <td>Static inventory of <code>modules/*/create.php</code> POST save SQL: flags <code>escape_sql()</code>, flattened CRUD <code>$sqlValues</code> string INSERT/UPDATE, bespoke string saves, and <code>mysqli_prepare</code> / OOP <code>$conn-&gt;prepare</code> handlers. Default collapses scaffold listings; <code>--list-scaffold</code>, <code>--verbose</code>, <code>--json</code>. Default informational; <code>--strict</code> fails when legacy paths remain. Complements <code>check_sql_injection_coverage.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
