@@ -6,8 +6,8 @@
 $crud_table = 'ticket_surveys';
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
-
-itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
+// Why: Single RBAC chokepoint for POST delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, 'delete', $crud_table);
 
 $listUrl = dirname($_SERVER['PHP_SELF']) . '/index.php';
 

@@ -375,6 +375,7 @@ require_once ROOT_PATH . 'includes/itm_software_license_link.php';
 require_once ROOT_PATH . 'includes/itm_totp_helpers.php';
 require_once ROOT_PATH . 'includes/itm_vault_unlock.php';
 require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
+require_once ROOT_PATH . 'includes/itm_crud_mutation_bootstrap.php';
 require_once ROOT_PATH . 'includes/itm_company_session.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 require_once ROOT_PATH . 'includes/itm_ticket_activity.php';

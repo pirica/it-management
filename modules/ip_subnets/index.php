@@ -19,6 +19,9 @@ if (!in_array($ipSubnetsTab, ['subnets', 'profiles', 'staging'], true)) {
 ?>
 <?php
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once __DIR__ . '/../../includes/ipam_crud_hooks.php';
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {

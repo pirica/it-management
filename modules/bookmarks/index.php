@@ -5,6 +5,9 @@ $crud_title = 'Bookmarks';
 $crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require './helpers.php';
 require './bkm_vault_bootstrap.php';
 

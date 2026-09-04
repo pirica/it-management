@@ -5,7 +5,9 @@ $crud_action = 'delete';
 ?>
 <?php
 require '../../config/config.php';
-itm_require_crud_role_module_permission($conn, 'delete', 'suppliers');
+// Why: Single RBAC chokepoint for POST create/edit/delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
@@ -279,9 +281,11 @@ if ($crud_action === 'delete') {
         if (function_exists('itm_crud_append_not_deleted_predicate')) {
             $where = itm_crud_append_not_deleted_predicate($where);
         }
-        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+        $deleteSql = function_exists('itm_crud_soft_delete_sql_for_module')
+        ? itm_crud_soft_delete_sql_for_module($conn, $crud_table, $where, (int)($_SESSION['employee_id'] ?? 0), $crud_table)
+        : (function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where));
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             header('Location: ' . $listUrl);
@@ -309,9 +313,11 @@ if ($crud_action === 'delete') {
             if ($hasCompany && $company_id > 0) {
                 $where .= ' AND company_id=' . (int)$company_id;
             }
-            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+            $deleteSql = function_exists('itm_crud_soft_delete_sql_for_module')
+        ? itm_crud_soft_delete_sql_for_module($conn, $crud_table, $where, (int)($_SESSION['employee_id'] ?? 0), $crud_table)
+        : (function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where));
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             }
@@ -335,9 +341,11 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+        $deleteSql = function_exists('itm_crud_soft_delete_sql_for_module')
+        ? itm_crud_soft_delete_sql_for_module($conn, $crud_table, $where, (int)($_SESSION['employee_id'] ?? 0), $crud_table) . ''
+        : (function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1'));
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             header('Location: ' . $listUrl);

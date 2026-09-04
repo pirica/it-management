@@ -4,6 +4,8 @@
  */
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
+// Why: Single RBAC chokepoint for POST delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, 'delete', 'emails');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     header('Location: index.php?tab=send_logs');

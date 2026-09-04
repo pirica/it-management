@@ -3,6 +3,9 @@
  * Per-hotel special rate discounts for the public booking portal (programs + code fields).
  */
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 
 $company_id = (int) ($_SESSION['company_id'] ?? 0);
 $employee_id = (int) ($_SESSION['employee_id'] ?? 0);

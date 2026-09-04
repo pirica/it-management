@@ -11,6 +11,9 @@ $crud_title = 'Companies';
 $crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 if (!itm_is_admin($conn, $_SESSION['employee_id'] ?? 0)) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;

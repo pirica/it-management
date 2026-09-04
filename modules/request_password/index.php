@@ -12,6 +12,9 @@ if (!isset($crud_action)) {
 
 
 require_once '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once '../../includes/itm_crud_fk_label_search.php';
 
 // WHY: Enforce RBAC permissions for the request_password module.

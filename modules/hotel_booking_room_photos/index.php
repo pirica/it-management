@@ -5,6 +5,9 @@ $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once '../../includes/itm_hotel_booking.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
 itm_require_crud_role_module_permission($conn, 'view', 'hotel_booking_room_photos');

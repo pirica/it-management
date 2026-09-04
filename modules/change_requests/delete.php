@@ -3,6 +3,9 @@
  * Change Requests — soft delete.
  */
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');

@@ -5,7 +5,9 @@ $crud_action = 'edit';
 ?>
 <?php
 require '../../config/config.php';
-itm_require_crud_role_module_permission($conn, 'edit', 'note_labels');
+// Why: Single RBAC chokepoint for POST create/edit/delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 $logged_user_id = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 
 

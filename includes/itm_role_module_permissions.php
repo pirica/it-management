@@ -383,6 +383,16 @@ if (!function_exists('itm_resolve_rbac_module_name_for_slug')) {
     }
 }
 
+if (!function_exists('itm_crud_enforce_mutation_access')) {
+    /**
+     * Canonical RBAC chokepoint for flattened CRUD POST mutations (create / edit / delete).
+     */
+    function itm_crud_enforce_mutation_access($conn, $crudAction, $moduleSlug): void
+    {
+        itm_require_crud_role_module_permission($conn, $crudAction, $moduleSlug);
+    }
+}
+
 if (!function_exists('itm_require_crud_role_module_permission')) {
     /**
      * Enforce role_module_permissions for flattened CRUD mutations (create/edit/delete/import/export).

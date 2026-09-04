@@ -4,6 +4,9 @@
  */
 
 require_once "../../config/config.php";
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once ROOT_PATH . "includes/notes_visibility.php";
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require_once __DIR__ . '/notes_vault_bootstrap.php';
@@ -183,7 +186,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     itm_require_post_csrf();
 
     if ($crud_action === 'delete') {
-        itm_require_crud_role_module_permission($conn, 'delete', 'notes');
         $bulkAction = (string)($_POST['bulk_action'] ?? '');
         $visSql = itm_notes_visibility_sql();
 

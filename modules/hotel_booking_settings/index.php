@@ -1,5 +1,8 @@
 <?php
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once ROOT_PATH . 'includes/itm_stripe_checkout.php';
 
 $company_id = (int) ($_SESSION['company_id'] ?? 0);

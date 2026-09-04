@@ -7,6 +7,9 @@
  */
 
 require_once '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 itm_crud_record_share_handle_ajax_request($conn, 'ops_report');
 
@@ -891,8 +894,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_delete_row'])) {
 }
 
 if ($crud_action === 'delete') {
-    // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
     itm_require_post_csrf();
     $id = (int)($_POST['id'] ?? 0);

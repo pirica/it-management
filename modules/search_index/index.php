@@ -21,6 +21,9 @@ $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once '../../includes/itm_crud_fk_label_search.php';
 $pk = 'id';
 
@@ -484,8 +487,6 @@ if ($crud_action === 'delete') {
         exit('Method not allowed.');
     }
 
-    // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
     cr_require_valid_csrf_token();
 
@@ -626,8 +627,6 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
-    // Why: Server-side RBAC before CSRF persistence (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, $crud_action, $crud_table);
     cr_require_valid_csrf_token();
 
     foreach ($fieldColumns as $col) {
