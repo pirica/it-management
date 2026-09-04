@@ -2,7 +2,7 @@
 
 Living register of **still-valid** items migrated from the retired GitHub Wiki page `TO-DO-3.md` (removed during the wiki sync — scratchpad retirement, not “all fixed”). For penetration-test status use [`docs/report.md`](report.md) and [`verify_pentest_report.php?run=1`](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Admin session). For product/feature gaps use [`docs/PRODUCT_GAPS_AND_MISSING.md`](PRODUCT_GAPS_AND_MISSING.md).
 
-**Last validated against codebase:** 2026-09-03 (env drift audit synced below).
+**Last validated against codebase:** 2026-09-04 (PHPUnit pure-logic item #10 closed).
 
 **Environment drift audit:** [check_env_vars_in_use.php?run=1](http://localhost/it-management/scripts/check_env_vars_in_use.php?run=1) (Admin session) — re-run after changing `.env.example` or `getenv()` reads. Canonical catalog: [`docs/ENV.md`](ENV.md).
 
@@ -162,11 +162,32 @@ Default run is **informational** (exit `0`). `php scripts/check_env_vars_in_use.
 
 ### 10. Grow PHPUnit (pure-logic coverage)
 
-**Status:** **Partial**
+**Status:** **Done**
 
-**Problem:** Heavy regression lives in `scripts/verify_*.php` (often needs Apache + MySQL). Many PHPUnit tests exist today, but CSRF validation, SQL parser helpers, `itm_encrypt` round-trip, and path normalizers are still primarily script-tested.
+**Problem:** Heavy regression lives in `scripts/verify_*.php` (often needs Apache + MySQL). Selected helpers (CSRF POST guard, audit SQL parser, `itm_encrypt` round-trip, Explorer path normalizers, ZIP slip guard) were script-tested only.
 
 **Acceptance:** Move selected pure-logic checks into `phpunit/tests/Unit/` so `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` covers them in seconds without MySQL.
+
+**Shipped (2026-09-04):**
+
+| Area | PHPUnit class | Notes |
+|------|---------------|--------|
+| CSRF POST guard | `phpunit/tests/Unit/Security/CsrfPostGuardTest.php` | `itm_try_post_csrf()`, cookie params |
+| Encrypt round-trip | `phpunit/tests/Unit/Security/ItmEncryptDecryptTest.php` | `itm_encrypt()` / `itm_decrypt()` |
+| Explorer paths | `phpunit/tests/Unit/Includes/ExplorerNormalizePathTest.php` | `explorer_normalize_relative_path()`, extension allowlist |
+| ZIP slip | `phpunit/tests/Unit/Security/ExplorerZipSlipTest.php` | `explorer_extract_zip_safely()` |
+| Audit SQL parser | `phpunit/tests/Unit/Includes/AuditSqlParserTest.php` | `itm_parse_audit_sql()` |
+| SQL CSV/tuple split | `phpunit/tests/Unit/CRUD/CRUDunittest.php` | extended `itm_split_sql_csv()` / tuple edge cases |
+
+**Regression (no MySQL):**
+
+```bash
+ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php --filter 'CsrfPostGuard|ItmEncryptDecrypt|ExplorerNormalize|ExplorerZipSlip|AuditSqlParser|CRUDUnittest'
+```
+
+Browser filter on the same runner: [run_tests.php?run=1&mode=standard&skip_db=1&filter=CsrfPostGuard](http://localhost/it-management/scripts/run_tests.php?run=1&mode=standard&skip_db=1&filter=CsrfPostGuard) (Administrator session). See **`scripts/SCRIPTS.md` → PHPUnit test runner**.
+
+**Follow-up (optional):** migrate additional `verify_*` pure-logic probes as new backlog items — this ticket scoped the helpers named in the original problem only.
 
 ---
 
