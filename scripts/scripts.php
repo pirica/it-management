@@ -3409,6 +3409,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static audit for CRUD mutation RBAC chokepoint on in-scope <code>modules/*/index.php</code> routers and standalone <code>create.php</code> / <code>edit.php</code> / <code>delete.php</code>. Exit <code>1</code> when guards are missing.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Codebase setup">
+                    <td><a href="verify_setup_wizard_project_root.php" target="_blank" rel="nofollow noreferrer">verify_setup_wizard_project_root.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Regression for setup wizard project-root repair: collapsed Windows session paths, step 1 confirmed root vs PHP runtime fallback, step 2 upload subdirectory resolution (<code>setup/includes/itm_setup_wizard.php</code>).</td>
+                    <td class="scripts-catalog-how-stub">CLI: <code>php scripts/verify_setup_wizard_project_root.php</code></td>
+                </tr>
                 <tr data-tags="Codebase">
                     <td><a href="check_prod_hardening.php" target="_blank" rel="nofollow noreferrer">check_prod_hardening.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
