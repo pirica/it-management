@@ -107,16 +107,16 @@ Default run is **informational** (exit `0`). `php scripts/check_env_vars_in_use.
 
 ### 5. Production go-live checklist as code
 
-**Status:** **Open**
+**Status:** **Done** (script + catalog; **not** wired to `.github/workflows/smoke.yml` — manual pre-deploy gate)
 
 **Problem:** Dev affordances (`scripts/bypass_login.php`, seed `Admin`/`Admin` password, `ITM_SCRIPT_NO_AUTH` allowlist) have no technical guard preventing accidental production exposure.
 
 **Touch points:**
 
-- New: `scripts/check_prod_hardening.php` — fail when `bypass_login.php` is web-reachable in prod mode, seed admin still uses default password, `display_errors` on, or `error_log.txt` under web root
-- Wire into `.github/workflows/smoke.yml` (optional prod profile) or document as pre-deploy gate in `handoff.md`
+- [check_prod_hardening.php?run=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1) — fail when `APP_ENV=production` and `bypass_login.php` is web-reachable, seed admin/demo still uses default password, `display_errors` / `enable_all_error_reporting` on, `error_log.txt` under web root, or dev bypass env flags are set
+- Pre-deploy gate documented in `handoff.md` (optional CI smoke wiring deferred)
 
-**Acceptance:** Script exit `1` on unsafe prod posture; catalog entry in `scripts/scripts.php` + `scripts/SCRIPTS.md`.
+**Acceptance:** Script exit `1` on unsafe prod posture with `--enforce` or production profile; catalog in `scripts/scripts.php` + `scripts/SCRIPTS.md`.
 
 ---
 

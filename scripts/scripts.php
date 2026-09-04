@@ -3410,6 +3410,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
+                    <td><a href="check_prod_hardening.php" target="_blank" rel="nofollow noreferrer">check_prod_hardening.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Pre-deploy production hardening gate — seed passwords, browser error reporting, web-root <code>error_log.txt</code>, dev env bypass flags, no-auth allowlists, and HTTP reachability of <code>bypass_login.php</code>. Enforces when <code>APP_ENV=production</code>; development prints <code>[WARN]</code> unless <code>--enforce</code>. Not part of CI smoke.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Codebase">
                     <td><a href="apply_crud_rbac_guards.php" target="_blank" rel="nofollow noreferrer">apply_crud_rbac_guards.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
