@@ -5,10 +5,17 @@
 
 declare(strict_types=1);
 
+if (!function_exists('itm_setup_wizard_setup_directory')) {
+    function itm_setup_wizard_setup_directory(): string
+    {
+        return rtrim(itm_setup_wizard_project_root(), '/\\') . DIRECTORY_SEPARATOR . 'setup' . DIRECTORY_SEPARATOR;
+    }
+}
+
 if (!function_exists('itm_setup_wizard_lock_path')) {
     function itm_setup_wizard_lock_path(): string
     {
-        return rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . 'setup' . DIRECTORY_SEPARATOR . '.installed';
+        return itm_setup_wizard_setup_directory() . '.installed';
     }
 }
 
@@ -1451,8 +1458,8 @@ if (!function_exists('itm_setup_wizard_verify_files')) {
             }
         }
 
+        $envPath = itm_setup_wizard_env_file_path();
         $projectRoot = rtrim(itm_setup_wizard_project_root(), '/\\');
-        $envPath = $projectRoot . DIRECTORY_SEPARATOR . '.env';
         if (is_file($envPath) && !is_writable($envPath)) {
             $results[] = itm_setup_wizard_verify_row(
                 'fail',
@@ -2085,13 +2092,36 @@ if (!function_exists('itm_setup_wizard_extension_matrix')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_env_file_path')) {
+    /**
+     * Target install folder .env — matches step 2 verification (not necessarily the PHP runtime ROOT_PATH).
+     */
+    function itm_setup_wizard_env_file_path(): string
+    {
+        return rtrim(itm_setup_wizard_project_root(), '/\\') . DIRECTORY_SEPARATOR . '.env';
+    }
+}
+
+if (!function_exists('itm_setup_wizard_finish_login_url')) {
+    function itm_setup_wizard_finish_login_url(): string
+    {
+        $state = itm_setup_wizard_state();
+        $appUrl = trim((string)($state['itm_app_url'] ?? ''));
+        if ($appUrl !== '') {
+            return rtrim($appUrl, '/') . '/login.php?setup=done';
+        }
+
+        return rtrim((defined('BASE_URL') ? (string)BASE_URL : '/'), '/') . '/login.php?setup=done';
+    }
+}
+
 if (!function_exists('itm_setup_wizard_read_env_file')) {
     /**
      * @return array<string, string>
      */
     function itm_setup_wizard_read_env_file(): array
     {
-        $path = ROOT_PATH . '.env';
+        $path = itm_setup_wizard_env_file_path();
         $vars = [];
         if (!is_readable($path)) {
             return $vars;
@@ -2152,12 +2182,39 @@ if (!function_exists('itm_setup_wizard_write_env_file')) {
             $lines[] = $key . '=' . $value;
         }
 
-        $path = ROOT_PATH . '.env';
+        $path = itm_setup_wizard_env_file_path();
+        $projectRoot = rtrim(itm_setup_wizard_project_root(), '/\\');
+        if (!is_dir($projectRoot)) {
+            return [
+                'ok' => false,
+                'message' => 'Project root does not exist — cannot write .env: '
+                    . itm_setup_wizard_format_path_display($projectRoot),
+            ];
+        }
+        if (is_file($path) && !is_writable($path)) {
+            return [
+                'ok' => false,
+                'message' => '.env exists but is not writable: ' . itm_setup_wizard_format_path_display($path),
+            ];
+        }
+        if (!is_file($path) && !is_writable($projectRoot)) {
+            return [
+                'ok' => false,
+                'message' => 'Project root is not writable — cannot create .env: '
+                    . itm_setup_wizard_format_path_display($projectRoot),
+            ];
+        }
         if (file_put_contents($path, implode("\n", $lines) . "\n") === false) {
-            return ['ok' => false, 'message' => 'Could not write .env'];
+            return [
+                'ok' => false,
+                'message' => 'Could not write .env: ' . itm_setup_wizard_format_path_display($path),
+            ];
         }
 
-        return ['ok' => true, 'message' => 'Saved .env'];
+        return [
+            'ok' => true,
+            'message' => 'Saved .env at ' . itm_setup_wizard_format_path_display($path),
+        ];
     }
 }
 
@@ -2234,7 +2291,7 @@ if (!function_exists('itm_setup_wizard_connect_database')) {
             );
         }
 
-        itm_load_dotenv_file(ROOT_PATH . '.env');
+        itm_load_dotenv_file(itm_setup_wizard_env_file_path());
 
         return itm_mysqli_connect(
             getenv('DB_HOST') ?: DB_HOST,
@@ -2512,14 +2569,16 @@ if (!function_exists('itm_setup_wizard_remove_entrypoint')) {
     function itm_setup_wizard_remove_entrypoint(): array
     {
         $removed = [];
+        $setupDir = itm_setup_wizard_setup_directory();
         $targets = [
-            ROOT_PATH . 'setup/index.php',
-            ROOT_PATH . 'setup/includes/itm_setup_wizard.php',
+            $setupDir . 'index.php',
+            $setupDir . 'includes' . DIRECTORY_SEPARATOR . 'itm_setup_wizard.php',
         ];
 
         foreach ($targets as $path) {
             if (is_file($path) && @unlink($path)) {
-                $removed[] = str_replace(ROOT_PATH, '', $path);
+                $projectRoot = rtrim(itm_setup_wizard_project_root(), '/\\') . DIRECTORY_SEPARATOR;
+                $removed[] = str_replace($projectRoot, '', $path);
             }
         }
 
