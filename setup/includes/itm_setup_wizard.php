@@ -126,6 +126,104 @@ if (!function_exists('itm_setup_wizard_step_done')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_detected_project_root')) {
+    function itm_setup_wizard_detected_project_root(): string
+    {
+        return realpath(ROOT_PATH) ?: rtrim(ROOT_PATH, '/\\');
+    }
+}
+
+if (!function_exists('itm_setup_wizard_normalize_path_input')) {
+    function itm_setup_wizard_normalize_path_input(string $input): string
+    {
+        $input = trim($input);
+        if ($input === '') {
+            return '';
+        }
+
+        return rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $input), DIRECTORY_SEPARATOR);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_format_path_for_input')) {
+    function itm_setup_wizard_format_path_for_input(string $path): string
+    {
+        // Why: Windows installers expect drive-letter paths with backslashes in editable fields.
+        if (preg_match('/^[A-Za-z]:/', $path) || DIRECTORY_SEPARATOR === '\\') {
+            return str_replace('/', '\\', $path);
+        }
+
+        return str_replace('\\', '/', $path);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_validate_project_root_path')) {
+    /**
+     * @return array{ok:bool,path:string,message:string}
+     */
+    function itm_setup_wizard_validate_project_root_path(string $input): array
+    {
+        $normalized = itm_setup_wizard_normalize_path_input($input);
+        if ($normalized === '') {
+            return ['ok' => false, 'path' => '', 'message' => 'Project root is required.'];
+        }
+
+        $resolved = realpath($normalized);
+        if ($resolved === false || !is_dir($resolved)) {
+            return ['ok' => false, 'path' => $normalized, 'message' => 'Project root folder does not exist or is not readable.'];
+        }
+
+        $schemaPath = $resolved . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '01_schema.sql';
+        if (!is_readable($schemaPath)) {
+            return [
+                'ok' => false,
+                'path' => $resolved,
+                'message' => 'Folder must contain db/01_schema.sql (IT Management project root).',
+            ];
+        }
+
+        return ['ok' => true, 'path' => $resolved, 'message' => ''];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_project_root')) {
+    function itm_setup_wizard_project_root(): string
+    {
+        $state = itm_setup_wizard_state();
+        $saved = isset($state['project_root']) ? trim((string)$state['project_root']) : '';
+        if ($saved !== '') {
+            $validated = itm_setup_wizard_validate_project_root_path($saved);
+            if ($validated['ok']) {
+                return $validated['path'];
+            }
+        }
+
+        return itm_setup_wizard_detected_project_root();
+    }
+}
+
+if (!function_exists('itm_setup_wizard_project_root_input_value')) {
+    function itm_setup_wizard_project_root_input_value(): string
+    {
+        $state = itm_setup_wizard_state();
+        if (isset($state['project_root']) && trim((string)$state['project_root']) !== '') {
+            return itm_setup_wizard_format_path_for_input(trim((string)$state['project_root']));
+        }
+
+        return itm_setup_wizard_format_path_for_input(itm_setup_wizard_detected_project_root());
+    }
+}
+
+if (!function_exists('itm_setup_wizard_project_root_matches_runtime')) {
+    function itm_setup_wizard_project_root_matches_runtime(): bool
+    {
+        $runtime = str_replace('\\', '/', strtolower(itm_setup_wizard_detected_project_root()));
+        $chosen = str_replace('\\', '/', strtolower(itm_setup_wizard_project_root()));
+
+        return $runtime === $chosen;
+    }
+}
+
 if (!function_exists('itm_setup_wizard_detect_paths')) {
     /**
      * @return array<string, string>
@@ -133,15 +231,18 @@ if (!function_exists('itm_setup_wizard_detect_paths')) {
     function itm_setup_wizard_detect_paths(): array
     {
         $documentRoot = realpath($_SERVER['DOCUMENT_ROOT'] ?? '') ?: '';
-        $projectRoot = realpath(ROOT_PATH) ?: rtrim(ROOT_PATH, '/\\');
+        $detectedRoot = itm_setup_wizard_detected_project_root();
+        $projectRoot = itm_setup_wizard_project_root();
         $aligned = $documentRoot !== '' && $projectRoot !== '' && strpos($projectRoot, $documentRoot) === 0;
 
         return [
             'project_root' => $projectRoot,
+            'detected_project_root' => $detectedRoot,
             'document_root' => $documentRoot,
             'base_url' => defined('BASE_URL') ? (string)BASE_URL : '',
             'setup_url' => (defined('BASE_URL') ? (string)BASE_URL : '/') . 'setup/',
             'docroot_aligned' => $aligned ? 'yes' : 'no',
+            'project_root_matches_runtime' => itm_setup_wizard_project_root_matches_runtime() ? 'yes' : 'no',
         ];
     }
 }
@@ -152,10 +253,12 @@ if (!function_exists('itm_setup_wizard_required_db_files')) {
      */
     function itm_setup_wizard_required_db_files(): array
     {
+        $dbRoot = rtrim(itm_setup_wizard_project_root(), '/\\') . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR;
+
         return [
-            itm_database_sql_schema_path(),
-            itm_database_sql_data_path(),
-            itm_database_sql_triggers_path(),
+            $dbRoot . '01_schema.sql',
+            $dbRoot . '02_data.sql',
+            $dbRoot . '03_triggers.sql',
         ];
     }
 }
@@ -183,6 +286,13 @@ if (!function_exists('itm_setup_wizard_verify_files')) {
     function itm_setup_wizard_verify_files(): array
     {
         $results = [];
+
+        if (!itm_setup_wizard_project_root_matches_runtime()) {
+            $results[] = [
+                'level' => 'warn',
+                'message' => 'Confirmed project root differs from this PHP request path (' . itm_setup_wizard_detected_project_root() . ') — database bundle checks use the path from step 1.',
+            ];
+        }
 
         foreach (itm_setup_wizard_required_db_files() as $path) {
             if (!is_readable($path)) {

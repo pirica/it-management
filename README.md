@@ -341,6 +341,10 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 
 <h2 align="center">Installation</h2>
 
+<p align="center"><strong>Recommended:</strong> use the browser setup wizard at <a href="http://localhost/it-management/setup/index.php">setup/index.php</a> (no login). Step 1 lets you confirm or edit the <strong>project root</strong> path (on Windows use backslashes, e.g. <code>C:\laragon\www\it-management</code>), set the public URL, then the wizard verifies files, imports the <code>db/</code> bundle, scans PHP extensions, writes <code>.env</code>, rotates the seed Admin password, optionally installs sample data, and removes <code>setup/index.php</code> when finished. See <code>handoff.md</code> §5.1.1 for details.</p>
+
+<p align="center"><strong>Manual install</strong> (when the wizard is unavailable):</p>
+
 1. Extract the project files into your web root.
 2. Import the database: `bash scripts/verify_database_sql_import.sh` (wraps `import_database_split.sh`) or run the split import directly. Both honour **`MYSQL_PORT`** — default **3307** (Dunebox); use `MYSQL_PORT=3306` when MySQL listens on the standard port (for example Laragon). See `db/AGENT_NOTES.md`.
 3. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, and `DB_NAME` (Dunebox: **`DB_PORT=3307`**; Laragon / many local installs: **3306** — see `.env.example`). For local dev, add `ITM_DEV=1` and `APP_ENV=development` (see `docs/ENV.md`).
@@ -349,6 +353,8 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 6. Create a `backups/` directory for backup files.
 7. Create a `floor_plans/` directory for floor plan file uploads (company subfolders are created automatically).
 8. Open `http://localhost/it-management/` in your browser.
+
+<p align="center">Before production go-live, run <code>php scripts/check_prod_hardening.php</code> or <a href="http://localhost/it-management/scripts/check_prod_hardening.php?run=1">check_prod_hardening.php?run=1</a> (Admin session).</p>
 
 <h3 align="center">Inbound email → tickets (local Mailpit)</h3>
 
