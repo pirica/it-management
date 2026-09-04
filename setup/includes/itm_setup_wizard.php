@@ -389,6 +389,69 @@ if (!function_exists('itm_setup_wizard_docroot_aligned')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_probe_localhost_port')) {
+    /**
+     * Best-effort TCP probe for informational UI only (does not gate install steps).
+     *
+     * @return 'open'|'closed'|'unknown'
+     */
+    function itm_setup_wizard_probe_localhost_port(int $port, float $timeoutSeconds = 0.35): string
+    {
+        if ($port < 1 || $port > 65535) {
+            return 'unknown';
+        }
+
+        $errno = 0;
+        $errstr = '';
+        $socket = @fsockopen('127.0.0.1', $port, $errno, $errstr, $timeoutSeconds);
+        if (is_resource($socket)) {
+            fclose($socket);
+
+            return 'open';
+        }
+
+        if (in_array((int)$errno, [61, 111, 10061], true)) {
+            return 'closed';
+        }
+
+        return 'unknown';
+    }
+}
+
+if (!function_exists('itm_setup_wizard_localhost_port_status_label')) {
+    function itm_setup_wizard_localhost_port_status_label(string $status): string
+    {
+        switch ($status) {
+            case 'open':
+                return '🟢 Open';
+            case 'closed':
+                return '🔴 Closed';
+            default:
+                return '⭕ Unknown';
+        }
+    }
+}
+
+if (!function_exists('itm_setup_wizard_localhost_port_status_rows')) {
+    /**
+     * @return array<int, array{port:int,status:string,label:string}>
+     */
+    function itm_setup_wizard_localhost_port_status_rows(): array
+    {
+        $rows = [];
+        foreach ([80, 443] as $port) {
+            $status = itm_setup_wizard_probe_localhost_port((int)$port);
+            $rows[] = [
+                'port' => (int)$port,
+                'status' => $status,
+                'label' => itm_setup_wizard_localhost_port_status_label($status),
+            ];
+        }
+
+        return $rows;
+    }
+}
+
 if (!function_exists('itm_setup_wizard_derive_app_url_from_project_root')) {
     function itm_setup_wizard_derive_app_url_from_project_root(string $repairedPath): string
     {
