@@ -194,10 +194,19 @@ if ($mysqlEndpoints !== ['127.0.0.1:3306', '127.0.0.1:3307']) {
 }
 
 $defaultPort = itm_setup_wizard_default_db_port(null, ['DB_PORT' => '3307']);
-if ($defaultPort !== 3307) {
-    setup_root_fail('Default DB port must honour .env DB_PORT');
+$detectedOpenMysql = itm_setup_wizard_detect_open_mysql_loopback_port();
+if ($detectedOpenMysql !== null) {
+    $conflictingEnvPort = $detectedOpenMysql === 3306 ? '3307' : '3306';
+    $portFromProbe = itm_setup_wizard_default_db_port(null, ['DB_PORT' => $conflictingEnvPort]);
+    if ($portFromProbe !== $detectedOpenMysql) {
+        setup_root_fail('Default DB port must prefer open loopback MySQL probe over conflicting .env DB_PORT');
+    } else {
+        setup_root_pass('Default DB port prefers open loopback probe over .env');
+    }
+} elseif ($defaultPort !== 3307) {
+    setup_root_fail('Default DB port must honour .env DB_PORT when no loopback listener is open');
 } else {
-    setup_root_pass('Default DB port reads .env DB_PORT');
+    setup_root_pass('Default DB port reads .env DB_PORT when probe finds no open listener');
 }
 
 $refused = itm_setup_wizard_format_database_connection_error('127.0.0.1', 3306, 'No connection could be made because the target machine actively refused it');
