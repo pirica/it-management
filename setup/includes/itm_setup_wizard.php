@@ -129,6 +129,10 @@ if (!function_exists('itm_setup_wizard_step_done')) {
 if (!function_exists('itm_setup_wizard_detected_project_root')) {
     function itm_setup_wizard_detected_project_root(): string
     {
+        if (defined('ITM_SETUP_WIZARD_TEST_DETECTED_ROOT')) {
+            return (string)ITM_SETUP_WIZARD_TEST_DETECTED_ROOT;
+        }
+
         return realpath(ROOT_PATH) ?: rtrim(ROOT_PATH, '/\\');
     }
 }
@@ -137,6 +141,30 @@ if (!function_exists('itm_setup_wizard_collapse_path_token')) {
     function itm_setup_wizard_collapse_path_token(string $value): string
     {
         return strtolower(preg_replace('/[^a-z0-9]/', '', $value));
+    }
+}
+
+if (!function_exists('itm_setup_wizard_path_dirname')) {
+    function itm_setup_wizard_path_dirname(string $path): string
+    {
+        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path)) {
+            $parent = dirname(str_replace('\\', '/', $path));
+
+            return str_replace('/', '\\', $parent);
+        }
+
+        return dirname($path);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_path_basename')) {
+    function itm_setup_wizard_path_basename(string $path): string
+    {
+        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path)) {
+            return basename(str_replace('\\', '/', $path));
+        }
+
+        return basename($path);
     }
 }
 
@@ -172,8 +200,8 @@ if (!function_exists('itm_setup_wizard_repair_windows_path_input')) {
             return $detected;
         }
 
-        $detectedParent = dirname($detected);
-        $detectedBase = basename($detected);
+        $detectedParent = itm_setup_wizard_path_dirname($detected);
+        $detectedBase = itm_setup_wizard_path_basename($detected);
         $parentCollapsed = itm_setup_wizard_collapse_path_token($detectedParent);
         $baseCollapsed = itm_setup_wizard_collapse_path_token($detectedBase);
         $detectedTail = preg_replace('/^[A-Za-z]:[\\\\\\/]?/', '', $detected);
@@ -216,6 +244,8 @@ if (!function_exists('itm_setup_wizard_normalize_path_input')) {
         }
 
         $input = itm_setup_wizard_repair_windows_path_input($input);
+
+        $input = preg_replace('#^\.[\\\\/]+#', '', $input) ?? $input;
 
         return rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $input), DIRECTORY_SEPARATOR);
     }
@@ -454,6 +484,7 @@ if (!function_exists('itm_setup_wizard_step1_preview_payload')) {
             itm_setup_wizard_state_set([
                 'project_root' => $repaired,
                 'itm_app_url' => $appUrl,
+                'file_checks' => null,
             ]);
         }
 
@@ -999,15 +1030,52 @@ if (!function_exists('itm_setup_wizard_validate_project_root_path')) {
     }
 }
 
-if (!function_exists('itm_setup_wizard_project_root')) {
-    function itm_setup_wizard_project_root(): string
+if (!function_exists('itm_setup_wizard_resolve_saved_project_root')) {
+    /**
+     * Repair and normalize the wizard session project_root string (never falls back to runtime).
+     */
+    function itm_setup_wizard_resolve_saved_project_root(): string
     {
         $state = itm_setup_wizard_state();
         $saved = isset($state['project_root']) ? trim((string)$state['project_root']) : '';
+        if ($saved === '') {
+            return '';
+        }
+
+        $repaired = itm_setup_wizard_preview_project_root_path($saved);
+        if ($repaired !== '' && $repaired !== $saved) {
+            itm_setup_wizard_state_set(['project_root' => $repaired]);
+        }
+
+        return $repaired !== '' ? $repaired : $saved;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_project_root')) {
+    function itm_setup_wizard_project_root(): string
+    {
+        $saved = itm_setup_wizard_resolve_saved_project_root();
         if ($saved !== '') {
             $validated = itm_setup_wizard_validate_project_root_path($saved);
             if ($validated['ok']) {
                 return $validated['path'];
+            }
+
+            // Why: Step 1 may persist a repaired path before the folder exists (preview save) or when
+            // realpath() fails on a valid Windows path — never substitute the PHP runtime install path.
+            if (itm_setup_wizard_step_done(1)) {
+                $normalized = itm_setup_wizard_normalize_path_input($saved);
+                if ($normalized !== '' && itm_setup_wizard_is_safe_project_root_path($normalized)) {
+                    $resolved = realpath($normalized);
+                    if ($resolved !== false && is_dir($resolved)) {
+                        return $resolved;
+                    }
+                    if (is_dir($normalized)) {
+                        return $normalized;
+                    }
+
+                    return $normalized;
+                }
             }
         }
 

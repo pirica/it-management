@@ -33,6 +33,8 @@ Eight steps (sidebar + main panel): install folder → verify files → database
 
 Step 1 exposes an editable **project root** field with a **💾** save control (`title="Save"`). Clicking save POSTs `step1_preview` (JSON) to validate the folder without advancing, repair Windows slashes, persist the path to wizard session state when valid, and refresh **Auto-detect**, **Document root** (repaired `DOCUMENT_ROOT` display), **Detected BASE_URL**, **Docroot aligned**, and **ITM_APP_URL**. **Continue** provisions/creates the folder and moves to step 2.
 
+Step 2 always re-runs file verification on page load (no stale cached `file_checks` from a prior runtime path). Writable upload paths and the **Confirmed project root** header resolve via `itm_setup_wizard_project_root()`, which repairs collapsed Windows session paths (e.g. `C:Users…it-management2`) and, after step 1 is complete, never falls back to the PHP runtime install folder when the session path differs.
+
 All mutating POSTs use `itm_try_post_csrf()`. Emoji-only navigation buttons follow NO MIXED on back/submit controls.
 
 ## 6. API Actions (If Applicable)
@@ -65,6 +67,8 @@ Step 5 may set `enable_all_error_reporting` on all `ui_configuration` rows when 
 ## 11. Testing / Verification
 
 Manual: [setup/index.php](http://localhost/it-management/setup/index.php) (no login until finish).
+
+Regression: `php scripts/verify_setup_wizard_project_root.php` — collapsed Windows path repair, step 1 session root vs runtime fallback, step 2 upload subdirectories.
 
 After finish: `login.php` with rotated admin credentials.
 

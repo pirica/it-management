@@ -1,0 +1,85 @@
+<?php
+/**
+ * Setup wizard project-root path repair and step-2 resolution regression.
+ *
+ * CLI: php scripts/verify_setup_wizard_project_root.php
+ */
+
+declare(strict_types=1);
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+define('ROOT_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
+define('ITM_SETUP_WIZARD_TEST_DETECTED_ROOT', 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\www\\it-management');
+
+require_once ROOT_PATH . 'setup/includes/itm_setup_wizard.php';
+
+$fail = 0;
+
+function setup_root_fail(string $message): void
+{
+    global $fail;
+    $fail++;
+    fwrite(STDERR, '[FAIL] ' . $message . PHP_EOL);
+}
+
+function setup_root_pass(string $message): void
+{
+    fwrite(STDOUT, '[PASS] ' . $message . PHP_EOL);
+}
+
+$collapsed = 'C:UsersNelsonSalvadorDownloadslaragon-portablewwwit-management2';
+$repaired = itm_setup_wizard_repair_windows_path_input($collapsed);
+$expectedSuffix = 'it-management2';
+if (stripos(str_replace('\\', '/', $repaired), $expectedSuffix) === false) {
+    setup_root_fail('Collapsed Windows path must repair to it-management2, got: ' . $repaired);
+} else {
+    setup_root_pass('Collapsed path repairs to folder suffix it-management2');
+}
+
+if (strpos($repaired, 'C:\\Users\\') !== 0 && strpos($repaired, 'C:/Users/') !== 0) {
+    setup_root_fail('Repaired path must restore drive-letter segments, got: ' . $repaired);
+} else {
+    setup_root_pass('Repaired path restores Windows drive-letter segments');
+}
+
+$_SESSION[itm_setup_wizard_session_key()] = [
+    'project_root' => $collapsed,
+    'completed_steps' => [1 => true],
+    'current_step' => 2,
+];
+
+$resolvedRoot = itm_setup_wizard_project_root();
+$resolvedDisplay = itm_setup_wizard_format_path_display($resolvedRoot);
+if (stripos(str_replace('\\', '/', $resolvedDisplay), 'it-management2') === false) {
+    setup_root_fail('Step 1 complete must keep session it-management2 root, got: ' . $resolvedDisplay);
+} else {
+    setup_root_pass('Completed step 1 keeps session project root (not runtime fallback)');
+}
+
+$uploadRoots = itm_setup_wizard_required_upload_roots();
+$imagesKey = '';
+foreach (array_keys($uploadRoots) as $dir) {
+    if (stripos($dir, 'images') !== false) {
+        $imagesKey = $dir;
+        break;
+    }
+}
+if ($imagesKey === '' || stripos(str_replace('\\', '/', $imagesKey), 'it-management2') === false) {
+    setup_root_fail('Step 2 upload roots must be under it-management2, got: ' . $imagesKey);
+} else {
+    setup_root_pass('Step 2 upload roots resolve under confirmed project root');
+}
+
+$imagesPath = itm_setup_wizard_project_subdirectory('images');
+if (stripos(str_replace('\\', '/', $imagesPath), 'it-management2') === false) {
+    setup_root_fail('project_subdirectory(images) must use confirmed root, got: ' . $imagesPath);
+} else {
+    setup_root_pass('project_subdirectory(images) uses confirmed root');
+}
+
+unset($_SESSION[itm_setup_wizard_session_key()]);
+
+exit($fail > 0 ? 1 : 0);

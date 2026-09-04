@@ -1087,8 +1087,11 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/verify_admin_page_gate.php` | Regression: **admin.php** `itm_is_admin()` gate and redirect to `dashboard.php` |
 | `php scripts/verify_settings_admin_buttons.php` | Regression: Settings **ADMIN** / **SCRIPTS** toolbar (admin-only), **All roles** chatbot block, **System (Admin Role only)** flags, and non-admin save preservation |
 | `php scripts/verify_ui_locale_format.php` | Regression: `ui_configuration` locale columns (money + date/time), Settings UI Configuration form wiring, `includes/itm_ui_locale_format.php` display helpers, `$GLOBALS['ui_config']` date-format flip via `itm_format_date_display()` / `itm_format_cell_scalar_display()`, audit-pass module spot checks (`list_date_display_formats.php` OK set), money columns in cell scalar display |
+| `php scripts/verify_setup_wizard_project_root.php` | Regression: setup wizard collapsed Windows `project_root` repair, step 1 session root (no runtime fallback after step 1 complete), step 2 upload subdirectory paths (`setup/includes/itm_setup_wizard.php`) |
 
 Run `verify_ui_locale_format.php` when changing Settings locale UI, `includes/itm_ui_locale_format.php`, `includes/ui_config.php` locale save/load, `ui_configuration` locale columns in `db/01_schema.sql`, `itm_format_date_display()` / `itm_format_datetime_display()` delegation, or `itm_format_cell_scalar_display()` money/date routing.
+
+Run `verify_setup_wizard_project_root.php` when changing setup wizard project-root repair, `itm_setup_wizard_project_root()`, step 2 file verification, or step 1 session persistence (`setup/index.php`, `setup/includes/itm_setup_wizard.php`).
 
 Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `js/roles-permissions-matrix.js`, `includes/itm_role_module_permissions.php`, or `employee_roles` / `role_module_permissions` / `role_hierarchy` schema in `db/03_triggers.sql`.
 

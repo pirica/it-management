@@ -71,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'project_root' => itm_setup_wizard_format_path_for_input($rootCheck['path']),
             'itm_app_url' => $appUrl,
             'install_notes' => trim((string)($_POST['install_notes'] ?? '')),
+            'file_checks' => null,
             'flash' => ['type' => 'success', 'message' => $successMessage],
         ]);
         itm_setup_wizard_mark_step_done(1);
@@ -304,7 +305,9 @@ $step1DocrootAligned = itm_setup_wizard_docroot_aligned($projectRootPreview, $st
 $step1PreviewConfig = $currentStep === 1 ? itm_setup_wizard_step1_preview_config() : [];
 $appEnv = (string)($state['app_env'] ?? $envFile['APP_ENV'] ?? 'development');
 $extensions = itm_setup_wizard_extension_matrix();
-$fileChecks = $state['file_checks'] ?? itm_setup_wizard_verify_files();
+$fileChecks = $currentStep === 2
+    ? itm_setup_wizard_verify_files()
+    : ($state['file_checks'] ?? itm_setup_wizard_verify_files());
 $csrfToken = itm_get_csrf_token();
 
 header('Content-Type: text/html; charset=utf-8');
@@ -415,7 +418,7 @@ header('Content-Type: text/html; charset=utf-8');
             <?php elseif ($currentStep === 2): ?>
                 <h2>2. Verify files</h2>
                 <p>Checks the canonical <code>db/</code> bundle, writable upload paths, and PHP version before database work.</p>
-                <p class="sub">Confirmed project root from step 1: <code><?php echo sanitize(itm_setup_wizard_preview_project_root_path(itm_setup_wizard_project_root())); ?></code></p>
+                <p class="sub">Confirmed project root from step 1: <code><?php echo sanitize(itm_setup_wizard_format_path_display(itm_setup_wizard_project_root())); ?></code></p>
                 <table>
                     <?php foreach ($fileChecks as $row): ?>
                         <tr>
