@@ -763,6 +763,21 @@ if (!function_exists('itm_setup_wizard_provision_project_root')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_project_subdirectory')) {
+    function itm_setup_wizard_project_subdirectory(string $segment): string
+    {
+        $root = rtrim(itm_setup_wizard_project_root(), '/\\');
+
+        return $root . DIRECTORY_SEPARATOR . trim($segment, '/\\') . DIRECTORY_SEPARATOR;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_format_path_display')) {
+    function itm_setup_wizard_format_path_display(string $path): string
+    {
+        return itm_setup_wizard_format_path_for_input($path);
+    }
+}
 if (!function_exists('itm_setup_wizard_validate_project_root_path')) {
     /**
      * @return array{ok:bool,path:string,message:string}
@@ -775,6 +790,9 @@ if (!function_exists('itm_setup_wizard_validate_project_root_path')) {
         }
 
         $resolved = realpath($normalized);
+        if ($resolved === false && is_dir($normalized) && itm_setup_wizard_project_root_has_schema($normalized)) {
+            $resolved = $normalized;
+        }
         if ($resolved === false || !is_dir($resolved) || !itm_setup_wizard_project_root_has_schema($resolved)) {
             return ['ok' => false, 'path' => $normalized, 'message' => 'Project root must contain db/01_schema.sql.'];
         }
@@ -872,11 +890,11 @@ if (!function_exists('itm_setup_wizard_required_upload_roots')) {
     function itm_setup_wizard_required_upload_roots(): array
     {
         return [
-            UPLOAD_PATH => 'upload',
-            TICKET_UPLOAD_PATH => 'upload',
-            FLOOR_PLAN_UPLOAD_PATH => 'upload',
-            BACKUP_PATH => 'deny_all',
-            itm_files_storage_root() . DIRECTORY_SEPARATOR => 'deny_http',
+            itm_setup_wizard_project_subdirectory('images') => 'upload',
+            itm_setup_wizard_project_subdirectory('tickets_photos') => 'upload',
+            itm_setup_wizard_project_subdirectory('floor_plans') => 'upload',
+            itm_setup_wizard_project_subdirectory('backups') => 'deny_all',
+            itm_setup_wizard_project_subdirectory('files') => 'deny_http',
         ];
     }
 }
@@ -892,37 +910,46 @@ if (!function_exists('itm_setup_wizard_verify_files')) {
         if (!itm_setup_wizard_project_root_matches_runtime()) {
             $results[] = [
                 'level' => 'warn',
-                'message' => 'Confirmed project root differs from this PHP request path (' . itm_setup_wizard_detected_project_root() . ') — database bundle checks use the path from step 1.',
+                'message' => 'Confirmed project root differs from this PHP request path ('
+                    . itm_setup_wizard_format_path_display(itm_setup_wizard_detected_project_root())
+                    . ') — verification uses the step 1 folder below.',
             ];
         }
 
+        $projectRootDisplay = itm_setup_wizard_format_path_display(itm_setup_wizard_project_root());
+        $results[] = ['level' => 'pass', 'message' => 'Project root: ' . $projectRootDisplay];
+
         foreach (itm_setup_wizard_required_db_files() as $path) {
             if (!is_readable($path)) {
-                $results[] = ['level' => 'fail', 'message' => 'Missing or unreadable: ' . $path];
+                $results[] = ['level' => 'fail', 'message' => 'Missing or unreadable: ' . itm_setup_wizard_format_path_display($path)];
             } else {
                 $results[] = ['level' => 'pass', 'message' => 'Found ' . basename($path) . ' (' . number_format(filesize($path)) . ' bytes)'];
             }
         }
 
-        $envPath = ROOT_PATH . '.env';
+        $projectRoot = rtrim(itm_setup_wizard_project_root(), '/\\');
+        $envPath = $projectRoot . DIRECTORY_SEPARATOR . '.env';
         if (is_file($envPath) && !is_writable($envPath)) {
-            $results[] = ['level' => 'fail', 'message' => '.env exists but is not writable'];
-        } elseif (!is_file($envPath) && !is_writable(ROOT_PATH)) {
-            $results[] = ['level' => 'fail', 'message' => 'Project root is not writable — cannot create .env'];
+            $results[] = ['level' => 'fail', 'message' => '.env exists but is not writable: ' . itm_setup_wizard_format_path_display($envPath)];
+        } elseif (!is_file($envPath) && !is_writable($projectRoot)) {
+            $results[] = ['level' => 'fail', 'message' => 'Project root is not writable — cannot create .env: ' . $projectRootDisplay];
         } else {
-            $results[] = ['level' => 'pass', 'message' => is_file($envPath) ? '.env is writable' : 'Project root can create .env'];
+            $results[] = ['level' => 'pass', 'message' => is_file($envPath)
+                ? '.env is writable: ' . itm_setup_wizard_format_path_display($envPath)
+                : 'Project root can create .env: ' . $projectRootDisplay];
         }
 
         foreach (itm_setup_wizard_required_upload_roots() as $dir => $policy) {
             $dir = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dir), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+            $displayDir = itm_setup_wizard_format_path_display(rtrim($dir, '/\\'));
             if (!is_dir($dir)) {
-                $results[] = ['level' => 'warn', 'message' => 'Directory missing (will be created): ' . $dir];
+                $results[] = ['level' => 'warn', 'message' => 'Directory missing (will be created): ' . $displayDir];
                 continue;
             }
             if (!is_writable($dir)) {
-                $results[] = ['level' => 'fail', 'message' => 'Not writable: ' . $dir];
+                $results[] = ['level' => 'fail', 'message' => 'Not writable: ' . $displayDir];
             } else {
-                $results[] = ['level' => 'pass', 'message' => 'Writable: ' . str_replace(ROOT_PATH, '', $dir)];
+                $results[] = ['level' => 'pass', 'message' => 'Writable: ' . $displayDir];
             }
         }
 
@@ -1207,7 +1234,9 @@ if (!function_exists('itm_setup_wizard_ensure_directories')) {
             $ok = itm_ensure_upload_directory($dir, $policy);
             $results[] = [
                 'level' => $ok ? 'pass' : 'fail',
-                'message' => ($ok ? 'Ensured ' : 'Failed ') . str_replace(ROOT_PATH, '', rtrim($dir, '/\\')) . '/ (' . $policy . ')',
+                'message' => ($ok ? 'Ensured ' : 'Failed ')
+                    . itm_setup_wizard_format_path_display(rtrim($dir, '/\\'))
+                    . ' (' . $policy . ')',
             ];
         }
 
