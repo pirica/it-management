@@ -2548,6 +2548,133 @@ if (!function_exists('itm_setup_wizard_save_admin')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_apply_minimal_single_user_install')) {
+    /**
+     * Remove seed Admin2–Admin5 and demo1–demo5 after step 7 skip — keep only the step 6 administrator.
+     *
+     * @return array{ok:bool,message:string,employee_count:int,keeper_employee_id:int}
+     */
+    function itm_setup_wizard_apply_minimal_single_user_install(mysqli $conn, string $keeperUsername): array
+    {
+        $keeperUsername = trim($keeperUsername);
+        if ($keeperUsername === '') {
+            return ['ok' => false, 'message' => 'Administrator username is required', 'employee_count' => 0, 'keeper_employee_id' => 0];
+        }
+
+        $keeperId = 0;
+        $lookup = mysqli_prepare($conn, 'SELECT id FROM employees WHERE username = ? AND deleted_at IS NULL LIMIT 1');
+        if (!$lookup) {
+            return ['ok' => false, 'message' => 'Could not resolve administrator employee', 'employee_count' => 0, 'keeper_employee_id' => 0];
+        }
+        mysqli_stmt_bind_param($lookup, 's', $keeperUsername);
+        mysqli_stmt_execute($lookup);
+        $lookupResult = mysqli_stmt_get_result($lookup);
+        if ($lookupResult && ($keeperRow = mysqli_fetch_assoc($lookupResult))) {
+            $keeperId = (int)($keeperRow['id'] ?? 0);
+        }
+        mysqli_stmt_close($lookup);
+
+        if ($keeperId < 1) {
+            return [
+                'ok' => false,
+                'message' => 'No employee row found for administrator username "' . $keeperUsername . '"',
+                'employee_count' => 0,
+                'keeper_employee_id' => 0,
+            ];
+        }
+
+        $removeIds = [];
+        $employeeResult = mysqli_query($conn, 'SELECT id FROM employees WHERE deleted_at IS NULL');
+        if ($employeeResult) {
+            while ($employeeRow = mysqli_fetch_assoc($employeeResult)) {
+                $employeeId = (int)($employeeRow['id'] ?? 0);
+                if ($employeeId > 0 && $employeeId !== $keeperId) {
+                    $removeIds[] = $employeeId;
+                }
+            }
+            mysqli_free_result($employeeResult);
+        }
+
+        if ($removeIds === []) {
+            return [
+                'ok' => true,
+                'message' => 'Single administrator account already present',
+                'employee_count' => 1,
+                'keeper_employee_id' => $keeperId,
+            ];
+        }
+
+        $removeList = implode(',', array_map('intval', $removeIds));
+        $keeperSql = (string)(int)$keeperId;
+
+        $statements = [
+            'UPDATE employees SET reports_to = NULL WHERE reports_to IN (' . $removeList . ')',
+            'UPDATE tickets SET created_by_employee_id = ' . $keeperSql . ' WHERE created_by_employee_id IN (' . $removeList . ')',
+            'UPDATE tickets SET assigned_to_employee_id = ' . $keeperSql . ' WHERE assigned_to_employee_id IN (' . $removeList . ')',
+            'UPDATE ticket_surveys SET issued_by_employee_id = ' . $keeperSql . ' WHERE issued_by_employee_id IN (' . $removeList . ')',
+            'UPDATE ticket_surveys SET created_by = ' . $keeperSql . ' WHERE created_by IN (' . $removeList . ')',
+            'UPDATE ticket_inbound_email_routing_rules SET assigned_to_employee_id = ' . $keeperSql . ' WHERE assigned_to_employee_id IN (' . $removeList . ')',
+            'UPDATE equipment SET assigned_to_employee_id = NULL WHERE assigned_to_employee_id IN (' . $removeList . ')',
+            'UPDATE inventory_items SET last_employee_id = NULL WHERE last_employee_id IN (' . $removeList . ')',
+            'DELETE FROM employee_sidebar_preferences WHERE employee_id IN (' . $removeList . ')',
+            'DELETE FROM ui_configuration WHERE employee_id IN (' . $removeList . ')',
+            'DELETE FROM employee_companies WHERE employee_id IN (' . $removeList . ')',
+            'DELETE FROM change_request_cab_members WHERE employee_id IN (' . $removeList . ')',
+            'DELETE FROM attempts WHERE employee_id IN (' . $removeList . ')',
+            'DELETE FROM registration_invitations WHERE invited_by_employee_id IN (' . $removeList . ')',
+            'DELETE FROM employees WHERE id IN (' . $removeList . ')',
+        ];
+
+        mysqli_begin_transaction($conn);
+        mysqli_query($conn, 'SET FOREIGN_KEY_CHECKS=0');
+
+        $failedSql = '';
+        foreach ($statements as $sql) {
+            if (!mysqli_query($conn, $sql)) {
+                $failedSql = $sql;
+                break;
+            }
+        }
+
+        mysqli_query($conn, 'SET FOREIGN_KEY_CHECKS=1');
+
+        if ($failedSql !== '') {
+            mysqli_rollback($conn);
+            return [
+                'ok' => false,
+                'message' => 'Minimal install cleanup failed: ' . mysqli_error($conn),
+                'employee_count' => 0,
+                'keeper_employee_id' => $keeperId,
+            ];
+        }
+
+        mysqli_commit($conn);
+
+        $remaining = 0;
+        $countResult = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM employees WHERE deleted_at IS NULL');
+        if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+            $remaining = (int)($countRow['c'] ?? 0);
+            mysqli_free_result($countResult);
+        }
+
+        if ($remaining !== 1) {
+            return [
+                'ok' => false,
+                'message' => 'Expected exactly one employee after skip cleanup, found ' . $remaining,
+                'employee_count' => $remaining,
+                'keeper_employee_id' => $keeperId,
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Removed ' . count($removeIds) . ' seed user(s); kept administrator "' . $keeperUsername . '"',
+            'employee_count' => $remaining,
+            'keeper_employee_id' => $keeperId,
+        ];
+    }
+}
+
 if (!function_exists('itm_setup_wizard_list_seed_companies')) {
     /**
      * @return array<int, array{id:int,name:string}>

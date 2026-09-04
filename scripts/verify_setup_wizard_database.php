@@ -294,6 +294,77 @@ if (!$importCreate['ok']) {
     }
 }
 
+$minimalDb = 'itm_setup_wizard_minimal_' . substr(sha1((string)getmypid() . 'minimal'), 0, 8);
+$minimalCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $minimalDb);
+if (!$minimalCreate['ok']) {
+    if (stripos($minimalCreate['message'], 'schema directory') !== false) {
+        fwrite(STDOUT, '[SKIP] Minimal single-user test skipped — CREATE DATABASE unavailable.' . PHP_EOL);
+    } else {
+        setup_db_fail('Minimal single-user test create database failed: ' . $minimalCreate['message']);
+    }
+} else {
+    $minimalImport = itm_setup_wizard_import_database($host, $port, $user, $pass, $minimalDb);
+    if (!$minimalImport['ok']) {
+        setup_db_fail('Minimal single-user import failed: ' . $minimalImport['message']);
+    } else {
+        $minimalConn = itm_mysqli_connect($host, $user, $pass, $minimalDb, $port);
+        if (!$minimalConn) {
+            setup_db_fail('Minimal single-user test could not connect after import');
+        } else {
+            $beforeCount = 0;
+            $beforeResult = mysqli_query($minimalConn, 'SELECT COUNT(*) AS c FROM employees WHERE deleted_at IS NULL');
+            if ($beforeResult && ($beforeRow = mysqli_fetch_assoc($beforeResult))) {
+                $beforeCount = (int)($beforeRow['c'] ?? 0);
+                mysqli_free_result($beforeResult);
+            }
+            if ($beforeCount < 2) {
+                setup_db_fail('Minimal single-user test expects multiple seed employees after import, found ' . $beforeCount);
+            } else {
+                setup_db_pass('Seed import includes multiple employees before skip cleanup (' . $beforeCount . ')');
+            }
+
+            $minimalResult = itm_setup_wizard_apply_minimal_single_user_install($minimalConn, 'Admin');
+            if (!$minimalResult['ok']) {
+                setup_db_fail('apply_minimal_single_user_install failed: ' . $minimalResult['message']);
+            } elseif ((int)($minimalResult['employee_count'] ?? 0) !== 1) {
+                setup_db_fail('apply_minimal_single_user_install must leave exactly one employee');
+            } else {
+                $keeperUsername = '';
+                $keeperResult = mysqli_query($minimalConn, "SELECT username FROM employees WHERE deleted_at IS NULL LIMIT 2");
+                if ($keeperResult) {
+                    $keeperRows = [];
+                    while ($keeperRow = mysqli_fetch_assoc($keeperResult)) {
+                        $keeperRows[] = (string)($keeperRow['username'] ?? '');
+                    }
+                    mysqli_free_result($keeperResult);
+                    if (count($keeperRows) !== 1 || $keeperRows[0] !== 'Admin') {
+                        setup_db_fail('Minimal install must keep only the Admin employee row');
+                    } else {
+                        setup_db_pass('apply_minimal_single_user_install keeps only step 6 administrator (Admin)');
+                    }
+                } else {
+                    setup_db_fail('Could not verify keeper employee after minimal install');
+                }
+            }
+
+            $repeatMinimal = itm_setup_wizard_apply_minimal_single_user_install($minimalConn, 'Admin');
+            if (!$repeatMinimal['ok'] || (int)($repeatMinimal['employee_count'] ?? 0) !== 1) {
+                setup_db_fail('apply_minimal_single_user_install must be idempotent on a single-user database');
+            } else {
+                setup_db_pass('apply_minimal_single_user_install is idempotent when one employee remains');
+            }
+
+            mysqli_close($minimalConn);
+        }
+    }
+
+    $minimalCleanup = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+    if ($minimalCleanup) {
+        mysqli_query($minimalCleanup, 'DROP DATABASE IF EXISTS `' . $minimalDb . '`');
+        mysqli_close($minimalCleanup);
+    }
+}
+
 if (session_status() === PHP_SESSION_NONE) {
     @session_start();
 }
