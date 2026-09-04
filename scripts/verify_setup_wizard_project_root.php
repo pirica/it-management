@@ -161,10 +161,14 @@ if ($portLabels['open'] !== '🟢 Open' || $portLabels['closed'] !== '🔴 Close
 }
 
 $portRows = itm_setup_wizard_localhost_port_status_rows();
-if (count($portRows) !== 2 || (int)($portRows[0]['port'] ?? 0) !== 80 || (int)($portRows[1]['port'] ?? 0) !== 443) {
-    setup_root_fail('Localhost port status must include ports 80 and 443');
+$expectedEndpoints = ['127.0.0.1:80', '127.0.0.1:443', 'localhost:80', 'localhost:443'];
+$actualEndpoints = array_map(static function (array $row): string {
+    return (string)($row['endpoint'] ?? '');
+}, $portRows);
+if (count($portRows) !== 4 || $actualEndpoints !== $expectedEndpoints) {
+    setup_root_fail('Localhost port status must include 127.0.0.1 and localhost on ports 80 and 443');
 } else {
-    setup_root_pass('Localhost port status rows include 80 and 443');
+    setup_root_pass('Localhost port status rows include 127.0.0.1 and localhost for 80/443');
 }
 $portStatusInvalid = false;
 foreach ($portRows as $portRow) {

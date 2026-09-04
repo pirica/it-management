@@ -550,7 +550,7 @@ header('Content-Type: text/html; charset=utf-8');
                         <table>
                             <?php foreach ($localhostPortStatuses as $portRow): ?>
                                 <tr>
-                                    <th>127.0.0.1:<?php echo (int)$portRow['port']; ?></th>
+                                    <th><?php echo itm_setup_wizard_h((string)($portRow['endpoint'] ?? '')); ?></th>
                                     <td><?php echo itm_setup_wizard_h((string)$portRow['label']); ?></td>
                                 </tr>
                             <?php endforeach; ?>
