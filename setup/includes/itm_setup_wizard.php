@@ -1074,6 +1074,36 @@ if (!function_exists('itm_setup_wizard_h')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_h_path_display')) {
+    /**
+     * Escape a filesystem path for HTML; allow wrap only after directory separators.
+     */
+    function itm_setup_wizard_h_path_display(string $path): string
+    {
+        $escaped = itm_setup_wizard_h($path);
+        $escaped = str_replace('-', '&#8209;', $escaped);
+
+        return str_replace(['\\', '/'], ['\\<wbr>', '/<wbr>'], $escaped);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_verify_row')) {
+    /**
+     * @return array{level:string,label:string,path:string,message:string}
+     */
+    function itm_setup_wizard_verify_row(string $level, string $label, string $path = ''): array
+    {
+        $path = trim($path);
+
+        return [
+            'level' => $level,
+            'label' => $label,
+            'path' => $path,
+            'message' => $path !== '' ? rtrim($label) . ' ' . $path : $label,
+        ];
+    }
+}
+
 if (!function_exists('itm_setup_wizard_format_path_display')) {
     function itm_setup_wizard_format_path_display(string $path): string
     {
@@ -1240,54 +1270,71 @@ if (!function_exists('itm_setup_wizard_required_upload_roots')) {
 
 if (!function_exists('itm_setup_wizard_verify_files')) {
     /**
-     * @return array<int, array{level:string,message:string}>
+     * @return array<int, array{level:string,label:string,path:string,message:string}>
      */
     function itm_setup_wizard_verify_files(): array
     {
         $results = [];
 
         $projectRootDisplay = itm_setup_wizard_format_path_display(itm_setup_wizard_project_root());
-        $results[] = ['level' => 'pass', 'message' => 'Project root: ' . $projectRootDisplay];
+        $results[] = itm_setup_wizard_verify_row('pass', 'Project root:', $projectRootDisplay);
 
         foreach (itm_setup_wizard_required_db_files() as $path) {
             if (!is_readable($path)) {
-                $results[] = ['level' => 'fail', 'message' => 'Missing or unreadable: ' . itm_setup_wizard_format_path_display($path)];
+                $results[] = itm_setup_wizard_verify_row(
+                    'fail',
+                    'Missing or unreadable:',
+                    itm_setup_wizard_format_path_display($path)
+                );
             } else {
-                $results[] = ['level' => 'pass', 'message' => 'Found ' . basename($path) . ' (' . number_format(filesize($path)) . ' bytes)'];
+                $results[] = itm_setup_wizard_verify_row(
+                    'pass',
+                    'Found ' . basename($path) . ' (' . number_format(filesize($path)) . ' bytes)'
+                );
             }
         }
 
         $projectRoot = rtrim(itm_setup_wizard_project_root(), '/\\');
         $envPath = $projectRoot . DIRECTORY_SEPARATOR . '.env';
         if (is_file($envPath) && !is_writable($envPath)) {
-            $results[] = ['level' => 'fail', 'message' => '.env exists but is not writable: ' . itm_setup_wizard_format_path_display($envPath)];
+            $results[] = itm_setup_wizard_verify_row(
+                'fail',
+                '.env exists but is not writable:',
+                itm_setup_wizard_format_path_display($envPath)
+            );
         } elseif (!is_file($envPath) && !is_writable($projectRoot)) {
-            $results[] = ['level' => 'fail', 'message' => 'Project root is not writable — cannot create .env: ' . $projectRootDisplay];
+            $results[] = itm_setup_wizard_verify_row(
+                'fail',
+                'Project root is not writable — cannot create .env:',
+                $projectRootDisplay
+            );
         } else {
-            $results[] = ['level' => 'pass', 'message' => is_file($envPath)
-                ? '.env is writable: ' . itm_setup_wizard_format_path_display($envPath)
-                : 'Project root can create .env: ' . $projectRootDisplay];
+            $results[] = itm_setup_wizard_verify_row(
+                'pass',
+                is_file($envPath) ? '.env is writable:' : 'Project root can create .env:',
+                is_file($envPath) ? itm_setup_wizard_format_path_display($envPath) : $projectRootDisplay
+            );
         }
 
         foreach (itm_setup_wizard_required_upload_roots() as $dir => $policy) {
             $dir = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dir), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
             $displayDir = itm_setup_wizard_format_path_display(rtrim($dir, '/\\'));
             if (!is_dir($dir)) {
-                $results[] = ['level' => 'warn', 'message' => 'Directory missing (will be created): ' . $displayDir];
+                $results[] = itm_setup_wizard_verify_row('warn', 'Directory missing (will be created):', $displayDir);
                 continue;
             }
             if (!is_writable($dir)) {
-                $results[] = ['level' => 'fail', 'message' => 'Not writable: ' . $displayDir];
+                $results[] = itm_setup_wizard_verify_row('fail', 'Not writable:', $displayDir);
             } else {
-                $results[] = ['level' => 'pass', 'message' => 'Writable: ' . $displayDir];
+                $results[] = itm_setup_wizard_verify_row('pass', 'Writable:', $displayDir);
             }
         }
 
         $phpVersion = PHP_VERSION;
         if (version_compare($phpVersion, '7.4.0', '<')) {
-            $results[] = ['level' => 'fail', 'message' => 'PHP 7.4+ required (found ' . $phpVersion . ')'];
+            $results[] = itm_setup_wizard_verify_row('fail', 'PHP 7.4+ required (found ' . $phpVersion . ')');
         } else {
-            $results[] = ['level' => 'pass', 'message' => 'PHP ' . $phpVersion];
+            $results[] = itm_setup_wizard_verify_row('pass', 'PHP ' . $phpVersion);
         }
 
         return $results;

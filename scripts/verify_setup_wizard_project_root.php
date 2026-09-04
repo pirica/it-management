@@ -116,9 +116,23 @@ if (strpos($sanitizeLike, 'C:Users') !== false && strpos($sanitizeLike, 'C:\\Use
 
 $wrappableRemoved = !function_exists('itm_setup_wizard_h_wrappable_path_text');
 if ($wrappableRemoved) {
-    setup_root_pass('Path display uses nowrap scroll (no wbr path wrapper)');
+    setup_root_pass('Legacy wbr wrapper helper is not used');
 } else {
-    setup_root_fail('itm_setup_wizard_h_wrappable_path_text should be removed in favor of nowrap CSS');
+    setup_root_fail('itm_setup_wizard_h_wrappable_path_text should remain removed');
+}
+
+$sampleRow = itm_setup_wizard_verify_row('pass', 'Writable:', $windowsPath . '\\images');
+if (($sampleRow['label'] ?? '') !== 'Writable:' || ($sampleRow['path'] ?? '') === '') {
+    setup_root_fail('Verify row must split label and path');
+} else {
+    setup_root_pass('Verify rows expose separate label and path fields');
+}
+
+$pathDisplay = itm_setup_wizard_h_path_display($windowsPath);
+if (strpos($pathDisplay, '<wbr>') === false || strpos($pathDisplay, '&#8209;') === false) {
+    setup_root_fail('Path display must add segment breaks and non-breaking hyphens, got: ' . $pathDisplay);
+} else {
+    setup_root_pass('Path display adds segment wrap hints without scrollbars');
 }
 
 $fileChecks = itm_setup_wizard_verify_files();
