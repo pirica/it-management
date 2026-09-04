@@ -150,7 +150,9 @@ if (!function_exists('itm_create_post_prepared_audit_scan')) {
      * @return array{
      *   scanned:int,
      *   by_status:array<string,list<array{path:string,reason:string}>>,
-     *   findings:list<array{path:string,status:string,reason:string}>
+     *   findings:list<array{path:string,status:string,reason:string}>,
+     *   summary:array<string,int>,
+     *   legacy_post_save_count:int
      * }
      */
     function itm_create_post_prepared_audit_scan(string $root, ?string $moduleSlug = null): array
@@ -201,10 +203,50 @@ if (!function_exists('itm_create_post_prepared_audit_scan')) {
             }
         }
 
+        $summary = [
+            'escape_sql' => count($byStatus['escape_sql']),
+            'scaffold_string_sql' => count($byStatus['scaffold_string_sql']),
+            'bespoke_string_sql' => count($byStatus['bespoke_string_sql']),
+            'prepared' => count($byStatus['prepared']),
+            'wrapper' => count($byStatus['wrapper']),
+            'no_local_post_save' => count($byStatus['no_local_post_save']),
+        ];
+
         return [
             'scanned' => count($paths),
             'by_status' => $byStatus,
             'findings' => $findings,
+            'summary' => $summary,
+            'legacy_post_save_count' => count($findings),
         ];
+    }
+}
+
+if (!function_exists('itm_create_post_prepared_audit_status_labels')) {
+    /**
+     * @return array<string,string>
+     */
+    function itm_create_post_prepared_audit_status_labels(): array
+    {
+        return [
+            'escape_sql' => '[FAIL]',
+            'scaffold_string_sql' => '[WARN]',
+            'bespoke_string_sql' => '[WARN]',
+            'prepared' => '[OK]',
+            'wrapper' => '[SKIP]',
+            'no_local_post_save' => '[INFO]',
+        ];
+    }
+}
+
+if (!function_exists('itm_create_post_prepared_audit_status_list_verbose_by_default')) {
+    /**
+     * Status buckets listed row-by-row without --verbose / --list-scaffold.
+     *
+     * @return list<string>
+     */
+    function itm_create_post_prepared_audit_status_list_verbose_by_default(): array
+    {
+        return ['escape_sql', 'bespoke_string_sql', 'prepared'];
     }
 }
