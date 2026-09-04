@@ -216,4 +216,18 @@ if (stripos($refused, '3307') === false) {
     setup_root_pass('Connection refused message hints alternate MySQL port');
 }
 
+$altRoot = 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\www\\it-management4';
+$_SESSION[itm_setup_wizard_session_key()] = [
+    'project_root' => $altRoot,
+    'completed_steps' => [1 => true],
+    'current_step' => 7,
+];
+$envPath = itm_setup_wizard_env_file_path();
+if (stripos(str_replace('\\', '/', $envPath), 'it-management4/.env') === false
+    && stripos(str_replace('\\', '/', $envPath), 'it-management4\\.env') === false) {
+    setup_root_fail('.env path must follow confirmed project root, got: ' . $envPath);
+} else {
+    setup_root_pass('.env path resolves under confirmed project root (not runtime ROOT_PATH)');
+}
+
 exit($fail > 0 ? 1 : 0);

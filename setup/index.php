@@ -411,7 +411,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $cleanup = itm_setup_wizard_remove_entrypoint();
         if ($cleanup['ok']) {
-            header('Location: ' . BASE_URL . 'login.php?setup=done');
+            header('Location: ' . itm_setup_wizard_finish_login_url());
             exit;
         }
         itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $cleanup['message']]]);
@@ -429,6 +429,15 @@ $paths = itm_setup_wizard_detect_paths();
 $state = itm_setup_wizard_state();
 $flash = $state['flash'] ?? ['type' => '', 'message' => ''];
 itm_setup_wizard_state_set(['flash' => ['type' => '', 'message' => '']]);
+
+// Why: Step 1 may be skipped on older flows — persist an open loopback MySQL port before step 3 defaults.
+if ($currentStep === 3 && (!isset($state['mysql_port']) || (int)$state['mysql_port'] <= 0)) {
+    $probedMysqlPort = itm_setup_wizard_detect_open_mysql_loopback_port();
+    if ($probedMysqlPort !== null) {
+        itm_setup_wizard_state_set(['mysql_port' => $probedMysqlPort]);
+        $state['mysql_port'] = $probedMysqlPort;
+    }
+}
 
 $dbDefaults = $state['db'] ?? [];
 // Why: During install, DB creds live in wizard session only — do not pre-fill password from a stale .env.
@@ -452,7 +461,8 @@ $step1DocumentRoot = itm_setup_wizard_resolve_step1_document_root($projectRootPr
 $step1DocrootAligned = itm_setup_wizard_docroot_aligned($projectRootPreview, $step1DocumentRoot);
 $step1PreviewConfig = $currentStep === 1 ? itm_setup_wizard_step1_preview_config() : [];
 $localhostPortStatuses = $currentStep === 1 ? itm_setup_wizard_localhost_port_status_rows() : [];
-$mysqlPortStatuses = $currentStep === 1 ? itm_setup_wizard_mysql_port_status_rows() : [];
+$mysqlPortStatuses = in_array($currentStep, [1, 3], true) ? itm_setup_wizard_mysql_port_status_rows() : [];
+$envFileTargetPath = itm_setup_wizard_format_path_display(itm_setup_wizard_env_file_path());
 $appEnv = (string)($state['app_env'] ?? $envFile['APP_ENV'] ?? 'development');
 $extensions = itm_setup_wizard_extension_matrix();
 $fileChecks = $currentStep === 2
@@ -464,8 +474,7 @@ $dbNeedsReplaceConfirm = !empty($dbProbe['needs_replace_confirm']);
 $dbExistingTableCount = (int)($dbProbe['table_count'] ?? 0);
 $folderProbe = isset($state['folder_probe']) && is_array($state['folder_probe']) ? $state['folder_probe'] : [];
 $folderNeedsReplaceConfirm = !empty($folderProbe['needs_replace_confirm']);
-$setupLoginUrl = rtrim(BASE_URL, '/') . '/login.php';
-$setupProdHardeningUrl = rtrim(BASE_URL, '/') . '/scripts/check_prod_hardening.php?run=1&enforce=1';
+$setupProdHardeningUrl = rtrim((string)($state['itm_app_url'] ?? BASE_URL), '/') . '/scripts/check_prod_hardening.php?run=1&enforce=1';
 $sampleCompanyOptions = [];
 $sampleCompanyDefaultIds = [1];
 if (isset($state['sample_company_ids']) && is_array($state['sample_company_ids'])) {
@@ -681,7 +690,7 @@ header('Content-Type: text/html; charset=utf-8');
 
             <?php elseif ($currentStep === 3): ?>
                 <h2>3. Verify database connection</h2>
-                <p>Test MySQL credentials, then import <code>01_schema → 02_data → 03_triggers</code>. Database settings are kept in the wizard session until step 7 writes <code>.env</code>.</p>
+                <p>Test MySQL credentials, then import <code>01_schema → 02_data → 03_triggers</code>. Database settings are kept in the wizard session until step 7 writes <code>.env</code> to <code class="setup-path"><?php echo itm_setup_wizard_h_path_display($envFileTargetPath); ?></code>.</p>
                 <?php if ($dbNeedsCreate): ?>
                     <div class="flash info">Database not found — use <strong>Create database</strong> below (server credentials are OK).</div>
                 <?php elseif ($dbNeedsReplaceConfirm): ?>
@@ -701,6 +710,20 @@ header('Content-Type: text/html; charset=utf-8');
                             <input type="number" id="db_port" name="db_port" min="1" max="65535" value="<?php echo (int)$dbPort; ?>">
                         </div>
                     </div>
+                    <div class="setup-step1-localhost-ports" aria-label="MySQL port status (informational)">
+                        <p class="sub">MySQL listener probe on 127.0.0.1 (informational — defaults the port field above)</p>
+                        <table>
+                            <?php foreach ($mysqlPortStatuses as $portRow): ?>
+                                <tr>
+                                    <th><?php echo itm_setup_wizard_h((string)($portRow['endpoint'] ?? '')); ?></th>
+                                    <td><?php echo itm_setup_wizard_h((string)$portRow['label']); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </table>
+                    </div>
+                    <?php if ($step1MysqlPort !== null && $step1MysqlPort > 0): ?>
+                        <p class="sub">Step 1 saved MySQL port: <strong><?php echo (int)$step1MysqlPort; ?></strong></p>
+                    <?php endif; ?>
                     <div class="row">
                         <div>
                             <label for="db_user">DB user</label>
@@ -837,7 +860,7 @@ header('Content-Type: text/html; charset=utf-8');
 
             <?php elseif ($currentStep === 7): ?>
                 <h2>7. Sample data (optional)</h2>
-                <p>Install demo rows from <code>db/02_data_sample.sql</code> for one or more seed companies. Safe to skip for production. Continuing writes <code>.env</code> with database and environment settings from earlier steps.</p>
+                <p>Install demo rows from <code>db/02_data_sample.sql</code> for one or more seed companies. Safe to skip for production. Continuing writes <code>.env</code> to <code class="setup-path"><?php echo itm_setup_wizard_h_path_display($envFileTargetPath); ?></code> with database and environment settings from earlier steps.</p>
                 <form method="post" id="setup-step7-sample-form">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step7_install">
@@ -870,10 +893,11 @@ header('Content-Type: text/html; charset=utf-8');
 
             <?php elseif ($currentStep === 8): ?>
                 <h2>8. Finish — remove setup entry point</h2>
-                <p>Writes <code>setup/.installed</code> and deletes <code>setup/index.php</code> so the installer cannot be reached from the web.</p>
+                <p>Writes <code>setup/.installed</code> under the confirmed project root and deletes <code>setup/index.php</code> there so the installer cannot be reached from the web.</p>
+                <p class="sub"><code>.env</code> target: <code class="setup-path"><?php echo itm_setup_wizard_h_path_display($envFileTargetPath); ?></code></p>
                 <ul>
                     <li>Before production go-live, run the <a href="<?php echo sanitize($setupProdHardeningUrl); ?>" target="_blank" rel="noopener noreferrer">production hardening check</a> (<code>check_prod_hardening.php?run=1&amp;enforce=1</code> — Administrator session; open in a new browser tab).</li>
-                    <li>Sign in at <a href="<?php echo sanitize($setupLoginUrl); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($setupLoginUrl); ?></a> (open in a new browser tab).</li>
+                    <li>Sign in at <a href="<?php echo sanitize(itm_setup_wizard_finish_login_url()); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize(itm_setup_wizard_finish_login_url()); ?></a> (open in a new browser tab).</li>
                 </ul>
                 <form method="post" onsubmit="return confirm('Delete setup/index.php and lock the installer?');">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
