@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ? $rootCheck['message']
             : 'Install folder confirmed.';
         itm_setup_wizard_state_set([
-            'project_root' => $rootCheck['path'],
+            'project_root' => itm_setup_wizard_format_path_for_input($rootCheck['path']),
             'itm_app_url' => $appUrl,
             'install_notes' => trim((string)($_POST['install_notes'] ?? '')),
             'flash' => ['type' => 'success', 'message' => $successMessage],
@@ -397,6 +397,7 @@ header('Content-Type: text/html; charset=utf-8');
             <?php elseif ($currentStep === 2): ?>
                 <h2>2. Verify files</h2>
                 <p>Checks the canonical <code>db/</code> bundle, writable upload paths, and PHP version before database work.</p>
+                <p class="sub">Confirmed project root from step 1: <code><?php echo sanitize(itm_setup_wizard_preview_project_root_path(itm_setup_wizard_project_root())); ?></code></p>
                 <table>
                     <?php foreach ($fileChecks as $row): ?>
                         <tr>
