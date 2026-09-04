@@ -2,7 +2,7 @@
 
 Living register of **still-valid** items migrated from the retired GitHub Wiki page `TO-DO-3.md` (removed during the wiki sync — scratchpad retirement, not “all fixed”). For penetration-test status use [`docs/report.md`](report.md) and [`verify_pentest_report.php?run=1`](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Admin session). For product/feature gaps use [`docs/PRODUCT_GAPS_AND_MISSING.md`](PRODUCT_GAPS_AND_MISSING.md).
 
-**Last validated against codebase:** 2026-09-04 (items **#10** and **#12** closed).
+**Last validated against codebase:** 2026-09-04 (items **#1**, **#10**, and **#12** closed).
 
 **Environment drift audit:** [check_env_vars_in_use.php?run=1](http://localhost/it-management/scripts/check_env_vars_in_use.php?run=1) (Admin session) — re-run after changing `.env.example` or `getenv()` reads. Canonical catalog: [`docs/ENV.md`](ENV.md).
 
@@ -32,18 +32,20 @@ Default run is **informational** (exit `0`). `php scripts/check_env_vars_in_use.
 
 ### 1. Hash integration API keys (`ui_configuration`)
 
-**Status:** **Open**
+**Status:** **Done**
 
-**Problem:** Paid-tier integration keys on `ui_configuration` are stored in plaintext column `api_key`. Lookup compares raw strings. `?api_key=` in query strings is still accepted (access logs, proxies, browser history). Hotel distribution channels already use `api_key_hash` + `api_key_prefix` on `hotel_booking_distribution_channels` — integration keys should follow the same pattern.
+**Problem:** Paid-tier integration keys on `ui_configuration` were stored in plaintext column `api_key`. Lookup compared raw strings. `?api_key=` in query strings was accepted (access logs, proxies, browser history). Hotel distribution channels already use `api_key_hash` + `api_key_prefix` on `hotel_booking_distribution_channels` — integration keys should follow the same pattern.
 
-**Touch points:**
+**Shipped (2026-09-04):**
 
-- Schema: `db/01_schema.sql` — `ui_configuration.api_key` (add `api_key_hash`, `api_key_prefix`; migration in `db/migrations/`)
-- Lookup: `includes/itm_api_rate_limit.php` — `itm_api_resolve_api_key_from_request()` (~lines 160–165 GET path; ~203/240 lookup queries)
-- Settings UI: `modules/settings/` — key generate/save flows
-- Regression: add `php scripts/verify_api_key_hashing.php` (match existing `verify_*` convention)
+- `db/01_schema.sql` + `db/migrations/ui_configuration_api_key_hash.sql` — `api_key_prefix` (16 chars) + `api_key_hash` (SHA-256 hex); plaintext `api_key` cleared on save/generate
+- `includes/itm_api_rate_limit.php` — `itm_api_hash_api_key()`, prefix-scoped lookup + verify; `X-API-Key` header and POST `api_key` only (query string rejected); legacy plaintext rows authenticate until re-saved/generated
+- `modules/settings/index.php` — prefix display, one-time reveal after generate/save, replace/clear flows
+- `AGENTS.md` — API keys and rate limits section updated
 
-**Acceptance:** Store `hash('sha256', $key)` only; display prefix for UI; remove `$_GET['api_key']` — header `X-API-Key` and POST body only; re-issue flow for existing keys on next save.
+**Regression:** `php scripts/verify_api_key_hashing.php` — exit `0`. Browser: [verify_api_key_hashing.php?run=1](http://localhost/it-management/scripts/verify_api_key_hashing.php?run=1) (Administrator session). Also: `php scripts/apitest_tier_basic.php`, `php scripts/verify_api_v2.php`, PHPUnit `ApiRateLimitTest`.
+
+**Manual:** [Settings → API Access](http://localhost/it-management/modules/settings/index.php) (Admin) — paid tier generate/save shows prefix + one-time full key reveal.
 
 ---
 
@@ -232,7 +234,7 @@ Browser filter on the same runner: [run_tests.php?run=1&mode=standard&skip_db=1&
 
 ## Suggested sequencing
 
-1. **#1** and **#2** — one PR each with matching `verify_*` script.
+1. **#2** — vault GCM (`verify_vault_gcm.php`).
 2. **#3** — can ride with either P1 PR.
 3. **#4** + **#11** — same PR (chokepoint + docs).
 4. **#5** + **#6** — prod hardening pair.
