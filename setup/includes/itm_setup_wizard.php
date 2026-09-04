@@ -1635,6 +1635,24 @@ if (!function_exists('itm_setup_wizard_build_import_sql_bundle')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_mysql_cli_connect_host')) {
+    /**
+     * Host passed to mysql.exe — on Windows prefer localhost for loopback to reduce TCP socket failures from Apache proc_open.
+     */
+    function itm_setup_wizard_mysql_cli_connect_host(string $host): string
+    {
+        $host = trim($host);
+        if ($host === '') {
+            return '127.0.0.1';
+        }
+        if (DIRECTORY_SEPARATOR === '\\' && ($host === '127.0.0.1' || strcasecmp($host, 'localhost') === 0)) {
+            return 'localhost';
+        }
+
+        return $host;
+    }
+}
+
 if (!function_exists('itm_setup_wizard_import_via_shell')) {
     /**
      * @return array{ok:bool,message:string}
@@ -1656,10 +1674,12 @@ if (!function_exists('itm_setup_wizard_import_via_shell')) {
             $mysqlBin = itm_resolve_cli_mysql_binary();
         }
 
+        $cliHost = itm_setup_wizard_mysql_cli_connect_host($host);
+
         $cmd = [
             $mysqlBin,
             '-h',
-            $host,
+            $cliHost,
             '-P',
             (string)$port,
             '-u',
@@ -1667,6 +1687,9 @@ if (!function_exists('itm_setup_wizard_import_via_shell')) {
             '--default-character-set=utf8mb4',
             $database,
         ];
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $cmd[] = '--protocol=TCP';
+        }
 
         $env = $_ENV;
         if ($pass !== '') {

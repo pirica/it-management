@@ -55,6 +55,56 @@ $host = getenv('DB_HOST') ?: '127.0.0.1';
 $port = (int)(getenv('DB_PORT') ?: '3306');
 $user = getenv('DB_USER') ?: 'root';
 $pass = getenv('DB_PASS') ?: 'itmanagement';
+
+$semicolonDropSample = '';
+$triggersPath = ROOT_PATH . 'db/03_triggers.sql';
+$triggerLines = file($triggersPath, FILE_IGNORE_NEW_LINES);
+if ($triggerLines === false) {
+    setup_db_fail('Could not read 03_triggers.sql for parser regression');
+} else {
+    // expense_recurrence cluster: semicolon-terminated DROP lines inside an active DELIMITER $$ block.
+    $semicolonDropSample = implode("\n", array_slice($triggerLines, 2059, 54)) . "\n";
+}
+if (!function_exists('itm_database_migrations_execute_sql_text')) {
+    require_once ROOT_PATH . 'includes/itm_database_migrations.php';
+}
+$parserDb = 'itm_setup_wizard_parser_' . substr(sha1((string)getmypid() . 'parser'), 0, 8);
+$parserCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $parserDb);
+if ($semicolonDropSample === '') {
+    fwrite(STDOUT, '[SKIP] Parser semicolon-DROP live test skipped — no SQL excerpt.' . PHP_EOL);
+} elseif (!$parserCreate['ok']) {
+    fwrite(STDOUT, '[SKIP] Parser semicolon-DROP live test skipped — could not create schema.' . PHP_EOL);
+} else {
+    $schemaConn = itm_mysqli_connect($host, $user, $pass, $parserDb, $port);
+    if (!$schemaConn) {
+        setup_db_fail('Parser test could not connect to disposable schema');
+    } else {
+        $schemaSql = file_get_contents(ROOT_PATH . 'db/01_schema.sql');
+        if ($schemaSql === false) {
+            setup_db_fail('Could not read 01_schema.sql for parser test');
+        } else {
+            $schemaSql = itm_setup_wizard_rewrite_sql_for_database($schemaSql, $parserDb);
+            [$schemaOk, $schemaErr] = itm_database_migrations_execute_sql_text($schemaConn, $schemaSql);
+            if (!$schemaOk) {
+                setup_db_fail('Parser test schema load failed: ' . $schemaErr);
+            } else {
+                [$parserOk, $parserErr] = itm_database_migrations_execute_sql_text($schemaConn, $semicolonDropSample);
+                if (!$parserOk) {
+                    setup_db_fail('Parser must split semicolon DROP lines inside DELIMITER $$ block: ' . $parserErr);
+                } else {
+                    setup_db_pass('Parser splits semicolon-terminated DROP lines inside DELIMITER $$ blocks');
+                }
+            }
+        }
+        mysqli_close($schemaConn);
+    }
+    $parserCleanup = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+    if ($parserCleanup) {
+        mysqli_query($parserCleanup, 'DROP DATABASE IF EXISTS `' . $parserDb . '`');
+        mysqli_close($parserCleanup);
+    }
+}
+
 $testDb = 'itm_setup_wizard_probe_' . substr(sha1((string)getmypid()), 0, 8);
 
 $serverConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);

@@ -554,6 +554,23 @@ if (!function_exists('itm_database_migrations_drain_multi_query')) {
     }
 }
 
+if (!function_exists('itm_database_migrations_sql_line_is_semicolon_admin_statement')) {
+    /**
+     * Standalone DDL lines that end with ; inside a custom DELIMITER block (db/03_triggers.sql).
+     *
+     * Why: mysql CLI batches these as separate statements even when delimiter is $$; mysqli must match.
+     */
+    function itm_database_migrations_sql_line_is_semicolon_admin_statement($trimmed)
+    {
+        $trimmed = trim((string)$trimmed);
+        if ($trimmed === '' || substr($trimmed, -1) !== ';') {
+            return false;
+        }
+
+        return (bool)preg_match('/^(DROP\s+TRIGGER|USE\s|SET\s|ALTER\s)/i', $trimmed);
+    }
+}
+
 if (!function_exists('itm_database_migrations_execute_sql_text')) {
     /**
      * Execute multi-statement SQL with DELIMITER blocks (e.g. db/03_triggers.sql).
@@ -595,6 +612,12 @@ if (!function_exists('itm_database_migrations_execute_sql_text')) {
                 $isStatementComplete = substr($lineWithoutTrailingSpaces, -1) === ';';
             } elseif (strlen($delimiter) > 0) {
                 $isStatementComplete = substr($lineWithoutTrailingSpaces, -strlen($delimiter)) === $delimiter;
+                if (
+                    !$isStatementComplete
+                    && itm_database_migrations_sql_line_is_semicolon_admin_statement($trimmed)
+                ) {
+                    $isStatementComplete = true;
+                }
             }
 
             if ($isStatementComplete) {
