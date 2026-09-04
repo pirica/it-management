@@ -197,7 +197,7 @@ if (!function_exists('itm_setup_wizard_repair_windows_path_input')) {
 
         $restCollapsed = itm_setup_wizard_collapse_path_token($rest);
         if ($restCollapsed === '') {
-            return $detected;
+            return $drive . ':\\';
         }
 
         $detectedParent = itm_setup_wizard_path_dirname($detected);
@@ -217,11 +217,27 @@ if (!function_exists('itm_setup_wizard_repair_windows_path_input')) {
 
         if ($parentCollapsed !== '' && strpos($restCollapsed, $parentCollapsed) === 0) {
             $folderCollapsed = substr($restCollapsed, strlen($parentCollapsed));
-            if ($folderCollapsed !== '' && $baseCollapsed !== '' && strpos($folderCollapsed, $baseCollapsed) === 0) {
-                $extra = substr($folderCollapsed, strlen($baseCollapsed));
-                $folder = $detectedBase . $extra;
+            if ($folderCollapsed !== '') {
+                // Why: Collapsed tails like …itmanagement5 must work when runtime folder is it-management3 (stem + new digits).
+                $baseStem = preg_replace('/\d+$/', '', $detectedBase);
+                if ($baseStem === '') {
+                    $baseStem = $detectedBase;
+                }
+                $stemCollapsed = itm_setup_wizard_collapse_path_token($baseStem);
+                if ($stemCollapsed !== '' && strpos($folderCollapsed, $stemCollapsed) === 0) {
+                    $userDigits = substr($folderCollapsed, strlen($stemCollapsed));
+                    if ($userDigits === '' || preg_match('/^\d+$/', $userDigits)) {
+                        $folder = $baseStem . $userDigits;
 
-                return itm_setup_wizard_format_path_for_input($detectedParent) . '\\' . $folder;
+                        return itm_setup_wizard_format_path_for_input($detectedParent) . '\\' . $folder;
+                    }
+                }
+                if ($baseCollapsed !== '' && strpos($folderCollapsed, $baseCollapsed) === 0) {
+                    $extra = substr($folderCollapsed, strlen($baseCollapsed));
+                    $folder = $detectedBase . $extra;
+
+                    return itm_setup_wizard_format_path_for_input($detectedParent) . '\\' . $folder;
+                }
             }
         }
 
