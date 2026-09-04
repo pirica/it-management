@@ -356,6 +356,7 @@ Before merging code, execute the pre-merge verification pipeline:
     ```bash
     php scripts/run_tier2_checks.php
     ```
+6.  **Production hardening (pre-deploy only):** Before go-live, run `php scripts/check_prod_hardening.php` with production `.env` (`APP_ENV=production`, no `ITM_DEV` / `ITM_SKIP_FORCE_PASSWORD_CHANGE`). Expect exit `1` on a fresh import until seed passwords are rotated, browser error reporting is off, and `bypass_login.php` is blocked from the web. Not part of CI smoke — manual gate only. Browser: [check_prod_hardening.php?run=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1) (Administrator).
 
 #### 5.3.3 Full-Module Browser QA (Multi-Tenant HTTP Scan)
 *   **Purpose:** Simulates complete HTTP sessions across all 5 seeded companies, validating pagination, search, sorting, exports, database backups, and error logs.
