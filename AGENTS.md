@@ -54,7 +54,7 @@ Before making any change, replying, running commands, editing files, or proposin
 
    Ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR (see **Change Hygiene → PR review**).
 6. **Always create and update `AGENT_NOTES.md` (hard fail):** for every in-scope folder you read or change, **read** that folder's `AGENT_NOTES.md` first (and the parent folder's file when editing a subfolder). **Create** the file from `templates/AGENT_NOTES.md` when it is missing. **Update** it in the **same PR** whenever your work changes purpose, tables, FKs, business rules, UI behaviour, API actions, file layout, tenant rules, audit coverage, or known pitfalls. Do not mark a deliverable complete while notes are missing, empty, or stale for a folder you touched.
-7. **Before every reply**, re-check `AGENTS.md` and, when the task touches `scripts/`, **`scripts/SCRIPTS.md`**, and confirm the response follows them (pre-implementation discovery, architecture, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
+7. **Before every reply**, re-check `AGENTS.md` and, when the task touches `scripts/`, **`scripts/SCRIPTS.md`**, and confirm the response follows them (pre-implementation discovery, architecture, encoding, scripts catalog, testing guardrails, PR workflow — including step **8b** PR autolink scan — and any section relevant to the task).
 7a. **Local browser links in every agent reply (mandatory):** whenever you mention a path under `modules/` or `scripts/` to the user — including summaries, audit results, PR test plans, and verification tables, not only defects or manual checks — provide a **markdown link** with base `http://localhost/it-management/` (see **Setup & Debugging**) and tell the user to **open it in a new browser tab**. Patterns: `http://localhost/it-management/modules/<slug>/<file>.php`; `http://localhost/it-management/scripts/<file>.php` (add `?run=1` for browser script landing pages; `?run=1&apply=1` when documenting apply flows; omit `run=1` for no-auth plain-text probes such as `count_db_tables.php` only). Note **Admin session** when required, or **no login** for no-auth scripts. Multi-row lists must include a link per script/module (table **Link** column or inline link) — do not cite bare repo paths without a localhost URL. Example: `[Open modules/news/index.php](http://localhost/it-management/modules/news/index.php)` · `[verify_db_migrations.php?run=1](http://localhost/it-management/scripts/verify_db_migrations.php?run=1)` · `[verify_bigint_table_review.php?run=1](http://localhost/it-management/scripts/verify_bigint_table_review.php?run=1)`. Browser script HTML output should use `itm_script_format_modules_file_local_dev_link()` (`scripts/lib/script_browser_nav.php`; `verify_module_page_chrome.php` prints **Open in new tab →** under each `[FAIL]`). Cursor rules and skills live only in the Laragon `www` folder: `C:\Users\NelsonSalvador\Downloads\laragon-portable\www\.cursor` (repo-relative `../.cursor`). Browser-link rule: `../.cursor/rules/local-dev-browser-links.mdc`. Table-count skill: `../.cursor/skills/sync-db-table-count-docs/SKILL.md`. Do not keep copies under `it-management/.cursor/rules` or `it-management/.cursor/skills`.
 8. **Auto-open fresh PRs (mandatory):** when implementation is complete and required checks pass, ship via **FRESH PR only**: **`git checkout -b <new-branch>`** from synced **`origin/master`** → commit → **one** **`git push -u origin <new-branch>`** (first publish only) → **`gh pr create`** → reply with the **new PR URL**. **Do not ask** the user to confirm (“say so and I will…”, “would you like me to open a PR?”, etc.). There is **no** push to update PR #N. Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
 8a. **Pre-PR CI quartet (mandatory — hard fail):** before the **only** allowed **`git push -u origin <new-branch>`** and **`gh pr create`**, run **all four** jobs from `.github/workflows/smoke.yml` locally in order — same commands as CI, exit `0` on each. **Do not open a PR** until the quartet passes. List every command and outcome in the PR **Test plan** (do not claim “no tests run”). Canonical detail: **`scripts/SCRIPTS.md`** → Smoke tests.
@@ -84,6 +84,15 @@ Before making any change, replying, running commands, editing files, or proposin
    ```
 
    Fix failures on a **fresh branch** before push/PR — do not rely on GitHub Actions alone to discover tier2/UI/schema regressions.
+8b. **PR body GitHub `#number` autolink gate (mandatory — hard fail):** GitHub **always** autolinks bare `#` + digits in PR **titles**, **bodies**, **comments**, and **commit messages** to that issue/PR in **this** repo — including markdown-bold forms like `**#1**` and backlog prose like `item #2`. That is **not** the same as `docs/todo.md` section numbers. Full examples: **Character encoding → PR descriptions: GitHub `#number` autolinks**.
+
+   **Before every `gh pr create` or `gh pr edit --body-file`:**
+
+   1. Draft the title and body in a UTF-8 file (see **PR descriptions: shell / quoting corruption**).
+   2. Scan the draft — **zero** bare `#<digits>` tokens unless you intentionally link that exact GitHub issue/PR. When closing backlog work, write `docs/todo.md backlog item 2 (short title)` or `todo item 12 — subject` — **never** `item #2`, `todo #12`, `(#12)`, or `**#1**`.
+   3. After create/edit, verify on GitHub: open the PR in the browser and confirm the sidebar/timeline does **not** show unrelated linked pull requests. Optional CLI spot-check on the draft file: `grep -En '(^|[^[:alnum:]_])#[0-9]+' .pr-body-tmp.md` must print nothing.
+
+   **Hard fail:** shipping a PR whose body links `docs/todo.md item #1` to unrelated historical pull request 1 (same for any `#<digits>` backlog reference). Fix with `gh pr edit --body-file` in the same turn when caught before merge; otherwise note the mistake and fix the body when the user reports it.
 9. **Never push to an existing PR branch (hard fail):** agents **do not** `git push` (including `git push`, `git push origin <branch>`, or force-push) to any branch that already has **open or merged PR #N** for this work. Follow-ups, review fixes, and corrections use a **new branch name** + **new push** + **`gh pr create`** → **new PR number**. Forbidden user-facing lines: “Pushed to an existing PR URL”, “updated the open PR”, “added commits to the open PR”, “you can push after the diff check”.
 10. **Never local-only commits (hard fail):** `git commit` without the **first-publish** **`git push -u origin <new-branch>`** and **`gh pr create`** (when there are file changes to ship) is **not done**. Do **not** tell the user work is “committed” if `git status` shows **ahead of origin** or the PR URL is missing. Do **not** suggest “push when you want” — **you** complete the fresh-PR sequence in the same turn.
 11. **Pre-push full diff review (hard fail):** before the **only** allowed **`git push -u origin <new-branch>`** on that deliverable, run and **read** the full patch against `origin/master` (see **Change Hygiene → Pre-push diff review**). Do **not** publish a branch whose diff removes unrelated functions, reverts a just-merged fix, or shows large deletions you did not intend.
@@ -180,17 +189,21 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 
 ### PR descriptions: GitHub `#number` autolinks (mandatory — hard fail)
 
-GitHub **always** turns `#` followed by digits in PR **titles**, **bodies**, **comments**, and **commit messages** into a link to that issue or pull request in the same repo — even when you mean a `docs/todo.md` backlog item, a checklist row, or prose like “item 12 Done”.
+> **Workflow gate:** agent compliance step **8b** — run this scan on every PR title/body **before** `gh pr create` or `gh pr edit --body-file`.
+
+GitHub **always** turns `#` followed by digits in PR **titles**, **bodies**, **comments**, and **commit messages** into a link to that issue or pull request in the same repo — even when you mean a `docs/todo.md` backlog item, a checklist row, or prose like “item 12 Done”. Markdown bold does **not** disable autolink: `**#2**` still links.
 
 | What agents wrote | What GitHub linked | Why it is wrong |
 |---|---|---|
+| `docs/todo.md` item **#1**`, `item #1` | Unrelated pull request **#1** in this repo | Meant backlog item 1 in `docs/todo.md` (hash integration API keys), not a 2024 PR |
+| `docs/todo.md` item **#2**`, `todo #2` | Unrelated pull request **#2** | Meant backlog item 2 (vault GCM), not a historical PR |
 | `todo #12`, `item #12`, `(#12)` | Pull request **#12** — “Make workstation/CRUD column labels human-readable” | The work closed **section 12** in `docs/todo.md` (`.env.example` drift), not a 2024 PR |
-| `Closes backlog item **#12**` | Same wrong PR #12 | Readers see unrelated workstation/CRUD history in the PR timeline |
-| Title `… (todo #12)` | Title autolink + sidebar cross-ref to PR #12 | Title and linked PR disagree with the actual diff |
+| `Closes backlog item **#12**` | Same wrong pull request 12 | Readers see unrelated workstation/CRUD history in the PR timeline |
+| Title `… (todo #12)` | Title autolink + sidebar cross-ref to pull request 12 | Title and linked PR disagree with the actual diff |
 
 **Forbidden on GitHub-hosted text (PR title, PR body, review comments, commit subject/body):**
 
-- Bare `#<digits>` when referring to backlog items, `docs/todo.md` sections, VERIFY.md rows, or internal numbering — use **no hash** (for example: `todo item 12 — Close .env.example drift`, `docs/todo.md section 10`, `backlog: PHPUnit pure-logic coverage`).
+- Bare `#<digits>` when referring to backlog items, `docs/todo.md` sections, VERIFY.md rows, or internal numbering — use **no hash** (for example: `todo item 12 — Close .env.example drift`, `docs/todo.md section 10`, `backlog: PHPUnit pure-logic coverage`, `docs/todo.md backlog item 2 (authenticated vault encryption)`).
 - `PR #<digits>`, `/pull/<digits>`, and `Closes #<digits>` unless the user explicitly asked to link that exact GitHub issue/PR.
 
 **Allowed:**
@@ -198,7 +211,7 @@ GitHub **always** turns `#` followed by digits in PR **titles**, **bodies**, **c
 - Section headings inside committed repo docs (`### 12. Close …` in `docs/todo.md`) — those files are not GitHub PR descriptions.
 - The literal placeholder `PR #N` in this `AGENTS.md` rule text only.
 
-**Before `gh pr create`:** read the draft title and body in a plain-text editor — if any `#<digits>` token appears, rewrite without `#` unless you intentionally target that GitHub issue/PR number.
+**Before `gh pr create`:** read the draft title and body in a plain-text editor — if any `#<digits>` token appears, rewrite without `#` unless you intentionally target that GitHub issue/PR number. **After create/edit:** open the PR on GitHub and confirm the linked-PR sidebar does not show wrong history.
 
 ## 📂 Directory Map
 * `config/`: Core settings and `config.php`.
@@ -1242,6 +1255,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * If GitHub reports merge conflicts on an open PR, **close** it (or leave it) and open a **fresh PR** from a clean branch off current `master` — do **not** force-push to “fix” the old PR unless the user **explicitly** asked to keep and update **that same PR number**.
   * Before `gh pr create`, confirm `git log origin/master..HEAD` contains only commits for the current deliverable.
   * **PR body encoding check:** use `gh pr create --body-file` (see **PR descriptions: shell / quoting corruption** under Character encoding). After create/edit, run `gh pr view <number> --json body` or open the PR on GitHub — if step names or `$variables` look corrupted, fix with `gh pr edit --body-file`; that is shell quoting, not a repo UTF-8 issue.
+  * **PR body autolink check (step 8b):** draft title/body must contain **no** bare `#<digits>` backlog references; after publish, open the PR on GitHub and confirm the sidebar does not link unrelated historical pull requests.
 * **Pre-push diff review (mandatory — before the one allowed `git push -u` on a new branch):**
   * **Scope:** applies only to the **first publish** of a **new** branch that will become a **new** PR. It does **not** authorize a second push to an existing PR branch.
   * **Read the full diff, not the commit message alone.** A one-line commit can still delete dozens of lines (regression example: a “routing fix” branch that removed FK detach helpers while merging after a correct PR had already landed on `master`).
@@ -1269,6 +1283,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * Module consistency rechecks for any touched module (`index.php`, `view.php`, `edit.php`, `create.php`, `list_all.php`, and `delete.php` when applicable).
   * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php` from the repo root) — hard-fail if any `[FAIL]`.
   * **Pre-PR CI quartet** (step **8a**): already required before **`gh pr create`** — do not substitute ad-hoc checks for **smoke**, **database-import**, **tier2**, or **phpunit**.
+  * **PR body autolink gate** (step **8b**): no `#<digits>` in draft title/body unless intentionally linking that GitHub issue/PR; verify linked-PR sidebar on GitHub after publish.
   * Additional scope checks: see **`scripts/SCRIPTS.md`** and **`scripts/scripts.php`** when the change touches modules, `db/`, UI, or scripts beyond the quartet.
 
 ### GitHub PR review comments (mandatory)
