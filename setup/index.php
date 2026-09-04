@@ -134,15 +134,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ],
             'flash' => ['type' => $flashType, 'message' => $test['message']],
         ]);
-        if ($test['ok']) {
-            itm_setup_wizard_write_env_file([
-                'DB_HOST' => $host,
-                'DB_PORT' => (string)$port,
-                'DB_USER' => $user,
-                'DB_PASS' => $pass,
-                'DB_NAME' => $name,
-            ]);
-        }
         header('Location: ' . BASE_URL . 'setup/index.php?step=3');
         exit;
     }
@@ -154,15 +145,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pass = (string)($_POST['db_pass'] ?? '');
         $name = trim((string)($_POST['db_name'] ?? 'itmanagement'));
         $create = itm_setup_wizard_create_database($host, $port, $user, $pass, $name);
-        if ($create['ok']) {
-            itm_setup_wizard_write_env_file([
-                'DB_HOST' => $host,
-                'DB_PORT' => (string)$port,
-                'DB_USER' => $user,
-                'DB_PASS' => $pass,
-                'DB_NAME' => $name,
-            ]);
-        }
         itm_setup_wizard_state_set([
             'db' => compact('host', 'port', 'user', 'pass', 'name'),
             'db_probe' => [
@@ -236,14 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $import = itm_setup_wizard_import_database($host, $port, $user, $pass, $name);
-        itm_setup_wizard_write_env_file([
-            'DB_HOST' => $host,
-            'DB_PORT' => (string)$port,
-            'DB_USER' => $user,
-            'DB_PASS' => $pass,
-            'DB_NAME' => $name,
-        ]);
-        $connAfter = itm_setup_wizard_reload_connection();
+        $connAfter = itm_setup_wizard_connect_database(compact('host', 'port', 'user', 'pass', 'name'));
         $tableCount = $connAfter instanceof mysqli ? itm_setup_wizard_count_tables($connAfter, $name) : 0;
         $triggerCount = $connAfter instanceof mysqli ? itm_setup_wizard_count_triggers($connAfter, $name) : 0;
         $expected = itm_setup_wizard_expected_table_count();
@@ -295,13 +270,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $enableErrors = 0;
         }
 
-        $write = itm_setup_wizard_write_env_file([
-            'ITM_APP_URL' => $appUrl,
-            'APP_ENV' => $appEnv,
-            'ITM_DEV' => $itmDev,
-            'ITM_SKIP_FORCE_PASSWORD_CHANGE' => $skipForce,
-        ]);
-
         $connSettings = itm_setup_wizard_reload_connection();
         if ($connSettings instanceof mysqli && $enableErrors === 0) {
             itm_setup_wizard_apply_ui_error_reporting($connSettings, 0);
@@ -312,17 +280,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         itm_setup_wizard_state_set([
             'itm_app_url' => $appUrl,
             'app_env' => $appEnv,
+            'itm_dev' => $itmDev === '1',
+            'itm_skip_force_password_change' => $skipForce === '1',
             'enable_error_reporting' => $enableErrors,
             'flash' => [
-                'type' => $write['ok'] ? 'success' : 'error',
-                'message' => $write['message'],
+                'type' => 'success',
+                'message' => 'Environment settings saved (written to .env on step 7).',
             ],
         ]);
-        if ($write['ok']) {
-            itm_setup_wizard_mark_step_done(5);
-            itm_setup_wizard_set_step(6);
-        }
-        header('Location: ' . BASE_URL . 'setup/index.php?step=' . ($write['ok'] ? 6 : 5));
+        itm_setup_wizard_mark_step_done(5);
+        itm_setup_wizard_set_step(6);
+        header('Location: ' . BASE_URL . 'setup/index.php?step=6');
         exit;
     }
 
@@ -355,9 +323,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'step7_skip') {
+        $envWrite = itm_setup_wizard_persist_env_from_state();
+        if (!$envWrite['ok']) {
+            itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $envWrite['message']]]);
+            header('Location: ' . BASE_URL . 'setup/index.php?step=7');
+            exit;
+        }
         itm_setup_wizard_mark_step_done(7);
         itm_setup_wizard_set_step(8);
-        itm_setup_wizard_state_set(['flash' => ['type' => 'info', 'message' => 'Skipped sample data.']]);
+        itm_setup_wizard_state_set(['flash' => ['type' => 'info', 'message' => 'Skipped sample data. ' . $envWrite['message']]]);
         header('Location: ' . BASE_URL . 'setup/index.php?step=8');
         exit;
     }
@@ -371,16 +345,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $companyId = max(1, (int)($_POST['sample_company_id'] ?? 1));
         $seed = itm_setup_wizard_install_sample_data($connSample, $companyId);
-        itm_setup_wizard_state_set(['flash' => ['type' => $seed['ok'] ? 'success' : 'error', 'message' => $seed['message'] . ($seed['detail'] !== '' ? ' — ' . $seed['detail'] : '')]]);
         if ($seed['ok']) {
+            $envWrite = itm_setup_wizard_persist_env_from_state();
+            if (!$envWrite['ok']) {
+                itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $seed['message'] . ' — ' . $envWrite['message']]]);
+                header('Location: ' . BASE_URL . 'setup/index.php?step=7');
+                exit;
+            }
             itm_setup_wizard_mark_step_done(7);
             itm_setup_wizard_set_step(8);
+            itm_setup_wizard_state_set([
+                'flash' => [
+                    'type' => 'success',
+                    'message' => $seed['message'] . ($seed['detail'] !== '' ? ' — ' . $seed['detail'] : '') . ' — ' . $envWrite['message'],
+                ],
+            ]);
+            header('Location: ' . BASE_URL . 'setup/index.php?step=8');
+            exit;
         }
-        header('Location: ' . BASE_URL . 'setup/index.php?step=' . ($seed['ok'] ? 8 : 7));
+        itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $seed['message'] . ($seed['detail'] !== '' ? ' — ' . $seed['detail'] : '')]]);
+        header('Location: ' . BASE_URL . 'setup/index.php?step=7');
         exit;
     }
 
     if ($action === 'step8_finish') {
+        $envWrite = itm_setup_wizard_persist_env_from_state();
+        if (!$envWrite['ok']) {
+            itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $envWrite['message']]]);
+            header('Location: ' . BASE_URL . 'setup/index.php?step=7');
+            exit;
+        }
         $cleanup = itm_setup_wizard_remove_entrypoint();
         if ($cleanup['ok']) {
             header('Location: ' . BASE_URL . 'login.php?setup=done');
@@ -403,11 +397,12 @@ $flash = $state['flash'] ?? ['type' => '', 'message' => ''];
 itm_setup_wizard_state_set(['flash' => ['type' => '', 'message' => '']]);
 
 $dbDefaults = $state['db'] ?? [];
-$dbHost = (string)($dbDefaults['host'] ?? $envFile['DB_HOST'] ?? '127.0.0.1');
-$dbPort = (int)($dbDefaults['port'] ?? $envFile['DB_PORT'] ?? 3306);
-$dbUser = (string)($dbDefaults['user'] ?? $envFile['DB_USER'] ?? 'root');
-$dbPass = (string)($dbDefaults['pass'] ?? $envFile['DB_PASS'] ?? '');
-$dbName = (string)($dbDefaults['name'] ?? $envFile['DB_NAME'] ?? 'itmanagement');
+// Why: During install, DB creds live in wizard session only — do not pre-fill from a stale .env.
+$dbHost = (string)($dbDefaults['host'] ?? '127.0.0.1');
+$dbPort = (int)($dbDefaults['port'] ?? 3306);
+$dbUser = (string)($dbDefaults['user'] ?? 'root');
+$dbPass = (string)($dbDefaults['pass'] ?? '');
+$dbName = (string)($dbDefaults['name'] ?? 'itmanagement');
 $appUrl = (string)($state['itm_app_url'] ?? $envFile['ITM_APP_URL'] ?? $paths['base_url']);
 $projectRootInput = itm_setup_wizard_project_root_input_value();
 $projectRootPreview = itm_setup_wizard_preview_project_root_path($projectRootInput);
@@ -563,7 +558,7 @@ header('Content-Type: text/html; charset=utf-8');
 
             <?php elseif ($currentStep === 3): ?>
                 <h2>3. Verify database connection</h2>
-                <p>Test MySQL credentials, save <code>.env</code>, then import <code>01_schema → 02_data → 03_triggers</code>.</p>
+                <p>Test MySQL credentials, then import <code>01_schema → 02_data → 03_triggers</code>. Database settings are kept in the wizard session until step 7 writes <code>.env</code>.</p>
                 <?php if ($dbNeedsCreate): ?>
                     <div class="flash info">Database not found — use <strong>Create database</strong> below (server credentials are OK).</div>
                 <?php elseif ($dbNeedsReplaceConfirm): ?>
@@ -659,7 +654,7 @@ header('Content-Type: text/html; charset=utf-8');
 
             <?php elseif ($currentStep === 5): ?>
                 <h2>5. Environment settings</h2>
-                <p>Choose development vs production profile. Production disables dev bypass flags and browser error display.</p>
+                <p>Choose development vs production profile. Production disables dev bypass flags and browser error display. Values are stored in the wizard session and written to <code>.env</code> on step 7.</p>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step5_save">
@@ -671,8 +666,8 @@ header('Content-Type: text/html; charset=utf-8');
                         <option value="development"<?php echo $appEnv === 'development' ? ' selected' : ''; ?>>development</option>
                         <option value="production"<?php echo $appEnv === 'production' ? ' selected' : ''; ?>>production</option>
                     </select>
-                    <label><input type="checkbox" name="itm_dev" value="1"<?php echo (($envFile['ITM_DEV'] ?? '1') === '1') ? ' checked' : ''; ?>> ITM_DEV (local dev shortcut)</label>
-                    <label><input type="checkbox" name="itm_skip_force_password_change" value="1"<?php echo (($envFile['ITM_SKIP_FORCE_PASSWORD_CHANGE'] ?? '') === '1') ? ' checked' : ''; ?>> ITM_SKIP_FORCE_PASSWORD_CHANGE</label>
+                    <label><input type="checkbox" name="itm_dev" value="1"<?php echo (!empty($state['itm_dev']) || (!isset($state['itm_dev']) && ($envFile['ITM_DEV'] ?? '1') === '1')) ? ' checked' : ''; ?>> ITM_DEV (local dev shortcut)</label>
+                    <label><input type="checkbox" name="itm_skip_force_password_change" value="1"<?php echo (!empty($state['itm_skip_force_password_change']) || (!isset($state['itm_skip_force_password_change']) && ($envFile['ITM_SKIP_FORCE_PASSWORD_CHANGE'] ?? '') === '1')) ? ' checked' : ''; ?>> ITM_SKIP_FORCE_PASSWORD_CHANGE</label>
                     <label><input type="checkbox" name="enable_error_reporting" value="1"<?php echo !empty($state['enable_error_reporting']) ? ' checked' : ''; ?>> Enable browser error reporting (ui_configuration)</label>
                     <div class="actions">
                         <a class="btn" href="?step=4" title="Back">◀️</a>
@@ -719,7 +714,7 @@ header('Content-Type: text/html; charset=utf-8');
 
             <?php elseif ($currentStep === 7): ?>
                 <h2>7. Sample data (optional)</h2>
-                <p>Install demo rows from <code>db/02_data_sample.sql</code> for company 1 (TechCorp). Safe to skip for production.</p>
+                <p>Install demo rows from <code>db/02_data_sample.sql</code> for company 1 (TechCorp). Safe to skip for production. Continuing writes <code>.env</code> with database and environment settings from earlier steps.</p>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step7_install">

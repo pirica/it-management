@@ -1953,12 +1953,58 @@ if (!function_exists('itm_setup_wizard_ensure_directories')) {
     }
 }
 
-if (!function_exists('itm_setup_wizard_reload_connection')) {
+if (!function_exists('itm_setup_wizard_session_db_credentials')) {
     /**
+     * Wizard session DB settings (steps 3–7). Not read from .env — avoids stale on-disk creds mid-install.
+     *
+     * @return array{host:string,port:int,user:string,pass:string,name:string}|null
+     */
+    function itm_setup_wizard_session_db_credentials(): ?array
+    {
+        $state = itm_setup_wizard_state();
+        $db = $state['db'] ?? null;
+        if (!is_array($db)) {
+            return null;
+        }
+
+        $host = trim((string)($db['host'] ?? ''));
+        $name = trim((string)($db['name'] ?? ''));
+        $user = trim((string)($db['user'] ?? ''));
+        if ($host === '' || $name === '' || $user === '') {
+            return null;
+        }
+
+        return [
+            'host' => $host,
+            'port' => max(1, (int)($db['port'] ?? 3306)),
+            'user' => $user,
+            'pass' => (string)($db['pass'] ?? ''),
+            'name' => $name,
+        ];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_connect_database')) {
+    /**
+     * @param array{host?:string,port?:int,user?:string,pass?:string,name?:string}|null $credentials
      * @return mysqli|false
      */
-    function itm_setup_wizard_reload_connection()
+    function itm_setup_wizard_connect_database(?array $credentials = null)
     {
+        if ($credentials === null) {
+            $credentials = itm_setup_wizard_session_db_credentials();
+        }
+
+        if ($credentials !== null) {
+            return itm_mysqli_connect(
+                $credentials['host'],
+                $credentials['user'],
+                $credentials['pass'],
+                $credentials['name'],
+                $credentials['port']
+            );
+        }
+
         itm_load_dotenv_file(ROOT_PATH . '.env');
 
         return itm_mysqli_connect(
@@ -1968,6 +2014,64 @@ if (!function_exists('itm_setup_wizard_reload_connection')) {
             getenv('DB_NAME') ?: DB_NAME,
             (int)(getenv('DB_PORT') ?: DB_PORT)
         );
+    }
+}
+
+if (!function_exists('itm_setup_wizard_reload_connection')) {
+    /**
+     * @return mysqli|false
+     */
+    function itm_setup_wizard_reload_connection()
+    {
+        return itm_setup_wizard_connect_database();
+    }
+}
+
+if (!function_exists('itm_setup_wizard_persist_env_from_state')) {
+    /**
+     * Write .env from wizard session (step 7 / finish). Deferred so partial installs do not poison .env.
+     *
+     * @return array{ok:bool,message:string}
+     */
+    function itm_setup_wizard_persist_env_from_state(): array
+    {
+        $credentials = itm_setup_wizard_session_db_credentials();
+        if ($credentials === null) {
+            return ['ok' => false, 'message' => 'Database settings missing from wizard session — complete step 3 first.'];
+        }
+
+        $state = itm_setup_wizard_state();
+        $values = [
+            'DB_HOST' => $credentials['host'],
+            'DB_PORT' => (string)$credentials['port'],
+            'DB_USER' => $credentials['user'],
+            'DB_PASS' => $credentials['pass'],
+            'DB_NAME' => $credentials['name'],
+        ];
+
+        $appUrl = trim((string)($state['itm_app_url'] ?? ''));
+        if ($appUrl !== '') {
+            $values['ITM_APP_URL'] = rtrim($appUrl, '/') . '/';
+        }
+
+        $appEnv = trim((string)($state['app_env'] ?? ''));
+        if ($appEnv !== '') {
+            $values['APP_ENV'] = $appEnv;
+        }
+
+        if (array_key_exists('itm_dev', $state)) {
+            $values['ITM_DEV'] = !empty($state['itm_dev']) ? '1' : '0';
+        } elseif ($appEnv === 'production') {
+            $values['ITM_DEV'] = '0';
+        }
+
+        if (array_key_exists('itm_skip_force_password_change', $state)) {
+            $values['ITM_SKIP_FORCE_PASSWORD_CHANGE'] = !empty($state['itm_skip_force_password_change']) ? '1' : '0';
+        } elseif ($appEnv === 'production') {
+            $values['ITM_SKIP_FORCE_PASSWORD_CHANGE'] = '0';
+        }
+
+        return itm_setup_wizard_write_env_file($values);
     }
 }
 

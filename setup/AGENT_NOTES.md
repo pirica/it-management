@@ -25,6 +25,7 @@ Touches the full schema when **Import database bundle** runs (`db/01_schema.sql`
 - While `setup/.installed` exists, wizard redirects to `login.php` unless `?force=1` (re-run only when entry file restored manually).
 - `config/config.php` strips `/setup` from `BASE_URL` detection (same pattern as `/scripts`).
 - Production profile in step 5 forces `ITM_DEV=0`, `ITM_SKIP_FORCE_PASSWORD_CHANGE=0`, and disables browser error reporting on `ui_configuration`.
+- **`.env` is written on step 7** (sample data install or skip) and re-checked on step 8 finish — not on step 3 or 5. Steps 3–6 keep database and environment settings in wizard session; `itm_setup_wizard_connect_database()` prefers session creds over on-disk `.env` so a stale `.env` cannot break later steps or force a jump back to step 3.
 - Not wired to CI smoke — operators run manually before first login.
 
 ## 5. UI Behavior Requirements
@@ -79,5 +80,5 @@ After finish: `login.php` with rotated admin credentials.
 ## 12. Related Documentation
 
 - `handoff.md` — first-time install
-- `docs/ENV.md` — `.env` keys written in steps 3 and 5
+- `docs/ENV.md` — `.env` keys written on step 7 (and verified on step 8 finish)
 - `scripts/import_database_split.php` — equivalent CLI/browser import

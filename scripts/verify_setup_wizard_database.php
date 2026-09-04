@@ -231,4 +231,34 @@ if (!$importCreate['ok']) {
     }
 }
 
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+$wizardSessionBackup = $_SESSION['itm_setup_wizard'] ?? null;
+$_SESSION['itm_setup_wizard'] = [
+    'db' => [
+        'host' => '127.0.0.1',
+        'port' => 3307,
+        'user' => 'root',
+        'pass' => 'secret',
+        'name' => 'itmanagement_test',
+    ],
+];
+$credentials = itm_setup_wizard_session_db_credentials();
+if ($credentials === null || $credentials['port'] !== 3307 || $credentials['name'] !== 'itmanagement_test') {
+    setup_db_fail('Wizard session DB credentials must round-trip from session state');
+} else {
+    setup_db_pass('Wizard session DB credentials round-trip from session state');
+}
+
+$_SESSION['itm_setup_wizard'] = [];
+$persistMissing = itm_setup_wizard_persist_env_from_state();
+if ($persistMissing['ok']) {
+    setup_db_fail('persist_env_from_state must fail when session db is missing');
+} else {
+    setup_db_pass('persist_env_from_state rejects missing session db');
+}
+
+$_SESSION['itm_setup_wizard'] = $wizardSessionBackup;
+
 exit($fail > 0 ? 1 : 0);
