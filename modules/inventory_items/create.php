@@ -61,82 +61,152 @@ if ($is_edit) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
-    // Sanitize basic string inputs.
-    $name = escape_sql($_POST['name'] ?? '', $conn);
-    $item_code = escape_sql($_POST['item_code'] ?? '', $conn);
-    $serial = escape_sql($_POST['serial'] ?? '', $conn);
+    // Normalize POST values for prepared statements (no escape_sql).
+    $name = trim((string)($_POST['name'] ?? ''));
+    $item_code = trim((string)($_POST['item_code'] ?? ''));
+    $serial = trim((string)($_POST['serial'] ?? ''));
     $storage_date_post = trim((string)($_POST['storage_date'] ?? ''));
-    $storage_date = $storage_date_post !== '' ? escape_sql($storage_date_post, $conn) : '';
-    $comments = escape_sql($_POST['comments'] ?? '', $conn);
+    $storage_date = $storage_date_post !== '' ? $storage_date_post : null;
+    $comments = trim((string)($_POST['comments'] ?? ''));
 
-    // Normalize category selection.
     $category_post = $_POST['category_id'] ?? 0;
-    if ($category_post === '__add_new__') { $category_post = 0; }
+    if ($category_post === '__add_new__') {
+        $category_post = 0;
+    }
     $category_id = (int)$category_post;
-    $category_sql = $category_id ?: 'NULL';
-    $location_post = $_POST['location_id'] ?? 0;
-    if ($location_post === '__add_new__') { $location_post = 0; }
-    $location_id = (int)$location_post;
-    $location_sql = $location_id ?: 'NULL';
-    $manufacturer_post = $_POST['manufacturer_id'] ?? 0;
-    if ($manufacturer_post === '__add_new__') { $manufacturer_post = 0; }
-    $manufacturer_id = (int)$manufacturer_post;
-    $manufacturer_sql = $manufacturer_id ?: 'NULL';
-    $supplier_post = $_POST['supplier_id'] ?? 0;
-    if ($supplier_post === '__add_new__') { $supplier_post = 0; }
-    $supplier_id = (int)$supplier_post;
-    $supplier_sql = $supplier_id ?: 'NULL';
-    $last_user_post = $_POST['last_employee_id'] ?? 0;
-    if ($last_user_post === '__add_new__') { $last_user_post = 0; }
-    $last_employee_id = (int)$last_user_post;
-    $last_user_sql = $last_employee_id ?: 'NULL';
-    $last_employee_manual_post = trim((string)($_POST['last_employee_manual'] ?? ''));
-    $last_employee_manual = $last_employee_manual_post !== '' ? escape_sql($last_employee_manual_post, $conn) : '';
-    $last_employee_manual_sql = $last_employee_manual !== '' ? "'$last_employee_manual'" : 'NULL';
+    $category_bind = $category_id > 0 ? $category_id : null;
 
-    // Parse numeric inputs.
+    $location_post = $_POST['location_id'] ?? 0;
+    if ($location_post === '__add_new__') {
+        $location_post = 0;
+    }
+    $location_id = (int)$location_post;
+    $location_bind = $location_id > 0 ? $location_id : null;
+
+    $manufacturer_post = $_POST['manufacturer_id'] ?? 0;
+    if ($manufacturer_post === '__add_new__') {
+        $manufacturer_post = 0;
+    }
+    $manufacturer_id = (int)$manufacturer_post;
+    $manufacturer_bind = $manufacturer_id > 0 ? $manufacturer_id : null;
+
+    $supplier_post = $_POST['supplier_id'] ?? 0;
+    if ($supplier_post === '__add_new__') {
+        $supplier_post = 0;
+    }
+    $supplier_id = (int)$supplier_post;
+    $supplier_bind = $supplier_id > 0 ? $supplier_id : null;
+
+    $last_user_post = $_POST['last_employee_id'] ?? 0;
+    if ($last_user_post === '__add_new__') {
+        $last_user_post = 0;
+    }
+    $last_employee_id = (int)$last_user_post;
+    $last_employee_bind = $last_employee_id > 0 ? $last_employee_id : null;
+
+    $last_employee_manual_post = trim((string)($_POST['last_employee_manual'] ?? ''));
+    $last_employee_manual = $last_employee_manual_post !== '' ? $last_employee_manual_post : null;
+
     $quantity_on_hand = (int)($_POST['quantity_on_hand'] ?? 0);
     $quantity_minimum = (int)($_POST['quantity_minimum'] ?? 5);
     $price_eur = (float)($_POST['price_eur'] ?? 0);
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if (!$name) {
+    if ($name === '') {
         $error = 'Item name is required.';
     } else {
-        // Construct SQL query based on mode (Insert vs Update).
-        if ($is_edit) {
-            $sql = "UPDATE inventory_items
-                    SET name='$name',
-                        item_code='$item_code',
-                        serial='$serial',
-                        storage_date=" . ($storage_date !== '' ? "'$storage_date'" : "NULL") . ",
-                        comments='$comments',
-                        category_id=$category_sql,
-                        location_id=$location_sql,
-                        manufacturer_id=$manufacturer_sql,
-                        supplier_id=$supplier_sql,
-                        quantity_on_hand=$quantity_on_hand,
-                        quantity_minimum=$quantity_minimum,
-                        price_eur=$price_eur,
-                        last_employee_id=$last_user_sql,
-                        last_employee_manual=$last_employee_manual_sql,
-                        active=$active
-                    WHERE id=$id AND company_id=$company_id";
-        } else {
-            $sql = "INSERT INTO inventory_items
-                    (company_id,name,item_code,serial,storage_date,comments,category_id,location_id,manufacturer_id,supplier_id,quantity_on_hand,quantity_minimum,price_eur,last_employee_id,last_employee_manual,active)
-                    VALUES
-                    ($company_id,'$name','$item_code','$serial'," . ($storage_date !== '' ? "'$storage_date'" : "NULL") . ",'$comments',$category_sql,$location_sql,$manufacturer_sql,$supplier_sql,$quantity_on_hand,$quantity_minimum,$price_eur,$last_user_sql,$last_employee_manual_sql,$active)";
-        }
-
         $dbErrorCode = 0;
         $dbErrorMessage = '';
-        // Execute and redirect on success.
-        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+        $saveOk = false;
+
+        if ($is_edit) {
+            $stmt = mysqli_prepare(
+                $conn,
+                'UPDATE inventory_items
+                    SET name = ?, item_code = ?, serial = ?, storage_date = ?, comments = ?,
+                        category_id = ?, location_id = ?, manufacturer_id = ?, supplier_id = ?,
+                        quantity_on_hand = ?, quantity_minimum = ?, price_eur = ?,
+                        last_employee_id = ?, last_employee_manual = ?, active = ?
+                    WHERE id = ? AND company_id = ?'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    'sssssiiiiiidisisii',
+                    $name,
+                    $item_code,
+                    $serial,
+                    $storage_date,
+                    $comments,
+                    $category_bind,
+                    $location_bind,
+                    $manufacturer_bind,
+                    $supplier_bind,
+                    $quantity_on_hand,
+                    $quantity_minimum,
+                    $price_eur,
+                    $last_employee_bind,
+                    $last_employee_manual,
+                    $active,
+                    $id,
+                    $company_id
+                );
+                $saveOk = mysqli_stmt_execute($stmt);
+                if (!$saveOk) {
+                    $dbErrorCode = (int)mysqli_errno($conn);
+                    $dbErrorMessage = (string)mysqli_error($conn);
+                }
+                mysqli_stmt_close($stmt);
+            } else {
+                $dbErrorCode = (int)mysqli_errno($conn);
+                $dbErrorMessage = (string)mysqli_error($conn);
+            }
+        } else {
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO inventory_items
+                    (company_id, name, item_code, serial, storage_date, comments, category_id, location_id,
+                     manufacturer_id, supplier_id, quantity_on_hand, quantity_minimum, price_eur,
+                     last_employee_id, last_employee_manual, active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    'sssssiiiiiidisi',
+                    $company_id,
+                    $name,
+                    $item_code,
+                    $serial,
+                    $storage_date,
+                    $comments,
+                    $category_bind,
+                    $location_bind,
+                    $manufacturer_bind,
+                    $supplier_bind,
+                    $quantity_on_hand,
+                    $quantity_minimum,
+                    $price_eur,
+                    $last_employee_bind,
+                    $last_employee_manual,
+                    $active
+                );
+                $saveOk = mysqli_stmt_execute($stmt);
+                if (!$saveOk) {
+                    $dbErrorCode = (int)mysqli_errno($conn);
+                    $dbErrorMessage = (string)mysqli_error($conn);
+                }
+                mysqli_stmt_close($stmt);
+            } else {
+                $dbErrorCode = (int)mysqli_errno($conn);
+                $dbErrorMessage = (string)mysqli_error($conn);
+            }
+        }
+
+        if ($saveOk) {
             header('Location: index.php');
             exit;
         }
-        // Handle database-level errors (like unique constraint violations).
         $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }

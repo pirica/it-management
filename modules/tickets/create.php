@@ -361,25 +361,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
     itm_crud_force_active_live($data);
 
-    // Extraction and sanitization
-    $ticket_external_code = escape_sql($_POST['ticket_external_code'] ?? '', $conn);
-    $title = escape_sql($_POST['title'] ?? '', $conn);
+    // Extraction — raw POST values for prepared statements (no escape_sql).
+    $ticket_external_code = trim((string)($_POST['ticket_external_code'] ?? ''));
+    $title = trim((string)($_POST['title'] ?? ''));
     // Why: Initial description is set on create only; follow-up belongs in Activity comments.
     if ($is_edit && $id > 0) {
-        $description = escape_sql((string)($data['description'] ?? ''), $conn);
+        $description = (string)($data['description'] ?? '');
     } else {
-        $description = escape_sql($_POST['description'] ?? '', $conn);
+        $description = trim((string)($_POST['description'] ?? ''));
     }
 
-    // Normalization of FK fields
-    $category_id = (int)($_POST['category_id'] ?? 0) ?: 'NULL';
-    $status_id = (int)($_POST['status_id'] ?? 0) ?: 'NULL';
-    $priority_id = (int)($_POST['priority_id'] ?? 0) ?: 'NULL';
+    $categoryBind = ((int)($_POST['category_id'] ?? 0)) > 0 ? (int)$_POST['category_id'] : null;
+    $statusBind = ((int)($_POST['status_id'] ?? 0)) > 0 ? (int)$_POST['status_id'] : null;
+    $priorityBind = ((int)($_POST['priority_id'] ?? 0)) > 0 ? (int)$_POST['priority_id'] : null;
     $created_by_employee_id = (int)($_POST['created_by_employee_id'] ?? 0);
-    $assigned_to_employee_id = (int)($_POST['assigned_to_employee_id'] ?? 0) ?: 'NULL';
-    $equipment_id = (int)($_POST['equipment_id'] ?? 0) ?: 'NULL';
+    $assignedBind = ((int)($_POST['assigned_to_employee_id'] ?? 0)) > 0 ? (int)$_POST['assigned_to_employee_id'] : null;
+    $equipmentBind = ((int)($_POST['equipment_id'] ?? 0)) > 0 ? (int)$_POST['equipment_id'] : null;
     $due_date = trim((string)($_POST['due_date'] ?? ''));
-    $due_date_sql = ($due_date !== '') ? "'" . escape_sql($due_date, $conn) . "'" : 'NULL';
+    $dueDateBind = $due_date !== '' ? $due_date : null;
 
     // --- PHOTO PROCESSING ---
     $ticketPhotoFilenames = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
@@ -459,26 +458,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $previousPriorityId = (int)($prevRow['priority_id'] ?? 0);
             }
         }
-        $newAssigneeId = ($assigned_to_employee_id === 'NULL' || $assigned_to_employee_id === null) ? 0 : (int)$assigned_to_employee_id;
-        $photos_sql = empty($ticketPhotoFilenames) ? 'NULL' : "'" . escape_sql(json_encode($ticketPhotoFilenames, JSON_UNESCAPED_SLASHES), $conn) . "'";
-        $created_at_val = isset($_POST['created_at']) ? "'" . escape_sql(str_replace('T', ' ', $_POST['created_at']) . ':00', $conn) . "'" : 'CURRENT_TIMESTAMP';
+        $newAssigneeId = $assignedBind !== null ? (int)$assignedBind : 0;
+        $photosBind = !empty($ticketPhotoFilenames)
+            ? json_encode($ticketPhotoFilenames, JSON_UNESCAPED_SLASHES)
+            : null;
+        $createdAtPost = trim((string)($_POST['created_at'] ?? ''));
+        $createdAtBind = $createdAtPost !== ''
+            ? str_replace('T', ' ', $createdAtPost) . ':00'
+            : null;
 
+        $saveOk = false;
         if ($is_edit) {
-            $sql = "UPDATE tickets SET
-                        ticket_external_code='$ticket_external_code', title='$title', description='$description',
-                        category_id=$category_id, status_id=$status_id, priority_id=$priority_id,
-                        created_by_employee_id=$created_by_employee_id, assigned_to_employee_id=$assigned_to_employee_id, equipment_id=$equipment_id,
-                        due_date=$due_date_sql,
-                        tickets_photos=$photos_sql, active=1, created_at=$created_at_val
-                    WHERE id=$id AND company_id=$company_id";
+            $stmt = mysqli_prepare(
+                $conn,
+                'UPDATE tickets SET
+                    ticket_external_code = ?, title = ?, description = ?,
+                    category_id = ?, status_id = ?, priority_id = ?,
+                    created_by_employee_id = ?, assigned_to_employee_id = ?, equipment_id = ?,
+                    due_date = ?, tickets_photos = ?, active = 1, created_at = COALESCE(?, created_at)
+                WHERE id = ? AND company_id = ?'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    'sssiiiiisssii',
+                    $ticket_external_code,
+                    $title,
+                    $description,
+                    $categoryBind,
+                    $statusBind,
+                    $priorityBind,
+                    $created_by_employee_id,
+                    $assignedBind,
+                    $equipmentBind,
+                    $dueDateBind,
+                    $photosBind,
+                    $createdAtBind,
+                    $id,
+                    $company_id
+                );
+                $saveOk = mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
         } else {
-            $sql = "INSERT INTO tickets
-                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_employee_id, assigned_to_employee_id, equipment_id, due_date, tickets_photos, active, created_at)
-                    VALUES
-                    ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_employee_id, $assigned_to_employee_id, $equipment_id, $due_date_sql, $photos_sql, 1, $created_at_val)";
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO tickets
+                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id,
+                     created_by_employee_id, assigned_to_employee_id, equipment_id, due_date, tickets_photos, active, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, COALESCE(?, CURRENT_TIMESTAMP))'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    'isssiiiiiisss',
+                    $company_id,
+                    $ticket_external_code,
+                    $title,
+                    $description,
+                    $categoryBind,
+                    $statusBind,
+                    $priorityBind,
+                    $created_by_employee_id,
+                    $assignedBind,
+                    $equipmentBind,
+                    $dueDateBind,
+                    $photosBind,
+                    $createdAtBind
+                );
+                $saveOk = mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
         }
 
-        if (!$error && itm_run_query($conn, $sql)) {
+        if (!$error && $saveOk) {
             // Success: Cleanup physical files for removed photos
             foreach ($ticketPhotoFilenamesToDeleteAfterSave as $df) { @unlink($ticketUploadPath . $df); }
             $savedTicketId = $is_edit ? $id : (int)mysqli_insert_id($conn);
@@ -487,7 +540,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 itm_search_index_after_module_save($conn, 'tickets', (int)$company_id, $savedTicketId);
                 if (!$is_edit) {
                     if (function_exists('itm_ticket_sla_apply_on_create')) {
-                        $slaPriorityId = ($priority_id === 'NULL' || $priority_id === null) ? 0 : (int)$priority_id;
+                        $slaPriorityId = $priorityBind !== null ? (int)$priorityBind : 0;
                         itm_ticket_sla_apply_on_create($conn, $savedTicketId, (int)$company_id, $slaPriorityId);
                     }
                     if (function_exists('itm_webhook_queue_emit_ticket_created')) {
@@ -507,7 +560,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ]);
                         itm_automation_rules_dispatch($conn, (int)$company_id, 'ticket.created', $ticketContext);
                     } else {
-                        $newStatusId = ($status_id === 'NULL' || $status_id === null) ? 0 : (int)$status_id;
+                        $newStatusId = $statusBind !== null ? (int)$statusBind : 0;
                         if ($newStatusId > 0 && $newStatusId !== $previousStatusId) {
                             $statusContext = itm_automation_rules_build_ticket_context($conn, (int)$company_id, $savedTicketId, [
                                 'automation_depth' => 0,
@@ -529,7 +582,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ]);
                             }
                         }
-                        $newPriorityId = ($priority_id === 'NULL' || $priority_id === null) ? 0 : (int)$priority_id;
+                        $newPriorityId = $priorityBind !== null ? (int)$priorityBind : 0;
                         if ($newPriorityId > 0 && $newPriorityId !== $previousPriorityId) {
                             $priorityContext = itm_automation_rules_build_ticket_context($conn, (int)$company_id, $savedTicketId, [
                                 'automation_depth' => 0,
@@ -553,7 +606,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                 }
-                $newStatusIdForSurvey = ($status_id === 'NULL' || $status_id === null) ? 0 : (int)$status_id;
+                $newStatusIdForSurvey = $statusBind !== null ? (int)$statusBind : 0;
                 if ($newStatusIdForSurvey > 0 && function_exists('itm_ticket_survey_maybe_issue_on_close')) {
                     if (!$is_edit || $newStatusIdForSurvey !== $previousStatusId) {
                         itm_ticket_survey_maybe_issue_on_close($conn, (int)$company_id, $savedTicketId, $newStatusIdForSurvey);
@@ -563,8 +616,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     itm_notify_ticket_assigned($conn, (int)$company_id, $newAssigneeId, $savedTicketId, $title, $ticket_external_code);
                 }
                 if ($is_edit && function_exists('itm_ticket_log_edit_field_changes')) {
-                    $newStatusIdForActivity = ($status_id === 'NULL' || $status_id === null) ? 0 : (int)$status_id;
-                    $newPriorityIdForActivity = ($priority_id === 'NULL' || $priority_id === null) ? 0 : (int)$priority_id;
+                    $newStatusIdForActivity = $statusBind !== null ? (int)$statusBind : 0;
+                    $newPriorityIdForActivity = $priorityBind !== null ? (int)$priorityBind : 0;
                     itm_ticket_log_edit_field_changes(
                         $conn,
                         (int)$company_id,
