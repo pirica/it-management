@@ -50,7 +50,12 @@ if (!function_exists('itm_create_post_prepared_audit_is_wrapper')) {
      */
     function itm_create_post_prepared_audit_is_wrapper(string $content): bool
     {
-        if (preg_match('/\brequire(?:_once)?\s+[\'"][^\'"]*index\.php[\'"]/i', $content) !== 1) {
+        // Why: Match thin create.php that require() only the module index.php entry — not *search_index.php helpers.
+        $requiresModuleIndex = preg_match(
+            '/\brequire(?:_once)?\s+[\'"](?:(?:\.\/)?index\.php|[^\'"]+\/index\.php)[\'"]/i',
+            $content
+        ) === 1;
+        if (!$requiresModuleIndex) {
             return false;
         }
 

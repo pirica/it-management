@@ -17,6 +17,7 @@ require_once '../../includes/employee_profile_photo.php';
 require_once '../../includes/itm_employees_hidden_accounts.php';
 require_once '../../includes/itm_fk_option_labels.php';
 require_once '../../includes/itm_role_assignment_rights.php';
+require_once '../../includes/itm_employees_profile_save.php';
 
 /**
  * Cleanup unique constraints for email if they exist, facilitating manual handling
@@ -101,94 +102,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Execute insertion
     if (empty($errors)) {
-        $firstName = mysqli_real_escape_string($conn, $form['first_name']);
-        $lastName = mysqli_real_escape_string($conn, $form['last_name']);
-        $displayName = $form['display_name'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['display_name']) . "'";
-        $fullName = $form['full_name'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['full_name']) . "'";
-        $workEmail = $form['work_email'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['work_email']) . "'";
-        $personalEmail = $form['personal_email'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['personal_email']) . "'";
-        $externalId = $form['external_id'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_id']) . "'";
-        $insuranceN = $form['insurance_n'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['insurance_n']) . "'";
-        $username = $form['username'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['username']) . "'";
-        $jobCode = $form['job_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['job_code']) . "'";
-        $departmentId = $form['department_id'] === '' ? 'NULL' : (string)(int)$form['department_id'];
-        $officeDeptId = $form['office_key_card_department_id'] === '' ? 'NULL' : (string)(int)$form['office_key_card_department_id'];
-        $rawStatusCode = $form['raw_status_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['raw_status_code']) . "'";
-        $employmentStatusId = $form['employment_status_id'] === '' ? '1' : (string)(int)$form['employment_status_id'];
-        $employeePositionId = $form['employee_position_id'] === '' ? 'NULL' : (string)(int)$form['employee_position_id'];
-        $reportsTo = $form['reports_to'] === '' ? 'NULL' : (string)(int)$form['reports_to'];
-        $workstationModeId = $form['workstation_mode_id'] === '' ? 'NULL' : (string)(int)$form['workstation_mode_id'];
-        $assignmentTypeId = $form['assignment_type_id'] === '' ? 'NULL' : (string)(int)$form['assignment_type_id'];
-        $startDate = itm_sql_date_fragment($conn, $form['start_date']);
-        $employeeTypeId = $form['employee_type_id'] === '' ? 'NULL' : (string)(int)$form['employee_type_id'];
-        $terminationDate = itm_sql_date_fragment($conn, $form['termination_date']);
-        $employeeCode = $form['employee_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['employee_code']) . "'";
-        $locationId = $form['location_id'] === '' ? 'NULL' : (string)(int)$form['location_id'];
-        $requestDate = itm_sql_date_fragment($conn, $form['request_date']);
-        $requestedBy = $form['requested_by'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['requested_by']) . "'";
-        $terminationRequestedBy = $form['termination_requested_by'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['termination_requested_by']) . "'";
-        $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
-        $mobilePhone = $form['mobile_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['mobile_phone']) . "'";
-        $externalNumber = $form['external_number'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_number']) . "'";
-        $dect = $form['dect'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['dect']) . "'";
-        $extension = $form['extension'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['extension']) . "'";
-        $onContacts = (int)$form['on_contacts'];
-        $onOrgchart = (int)$form['on_orgchart'];
-        $birthday = itm_sql_date_fragment($conn, $form['birthday']);
-        $hideYear = (int)$form['hide_year'];
-        $roleId = $form['role_id'] === '' ? 'NULL' : (string)(int)$form['role_id'];
-        $accessLevelId = $form['access_level_id'] === '' ? 'NULL' : (string)(int)$form['access_level_id'];
-        $active = (int)$form['active'];
+        $profileRow = itm_employees_profile_normalize_post_row($form);
 
-        if ($roleId !== 'NULL') {
+        if ($profileRow['role_id'] !== null) {
             $currentUserRoleId = itm_get_employee_role_id($conn, (int)($_SESSION['employee_id'] ?? 0));
-            if (!itm_can_assign_role($conn, (int)$company_id, $currentUserRoleId, (int)$roleId)) {
+            if (!itm_can_assign_role($conn, (int)$company_id, $currentUserRoleId, (int)$profileRow['role_id'])) {
                 $errors[] = 'You do not have permission to assign this role.';
             }
         }
 
-    if (empty($errors)) {
-        $sql = "INSERT INTO employees (
-            company_id, first_name, last_name, display_name, full_name, work_email, personal_email, external_id, insurance_n, username, employee_code,
-            department_id, location_id, job_code, comments, mobile_phone, external_number, dect, extension, on_contacts, on_orgchart, raw_status_code, employment_status_id,
-            employee_position_id, reports_to, office_key_card_department_id, workstation_mode_id, assignment_type_id,
-            request_date, requested_by, termination_requested_by,
-            start_date, employee_type_id, termination_date, birthday, hide_year, role_id, access_level_id, active
-        ) VALUES (
-            " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$fullName}, {$workEmail}, {$personalEmail}, {$externalId}, {$insuranceN}, {$username}, {$employeeCode},
-            {$departmentId}, {$locationId}, {$jobCode}, {$comments}, {$mobilePhone}, {$externalNumber}, {$dect}, {$extension}, {$onContacts}, {$onOrgchart}, {$rawStatusCode}, {$employmentStatusId},
-            {$employeePositionId}, {$reportsTo}, {$officeDeptId}, {$workstationModeId}, {$assignmentTypeId},
-            {$requestDate}, {$requestedBy}, {$terminationRequestedBy},
-            {$startDate}, {$employeeTypeId}, {$terminationDate}, {$birthday}, {$hideYear}, {$roleId}, {$accessLevelId}, {$active}
-        )";
-
-        if (mysqli_query($conn, $sql)) {
-            $newEmployeeId = (int)mysqli_insert_id($conn);
-            if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
-                $newEmployeeRes = mysqli_query($conn, 'SELECT * FROM employees WHERE id=' . $newEmployeeId . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
-                $newEmployee = ($newEmployeeRes && mysqli_num_rows($newEmployeeRes) === 1) ? mysqli_fetch_assoc($newEmployeeRes) : null;
-                if ($newEmployee) {
-                    $photoResult = emp_profile_photo_store_upload((int)$company_id, $newEmployee, $_FILES['photo']);
-                    if ($photoResult['ok'] ?? false) {
-                        $photoFilename = mysqli_real_escape_string($conn, (string)$photoResult['filename']);
-                        mysqli_query($conn, "UPDATE employees SET photo='{$photoFilename}' WHERE id={$newEmployeeId} AND company_id=" . (int)$company_id . ' LIMIT 1');
-                    } elseif (!empty($photoResult['error'])) {
-                        $errors[] = (string)$photoResult['error'];
+        if (empty($errors)) {
+            $insertResult = itm_employees_profile_insert_prepared($conn, (int)$company_id, $profileRow);
+            if ($insertResult['ok']) {
+                $newEmployeeId = (int)$insertResult['id'];
+                if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $newEmployee = itm_employees_profile_fetch_row($conn, (int)$company_id, $newEmployeeId);
+                    if ($newEmployee) {
+                        $photoResult = emp_profile_photo_store_upload((int)$company_id, $newEmployee, $_FILES['photo']);
+                        if ($photoResult['ok'] ?? false) {
+                            itm_employees_profile_update_photo_prepared(
+                                $conn,
+                                (int)$company_id,
+                                $newEmployeeId,
+                                (string)$photoResult['filename']
+                            );
+                        } elseif (!empty($photoResult['error'])) {
+                            $errors[] = (string)$photoResult['error'];
+                        }
                     }
                 }
+                if (empty($errors)) {
+                    esa_save_employee_access_ids($conn, (int)$company_id, $newEmployeeId, $selectedSystemAccessIds);
+                    itm_employee_sync_department_assignments($conn, (int)$company_id, $newEmployeeId, $selectedDepartmentIds, (int)($_SESSION['employee_id'] ?? 0));
+                    require_once '../../includes/itm_search_index.php';
+                    itm_search_index_after_module_save($conn, 'employees', (int)$company_id, $newEmployeeId);
+                    header('Location: index.php');
+                    exit;
+                }
             }
-            if (empty($errors)) {
-            // Persist selected system access permissions in the employee_system_access matrix
-            esa_save_employee_access_ids($conn, (int)$company_id, $newEmployeeId, $selectedSystemAccessIds);
-            itm_employee_sync_department_assignments($conn, (int)$company_id, $newEmployeeId, $selectedDepartmentIds, (int)($_SESSION['employee_id'] ?? 0));
-            require_once '../../includes/itm_search_index.php';
-            itm_search_index_after_module_save($conn, 'employees', (int)$company_id, $newEmployeeId);
-            header('Location: index.php');
-            exit;
-            }
+            $errors[] = itm_format_db_constraint_error((int)$insertResult['errno'], (string)$insertResult['error']);
         }
-        $errors[] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
-    }
     }
 }
 
