@@ -29,6 +29,21 @@ if (!function_exists('itm_create_post_prepared_audit_has_escape_sql_call')) {
     }
 }
 
+if (!function_exists('itm_create_post_prepared_audit_uses_prepared_statements')) {
+    /**
+     * Procedural mysqli_prepare() or MySQLi OOP $conn->prepare() + bind_param.
+     */
+    function itm_create_post_prepared_audit_uses_prepared_statements(string $content): bool
+    {
+        if (preg_match('/\bmysqli_prepare\s*\(/i', $content) === 1) {
+            return true;
+        }
+
+        return preg_match('/\$\w+->prepare\s*\(/i', $content) === 1
+            && preg_match('/->bind_param\s*\(/i', $content) === 1;
+    }
+}
+
 if (!function_exists('itm_create_post_prepared_audit_is_wrapper')) {
     /**
      * Thin create.php that delegates to index.php (no local POST INSERT/UPDATE save).
@@ -43,7 +58,7 @@ if (!function_exists('itm_create_post_prepared_audit_is_wrapper')) {
             return false;
         }
 
-        if (preg_match('/\bmysqli_prepare\s*\(/i', $content) === 1) {
+        if (itm_create_post_prepared_audit_uses_prepared_statements($content)) {
             return false;
         }
 
@@ -89,7 +104,7 @@ if (!function_exists('itm_create_post_prepared_audit_classify')) {
             ];
         }
 
-        $hasPrepare = preg_match('/\bmysqli_prepare\s*\(/i', $content) === 1;
+        $hasPrepare = itm_create_post_prepared_audit_uses_prepared_statements($content);
         $hasScaffold = strpos($content, '$sqlValues') !== false
             || preg_match('/\$sqlValues\s*\[\s*\$name\s*\]/', $content) === 1;
 
@@ -103,7 +118,7 @@ if (!function_exists('itm_create_post_prepared_audit_classify')) {
         if ($hasPrepare && itm_create_post_prepared_audit_has_post_insert_or_update($content)) {
             return [
                 'status' => 'prepared',
-                'reason' => 'POST create/edit save uses mysqli_prepare',
+                'reason' => 'POST create/edit save uses mysqli_prepare or MySQLi OOP $conn->prepare + bind_param',
             ];
         }
 
@@ -112,14 +127,14 @@ if (!function_exists('itm_create_post_prepared_audit_classify')) {
         ) {
             return [
                 'status' => 'bespoke_string_sql',
-                'reason' => 'bespoke POST INSERT/UPDATE via mysqli_query/itm_run_query without mysqli_prepare',
+                'reason' => 'bespoke POST INSERT/UPDATE via mysqli_query/itm_run_query without prepared statements',
             ];
         }
 
         if (!$hasPrepare && itm_create_post_prepared_audit_has_post_insert_or_update($content)) {
             return [
                 'status' => 'bespoke_string_sql',
-                'reason' => 'POST INSERT/UPDATE present without mysqli_prepare in this file',
+                'reason' => 'POST INSERT/UPDATE present without mysqli_prepare or $conn->prepare in this file',
             ];
         }
 
