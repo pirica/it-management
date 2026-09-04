@@ -336,6 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $save = itm_setup_wizard_save_admin($connAdmin, $username, $password, $firstName, $lastName, $workEmail);
         itm_setup_wizard_state_set(['flash' => ['type' => $save['ok'] ? 'success' : 'error', 'message' => $save['message']]]);
         if ($save['ok']) {
+            itm_setup_wizard_state_set(['admin_username' => $username]);
             itm_setup_wizard_mark_step_done(6);
             itm_setup_wizard_set_step(7);
         }
@@ -345,6 +346,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'step7_skip') {
         itm_setup_wizard_require_import_bundle_or_redirect();
+        $connSkip = itm_setup_wizard_reload_connection();
+        if (!($connSkip instanceof mysqli)) {
+            itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => 'Database connection required — complete step 3 first.']]);
+            header('Location: ' . BASE_URL . 'setup/index.php?step=3');
+            exit;
+        }
+        $wizardState = itm_setup_wizard_state();
+        $keeperUsername = trim((string)($wizardState['admin_username'] ?? 'Admin'));
+        $minimal = itm_setup_wizard_apply_minimal_single_user_install($connSkip, $keeperUsername);
+        if (!$minimal['ok']) {
+            itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $minimal['message']]]);
+            header('Location: ' . BASE_URL . 'setup/index.php?step=7');
+            exit;
+        }
         $envWrite = itm_setup_wizard_persist_env_from_state();
         if (!$envWrite['ok']) {
             itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $envWrite['message']]]);
@@ -353,7 +368,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         itm_setup_wizard_mark_step_done(7);
         itm_setup_wizard_set_step(8);
-        itm_setup_wizard_state_set(['flash' => ['type' => 'info', 'message' => 'Skipped sample data. ' . $envWrite['message']]]);
+        itm_setup_wizard_state_set([
+            'flash' => [
+                'type' => 'info',
+                'message' => 'Skipped sample data. ' . $minimal['message'] . ' — ' . $envWrite['message'],
+            ],
+        ]);
         header('Location: ' . BASE_URL . 'setup/index.php?step=8');
         exit;
     }
@@ -708,7 +728,7 @@ header('Content-Type: text/html; charset=utf-8');
             <?php elseif ($currentStep === 3): ?>
                 <h2>3. Verify database connection</h2>
                 <p>Test MySQL credentials, then import <code>01_schema → 02_data → 03_triggers</code>. Database settings are kept in the wizard session until step 7 writes <code>.env</code> to <code class="setup-path"><?php echo itm_setup_wizard_h_path_display($envFileTargetPath); ?></code>.</p>
-                <p class="sub">To replace an existing database, click <strong>Import database bundle</strong> and confirm — the wizard drops and recreates the schema before import. <strong>Skip sample data</strong> on step 7 only skips optional rows from <code>db/02_data_sample.sql</code>; seed Admin and demo users come from <code>db/02_data.sql</code> imported here.</p>
+                <p class="sub">To replace an existing database, click <strong>Import database bundle</strong> and confirm — the wizard drops and recreates the schema before import. Step 7 <strong>Skip sample data</strong> removes extra seed users after import; only the step 6 administrator account remains.</p>
                 <?php if ($dbNeedsCreate): ?>
                     <div class="flash info">Database not found — use <strong>Create database</strong> below (server credentials are OK).</div>
                 <?php elseif ($dbNeedsReplaceConfirm): ?>
@@ -879,7 +899,7 @@ header('Content-Type: text/html; charset=utf-8');
             <?php elseif ($currentStep === 7): ?>
                 <h2>7. Sample data (optional)</h2>
                 <p>Install demo rows from <code>db/02_data_sample.sql</code> for one or more seed companies. Safe to skip for production. Continuing writes <code>.env</code> to <code class="setup-path"><?php echo itm_setup_wizard_h_path_display($envFileTargetPath); ?></code> with database and environment settings from earlier steps.</p>
-                <p class="sub">Skipping sample data does <strong>not</strong> remove seed companies or Admin/demo users — those were loaded during step 3 import (<code>db/02_data.sql</code>). To wipe an existing database, return to step 3 and import with replacement confirmation.</p>
+                <p class="sub"><strong>Skip</strong> installs no <code>db/02_data_sample.sql</code> rows and removes seed <code>Admin2</code>–<code>Admin5</code> and <code>demo1</code>–<code>demo5</code> accounts, leaving only the step 6 administrator. Seed companies and core <code>db/02_data.sql</code> reference data remain. To wipe an existing database, return to step 3 and import with replacement confirmation.</p>
                 <form method="post" id="setup-step7-sample-form">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step7_install">
