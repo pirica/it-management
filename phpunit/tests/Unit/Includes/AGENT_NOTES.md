@@ -25,6 +25,8 @@ Unit tests for shared helpers under `includes/` that are safe to exercise withou
 | `UiLocaleFormatTest.php` | `includes/itm_ui_locale_format.php` (Settings `ui_configuration` money + date/time defaults, prefix/suffix mutual exclusion, datetime fallback, `itm_is_money_field_name`) |
 | `SecurityHeadersTest.php` | `includes/itm_security_headers.php` (`itm_build_content_security_policy()`, `itm_request_is_https()`, `itm_session_cookie_secure_from_config()`; DB-free) |
 | `ItmCrudScalarColumnSearchTest.php` | `includes/itm_crud_scalar_column_search.php` (scalar list search OR fragments) |
+| `AuditSqlParserTest.php` | `includes/audit_functions.php` → `itm_parse_audit_sql()` (INSERT/UPDATE/DELETE meta; DB-free) |
+| `ExplorerNormalizePathTest.php` | `includes/itm_explorer_paths.php` → `explorer_normalize_relative_path()`, `itm_explorer_is_allowed_extension()` (DB-free) |
 | `CompanyModuleAccessDiscoveryTest.php` | `itm_ensure_registry_rows_for_module_slugs()`, `itm_sidebar_structure()` table discovery (requires MySQL) |
 | `SidebarSectionCollapseTest.php` | `itm_normalize_sidebar_collapsed_map()`, `itm_sidebar_section_collapse_feature_enabled()`, `itm_sidebar_is_valid_section_id()` |
 

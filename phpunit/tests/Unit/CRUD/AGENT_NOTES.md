@@ -14,3 +14,5 @@ Generic CRUD contract and template compliance tests.
 
 ## 12. Module Owner Notes (Optional)
 Parent: `phpunit/tests/Unit/AGENT_NOTES.md`. Run suite via `php scripts/run_tests.php`.
+
+`CRUDunittest.php` — `itm_split_sql_csv()` / `itm_split_sql_value_tuples()` edge cases (quoted commas, nested tuples; DB-free).
