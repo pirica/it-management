@@ -82,4 +82,21 @@ if (stripos(str_replace('\\', '/', $imagesPath), 'it-management2') === false) {
 
 unset($_SESSION[itm_setup_wizard_session_key()]);
 
+$suffixProbe = shell_exec(
+    'php -r '
+    . escapeshellarg(
+        'define("ROOT_PATH", ' . var_export(ROOT_PATH, true) . ');'
+        . 'define("ITM_SETUP_WIZARD_TEST_DETECTED_ROOT", "C:\\\\Users\\\\NelsonSalvador\\\\Downloads\\\\laragon-portable\\\\www\\\\it-management3");'
+        . 'require ROOT_PATH . "setup/includes/itm_setup_wizard.php";'
+        . '$r = itm_setup_wizard_repair_windows_path_input("C:UsersNelsonSalvadorDownloadslaragon-portablewwwit-management5");'
+        . 'echo (stripos(str_replace("\\\\", "/", $r), "it-management5") !== false) ? "ok" : $r;'
+    )
+);
+$suffixProbe = is_string($suffixProbe) ? trim($suffixProbe) : '';
+if ($suffixProbe !== 'ok') {
+    setup_root_fail('Collapsed path must repair to it-management5 when runtime is it-management3, got: ' . $suffixProbe);
+} else {
+    setup_root_pass('Collapsed path repairs sibling folder suffix (it-management3 runtime → it-management5 target)');
+}
+
 exit($fail > 0 ? 1 : 0);
