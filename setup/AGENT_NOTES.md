@@ -38,7 +38,7 @@ Step 3 probes MySQL at the server level before selecting a schema. When the name
 
 Step 2 always re-runs file verification on page load (no stale cached `file_checks` from a prior runtime path). Writable upload paths and the **Confirmed project root** header resolve via `itm_setup_wizard_project_root()`, which repairs collapsed Windows session paths (e.g. `C:Users…it-management2`) and, after step 1 is complete, never falls back to the PHP runtime install folder when the session path differs.
 
-**Path HTML output:** use `itm_setup_wizard_h()` for plain escaped text and `itm_setup_wizard_h_wrappable_path_text()` for paths / verify-table messages (inserts `<wbr>` after `\` and `/` so long Windows paths wrap at segment boundaries). Do **not** use global `sanitize()` for paths — it calls `stripslashes()` and removes `\` from `C:\Users\…` in step 1/2. Step 2 does **not** warn when the confirmed project root differs from the PHP runtime path (expected when installing to a sibling folder).
+**Path HTML output:** use `itm_setup_wizard_h()` for paths and verify-table messages (no `sanitize()` — it strips `\`). Wrap displayed paths in `.setup-path-scroll` (`white-space: nowrap` + horizontal scroll) so long Windows paths stay on one line. Step 2 does **not** warn when the confirmed project root differs from the PHP runtime path (expected when installing to a sibling folder).
 
 All mutating POSTs use `itm_try_post_csrf()`. Emoji-only navigation buttons follow NO MIXED on back/submit controls.
 

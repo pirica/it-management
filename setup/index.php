@@ -461,13 +461,20 @@ header('Content-Type: text/html; charset=utf-8');
         th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); }
         .ok { color:var(--ok); } .warn { color:var(--warn); } .bad { color:var(--err); }
         code { background:#0d1117; padding:2px 6px; border-radius:4px; }
-        .setup-path, .setup-verify-table td.setup-path-cell {
-            word-break: normal;
-            overflow-wrap: break-word;
-            white-space: normal;
+        .setup-path-scroll {
+            display: block;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
         }
+        .setup-path-scroll code, code.setup-path {
+            white-space: nowrap;
+        }
+        .setup-verify-table { table-layout: fixed; width: 100%; }
         .setup-verify-table td:first-child { width: 2.5rem; vertical-align: top; }
-        .setup-verify-table td.setup-path-cell { vertical-align: top; }
+        .setup-verify-table td.setup-path-cell { vertical-align: top; max-width: 0; }
         .setup-project-root-row { display:flex; gap:8px; align-items:stretch; }
         .setup-project-root-row input[type=text] { flex:1; margin:0; }
         .setup-project-root-row .btn { flex:0 0 auto; min-width:48px; }
@@ -524,8 +531,8 @@ header('Content-Type: text/html; charset=utf-8');
                     <p id="setup-step1-preview-status" class="sub" style="margin-top:8px;" aria-live="polite"></p>
                     <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. Use Windows backslashes after the drive letter (example: <code>C:\laragon\www\it-management5</code>). Click <strong>💾</strong> to validate the folder and refresh the preview rows below. When the path does not exist, the wizard creates it and downloads <code>pirica/it-management</code> from GitHub on Download. If the folder already exists, confirm replacement to delete all files inside and download again, or keep the auto-detected current install path for in-place setup.</p>
                     <table>
-                        <tr><th>Auto-detect</th><td><code class="setup-path" id="setup-auto-detect-path"><?php echo itm_setup_wizard_h_wrappable_path_text($projectRootPreview); ?></code></td></tr>
-                        <tr><th>Document root</th><td><code class="setup-path" id="setup-document-root-path"><?php echo itm_setup_wizard_h_wrappable_path_text($step1DocumentRoot !== '' ? $step1DocumentRoot : '(not detected)'); ?></code></td></tr>
+                        <tr><th>Auto-detect</th><td><span class="setup-path-scroll"><code class="setup-path" id="setup-auto-detect-path"><?php echo itm_setup_wizard_h($projectRootPreview); ?></code></span></td></tr>
+                        <tr><th>Document root</th><td><span class="setup-path-scroll"><code class="setup-path" id="setup-document-root-path"><?php echo itm_setup_wizard_h($step1DocumentRoot !== '' ? $step1DocumentRoot : '(not detected)'); ?></code></span></td></tr>
                         <tr><th>Detected BASE_URL</th><td><code id="setup-detected-base-url"><?php echo sanitize($paths['base_url']); ?></code></td></tr>
                         <tr><th>Docroot aligned</th><td id="setup-docroot-aligned"><?php echo $step1DocrootAligned ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
                     </table>
@@ -542,14 +549,14 @@ header('Content-Type: text/html; charset=utf-8');
             <?php elseif ($currentStep === 2): ?>
                 <h2>2. Verify files</h2>
                 <p>Checks the canonical <code>db/</code> bundle, writable upload paths, and PHP version before database work.</p>
-                <p class="sub">Confirmed project root from step 1: <code class="setup-path"><?php echo itm_setup_wizard_h_wrappable_path_text(itm_setup_wizard_format_path_display(itm_setup_wizard_project_root())); ?></code></p>
+                <p class="sub">Confirmed project root from step 1: <span class="setup-path-scroll"><code class="setup-path"><?php echo itm_setup_wizard_h(itm_setup_wizard_format_path_display(itm_setup_wizard_project_root())); ?></code></span></p>
                 <table class="setup-verify-table">
                     <?php foreach ($fileChecks as $row): ?>
                         <tr>
                             <td class="<?php echo sanitize($row['level'] === 'pass' ? 'ok' : ($row['level'] === 'warn' ? 'warn' : 'bad')); ?>">
                                 <?php echo $row['level'] === 'pass' ? '✅' : ($row['level'] === 'warn' ? '⚠️' : '❌'); ?>
                             </td>
-                            <td class="setup-path-cell"><?php echo itm_setup_wizard_h_wrappable_path_text($row['message']); ?></td>
+                            <td class="setup-path-cell"><span class="setup-path-scroll"><?php echo itm_setup_wizard_h($row['message']); ?></span></td>
                         </tr>
                     <?php endforeach; ?>
                 </table>

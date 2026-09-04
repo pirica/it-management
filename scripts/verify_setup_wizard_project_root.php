@@ -114,11 +114,11 @@ if (strpos($sanitizeLike, 'C:Users') !== false && strpos($sanitizeLike, 'C:\\Use
     setup_root_fail('Expected stripslashes contrast to collapse Windows path segments');
 }
 
-$wrappable = itm_setup_wizard_h_wrappable_path_text('Writable: ' . $windowsPath . '\\images');
-if (strpos($wrappable, '\\<wbr>') === false) {
-    setup_root_fail('Wrappable path text must insert wbr after backslashes, got: ' . $wrappable);
+$wrappableRemoved = !function_exists('itm_setup_wizard_h_wrappable_path_text');
+if ($wrappableRemoved) {
+    setup_root_pass('Path display uses nowrap scroll (no wbr path wrapper)');
 } else {
-    setup_root_pass('Wrappable path text inserts segment break hints after backslashes');
+    setup_root_fail('itm_setup_wizard_h_wrappable_path_text should be removed in favor of nowrap CSS');
 }
 
 $fileChecks = itm_setup_wizard_verify_files();
