@@ -50,11 +50,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'step1_save') {
         $projectRootRaw = (string)($_POST['project_root'] ?? '');
-        $rootCheck = itm_setup_wizard_provision_project_root($projectRootRaw);
+        $confirmReplaceFolder = !empty($_POST['confirm_replace_folder']);
+        $rootCheck = itm_setup_wizard_provision_project_root($projectRootRaw, $confirmReplaceFolder);
         if (!$rootCheck['ok']) {
             itm_setup_wizard_state_set([
                 'project_root' => itm_setup_wizard_format_path_for_input($projectRootRaw),
-                'flash' => ['type' => 'error', 'message' => $rootCheck['message']],
+                'folder_probe' => [
+                    'needs_replace_confirm' => !empty($rootCheck['needs_replace_confirm']),
+                ],
+                'flash' => ['type' => !empty($rootCheck['needs_replace_confirm']) ? 'info' : 'error', 'message' => $rootCheck['message']],
             ]);
             header('Location: ' . BASE_URL . 'setup/index.php?step=1');
             exit;
@@ -72,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'itm_app_url' => $appUrl,
             'install_notes' => trim((string)($_POST['install_notes'] ?? '')),
             'file_checks' => null,
+            'folder_probe' => ['needs_replace_confirm' => false],
             'flash' => ['type' => 'success', 'message' => $successMessage],
         ]);
         itm_setup_wizard_mark_step_done(1);
@@ -149,6 +154,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pass = (string)($_POST['db_pass'] ?? '');
         $name = trim((string)($_POST['db_name'] ?? 'itmanagement'));
         $create = itm_setup_wizard_create_database($host, $port, $user, $pass, $name);
+        if ($create['ok']) {
+            itm_setup_wizard_write_env_file([
+                'DB_HOST' => $host,
+                'DB_PORT' => (string)$port,
+                'DB_USER' => $user,
+                'DB_PASS' => $pass,
+                'DB_NAME' => $name,
+            ]);
+        }
         itm_setup_wizard_state_set([
             'db' => compact('host', 'port', 'user', 'pass', 'name'),
             'db_probe' => [
@@ -222,6 +236,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $import = itm_setup_wizard_import_database($host, $port, $user, $pass, $name);
+        itm_setup_wizard_write_env_file([
+            'DB_HOST' => $host,
+            'DB_PORT' => (string)$port,
+            'DB_USER' => $user,
+            'DB_PASS' => $pass,
+            'DB_NAME' => $name,
+        ]);
         $connAfter = itm_setup_wizard_reload_connection();
         $tableCount = $connAfter instanceof mysqli ? itm_setup_wizard_count_tables($connAfter, $name) : 0;
         $expected = itm_setup_wizard_expected_table_count();
@@ -396,6 +417,8 @@ $dbProbe = isset($state['db_probe']) && is_array($state['db_probe']) ? $state['d
 $dbNeedsCreate = !empty($dbProbe['needs_create']);
 $dbNeedsReplaceConfirm = !empty($dbProbe['needs_replace_confirm']);
 $dbExistingTableCount = (int)($dbProbe['table_count'] ?? 0);
+$folderProbe = isset($state['folder_probe']) && is_array($state['folder_probe']) ? $state['folder_probe'] : [];
+$folderNeedsReplaceConfirm = !empty($folderProbe['needs_replace_confirm']);
 $csrfToken = itm_get_csrf_token();
 
 header('Content-Type: text/html; charset=utf-8');
@@ -477,17 +500,21 @@ header('Content-Type: text/html; charset=utf-8');
             <?php if ($currentStep === 1): ?>
                 <h2>1. Select install folder</h2>
                 <p>Confirm where the application is deployed and the public base URL used for links and cookies.</p>
-                <form method="post">
+                <?php if ($folderNeedsReplaceConfirm): ?>
+                    <div class="flash info">Folder already exists — Download will ask you to confirm deleting <strong>all files inside</strong> before downloading a fresh copy.</div>
+                <?php endif; ?>
+                <form method="post" id="setup-step1-form">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step1_save">
                     <input type="hidden" name="step" value="1">
+                    <input type="hidden" name="confirm_replace_folder" id="setup-step1-confirm-replace" value="0">
                     <label for="project_root">Project root</label>
                     <div class="setup-project-root-row">
                         <input type="text" id="project_root" name="project_root" value="<?php echo sanitize($projectRootInput); ?>" required>
                         <button type="button" class="btn btn-primary" id="setup-step1-save-preview" title="Save">💾</button>
                     </div>
                     <p id="setup-step1-preview-status" class="sub" style="margin-top:8px;" aria-live="polite"></p>
-                    <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. Use Windows backslashes after the drive letter (example: <code>C:\laragon\www\it-management3</code>). Click <strong>💾</strong> to validate the folder and refresh the preview rows below. When the path does not exist, the wizard creates it and downloads <code>pirica/it-management</code> from GitHub on Download. If the folder already exists, step 1 fails — use the auto-detected current install path for in-place setup.</p>
+                    <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. Use Windows backslashes after the drive letter (example: <code>C:\laragon\www\it-management3</code>). Click <strong>💾</strong> to validate the folder and refresh the preview rows below. When the path does not exist, the wizard creates it and downloads <code>pirica/it-management</code> from GitHub on Download. If the folder already exists, confirm replacement to delete all files inside and download again, or keep the auto-detected current install path for in-place setup.</p>
                     <table>
                         <tr><th>Auto-detect</th><td><code id="setup-auto-detect-path"><?php echo sanitize($projectRootPreview); ?></code></td></tr>
                         <tr><th>Document root</th><td><code id="setup-document-root-path"><?php echo sanitize($step1DocumentRoot !== '' ? $step1DocumentRoot : '(not detected)'); ?></code></td></tr>
@@ -737,6 +764,8 @@ header('Content-Type: text/html; charset=utf-8');
     var statusEl = document.getElementById('setup-step1-preview-status');
     var downloadBtn = document.getElementById('setup-step1-download');
     var waitEl = document.getElementById('setup-step1-wait-status');
+    var confirmField = document.getElementById('setup-step1-confirm-replace');
+    var needsReplace = <?php echo $folderNeedsReplaceConfirm ? 'true' : 'false'; ?>;
     if (!form || !input || !preview || !saveBtn) {
         return;
     }
@@ -760,7 +789,16 @@ header('Content-Type: text/html; charset=utf-8');
         }
         if (statusEl) {
             statusEl.textContent = data.message || '';
-            statusEl.className = 'sub ' + (data.ok ? 'ok' : 'bad');
+            if (data.ok) {
+                statusEl.className = 'sub ok';
+            } else if (data.needsReplaceConfirm) {
+                statusEl.className = 'sub warn';
+            } else {
+                statusEl.className = 'sub bad';
+            }
+        }
+        if (typeof data.needsReplaceConfirm !== 'undefined') {
+            needsReplace = !!data.needsReplaceConfirm;
         }
     }
 
@@ -810,7 +848,20 @@ header('Content-Type: text/html; charset=utf-8');
             });
     }
 
-    form.addEventListener('submit', function () {
+    form.addEventListener('submit', function (event) {
+        if (needsReplace) {
+            var folderPath = input ? input.value : 'this folder';
+            var message = 'Folder "' + folderPath + '" already exists.\n\n'
+                + 'Download will DELETE ALL FILES inside the folder and download a fresh copy from GitHub.\n\n'
+                + 'Continue?';
+            if (!window.confirm(message)) {
+                event.preventDefault();
+                return;
+            }
+            if (confirmField) {
+                confirmField.value = '1';
+            }
+        }
         if (downloadBtn) {
             downloadBtn.disabled = true;
         }
