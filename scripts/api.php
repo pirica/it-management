@@ -1039,7 +1039,7 @@ $selectOptionsAllowedTables = itmDocSelectOptionsAllowedTables();
 
     <div class="card">
         <h2>API key authentication and rate limits</h2>
-        <p>Paid-tier employees store an integration key on <strong>Settings → API Access</strong> (<code>ui_configuration.api_key</code>, scoped to <code>company_id</code> + <code>employee_id</code>). <strong>Free</strong> tier has no API key UI — identity comes from the signed-in session. Tier caps apply per rolling hour (<code>rate_limit_window_start</code> + <code>rate_limit_request_count</code>).</p>
+        <p>Paid-tier employees store an integration key on <strong>Settings → API Access</strong> (<code>ui_configuration.api_key_prefix</code> + <code>api_key_hash</code>, scoped to <code>company_id</code> + <code>employee_id</code>). <strong>Free</strong> tier has no API key UI — identity comes from the signed-in session. Tier caps apply per rolling hour (<code>rate_limit_window_start</code> + <code>rate_limit_request_count</code>).</p>
         <table>
             <thead><tr><th>Tier</th><th>Hourly limit</th><th>API key</th><th>Session</th></tr></thead>
             <tbody>
@@ -1053,8 +1053,8 @@ $selectOptionsAllowedTables = itmDocSelectOptionsAllowedTables();
             <?php endforeach; ?>
             </tbody>
         </table>
-        <p><strong>Free</strong> tier does not require an API key but <strong>does require an authenticated session</strong> (<code>PHPSESSID</code> with <code>company_id</code> + <code>employee_id</code>). Keyless requests without a session return <code>401</code> — Free is not anonymous. <strong>Paid</strong> tiers must send <code>X-API-Key</code> or <code>api_key</code>.</p>
-        <p>Quota probe: <code>GET scripts/api.php?rate_limit=1</code> — Free while signed in (no <code>api_key</code>) or paid with <code>…&amp;api_key=&lt;key&gt;</code>. <code>ITM_API_RATE_LIMIT_PROBE</code> skips the <code>login.php</code> redirect only; it does not remove the Free-tier session requirement. Handler: <code>itm_api_handle_rate_limit_probe_request()</code>; enforcement in other endpoints: <code>itm_api_enforce_rate_limit_or_exit($conn)</code>.</p>
+        <p><strong>Free</strong> tier does not require an API key but <strong>does require an authenticated session</strong> (<code>PHPSESSID</code> with <code>company_id</code> + <code>employee_id</code>). Keyless requests without a session return <code>401</code> — Free is not anonymous. <strong>Paid</strong> tiers must send <code>X-API-Key</code> or POST <code>api_key</code> (never the URL query string).</p>
+        <p>Quota probe: <code>GET scripts/api.php?rate_limit=1</code> — Free while signed in (no key) or paid with <code>X-API-Key: &lt;key&gt;</code>. <code>ITM_API_RATE_LIMIT_PROBE</code> skips the <code>login.php</code> redirect only; it does not remove the Free-tier session requirement. Handler: <code>itm_api_handle_rate_limit_probe_request()</code>; enforcement in other endpoints: <code>itm_api_enforce_rate_limit_or_exit($conn)</code>.</p>
 <pre><code># Login first (required for Free-tier keyless probe)
 curl -c cookies.txt -X POST "http://localhost/it-management/login.php" \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -1063,8 +1063,8 @@ curl -c cookies.txt -X POST "http://localhost/it-management/login.php" \
 # Free tier — session cookie, no api_key
 curl -b cookies.txt "http://localhost/it-management/scripts/api.php?rate_limit=1"
 
-# Paid tier — api_key required
-curl "http://localhost/it-management/scripts/api.php?rate_limit=1&amp;api_key=&lt;api_key&gt;"
+# Paid tier — X-API-Key header (query api_key is not accepted)
+curl -H "X-API-Key: &lt;api_key&gt;" "http://localhost/it-management/scripts/api.php?rate_limit=1"
 
 # Example success payload (Free tier, signed in)
 {"ok":true,"tier":"Free","api_key_required":false,"unlimited":true,"limit":0,"remaining":null,"reset_at":0}</code></pre>
@@ -1090,7 +1090,7 @@ curl "http://localhost/it-management/scripts/api.php?rate_limit=1&amp;api_key=&l
 
     <div class="card">
         <h2>API v2 partner gateway (<code>modules/api_v2/router.php</code>)</h2>
-        <p>Paid-tier integration JSON REST with per-key scopes on <code>api_key_scopes</code>. Auth: <code>X-API-Key</code> (or <code>api_key</code>) on <code>ui_configuration</code> — <strong>no</strong> employee session (<code>ITM_API_V2</code>). Free tier rejected. Canonical doc: <code>docs/API_V2.md</code>. Scopes: Settings → API Access (paid tiers).</p>
+        <p>Paid-tier integration JSON REST with per-key scopes on <code>api_key_scopes</code>. Auth: <code>X-API-Key</code> (or POST <code>api_key</code>) on <code>ui_configuration</code> — <strong>no</strong> employee session (<code>ITM_API_V2</code>). Free tier rejected. Canonical doc: <code>docs/API_V2.md</code>. Scopes: Settings → API Access (paid tiers).</p>
         <h3>Scopes</h3>
         <table>
             <thead><tr><th>scope</th><th>Routes</th></tr></thead>

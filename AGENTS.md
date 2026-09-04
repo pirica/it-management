@@ -380,24 +380,25 @@ Per-user integration keys and hourly quotas live on **`ui_configuration`**. Logi
 | Tier | Hourly limit | API key | Session (`PHPSESSID`) |
 |------|----------------|---------|------------------------|
 | Free | No limit | **Not required** | **Required** — `$_SESSION['company_id']` + `$_SESSION['employee_id']` via `itm_api_resolve_rate_limit_row()` |
-| Basic | 300 | Required (`X-API-Key` or `api_key`) | Optional when API key present |
-| Pro | 1000 | Required | Optional when API key present |
-| Enterprise | 10000 | Required | Optional when API key present |
+| Basic | 300 | Required (`X-API-Key` header or POST `api_key` — **not** query string) | Optional when API key present |
+| Pro | 1000 | Required (`X-API-Key` or POST `api_key`) | Optional when API key present |
+| Enterprise | 10000 | Required (`X-API-Key` or POST `api_key`) | Optional when API key present |
 
 **Free is not anonymous:** a keyless request without a signed-in session returns `401` (same probe and enforce paths).
 
-2. **Settings → API Access** (`modules/settings/`): **Free** tier hides save/generate API key controls (copy explains session-based access). **Paid** tiers may save/generate `api_key`. `tier` is a **blocked** `<select>`; integration API counters are read-only. **Explorer API hourly limit** (`explorer_api_rate_limit_per_hour` on `ui_configuration`, default **1200**; **0** = unlimited) is editable on all tiers via POST `save_explorer_api_rate_limit`; optional `.env` `ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR` overrides Settings. Do not accept `tier` from POST.
+2. **Settings → API Access** (`modules/settings/`): **Free** tier hides save/generate API key controls (copy explains session-based access). **Paid** tiers may save/generate integration keys. Persisted keys store **`api_key_hash`** (`hash('sha256', $key)` hex) and **`api_key_prefix`** (first 16 chars) only — `api_key` plaintext column is cleared on save/generate; legacy plaintext rows still authenticate until re-saved. UI shows prefix + one-time reveal after generate/save. `tier` is a **blocked** `<select>`; integration API counters are read-only. **Explorer API hourly limit** (`explorer_api_rate_limit_per_hour` on `ui_configuration`, default **1200**; **0** = unlimited) is editable on all tiers via POST `save_explorer_api_rate_limit`; optional `.env` `ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR` overrides Settings. Do not accept `tier` from POST.
 
-3. **Enforcement:** `itm_api_enforce_rate_limit_or_exit($conn)` resolves via API key **or** (Free only) authenticated session. Paid tiers without a key return `401`. Helpers: `itm_api_tier_requires_api_key()`, `itm_api_lookup_configuration_by_user()`, `itm_api_build_rate_limit_probe_payload()`.
+3. **Enforcement:** `itm_api_enforce_rate_limit_or_exit($conn)` resolves via API key **or** (Free only) authenticated session. Paid tiers without a key return `401`. Present keys via **`X-API-Key`** header or POST body `api_key` only — **`?api_key=` query strings are rejected** (access logs / proxy leakage). Helpers: `itm_api_tier_requires_api_key()`, `itm_api_lookup_configuration_by_user()`, `itm_api_build_rate_limit_probe_payload()`, `itm_api_hash_api_key()`, `itm_api_key_prefix()`.
 
-4. **Quota probe (does not consume a request):** `GET scripts/api.php?rate_limit=1` returns JSON including `employee_id`, `company_id`, and `api_key_required`. `ITM_API_RATE_LIMIT_PROBE` skips the **login.php redirect** only — it does **not** remove the Free-tier session requirement. Free may omit `api_key` when `PHPSESSID` carries `company_id` + `employee_id`; paid tiers must send a key.
+4. **Quota probe (does not consume a request):** `GET scripts/api.php?rate_limit=1` returns JSON including `employee_id`, `company_id`, and `api_key_required`. `ITM_API_RATE_LIMIT_PROBE` skips the **login.php redirect** only — it does **not** remove the Free-tier session requirement. Free may omit `api_key` when `PHPSESSID` carries `company_id` + `employee_id`; paid tiers must send a key via header or POST (not query).
 
 5. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`):
 
 | Script | Expectation |
 |--------|-------------|
 | `php scripts/apitest_tier_free.php` | Empty `api_key`; in-process session resolve; unlimited consumes; HTTP probe via `itm_apitest_publish_http_session()` + keyless URL; `api_key_required=false` |
-| `php scripts/apitest_tier_basic.php` | Basic at cap − 1; allow then block; HTTP probe requires `api_key` |
+| `php scripts/apitest_tier_basic.php` | Basic at cap − 1; allow then block; HTTP probe requires `X-API-Key` (not `?api_key=`) |
+| `php scripts/verify_api_key_hashing.php` | SHA-256 hash + prefix storage; lookup by header/POST; rejects query-string keys; `itm_api_save_user_api_key` clears plaintext |
 
 6. **PHPUnit:** `phpunit/tests/Unit/Includes/ApiRateLimitTest.php` (`itm_api_tier_requires_api_key`, probe payload).
 

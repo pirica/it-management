@@ -30,8 +30,8 @@ Partners concatenate **`server.url + path`** from the OpenAPI document (path is 
 
 | Rule | Detail |
 |------|--------|
-| Header | `X-API-Key: <key>` (or query/body `api_key`) |
-| Key storage | `ui_configuration.api_key` per `company_id` + `employee_id` |
+| Header | `X-API-Key: <key>` or POST body `api_key` (**not** `?api_key=` query string) |
+| Key storage | `ui_configuration.api_key_prefix` + `api_key_hash` (`hash('sha256', $key)` hex); plaintext `api_key` cleared on save/generate; legacy plaintext rows until re-issue |
 | Tier | **Paid only** (Basic, Pro, Enterprise). Free tier is rejected with HTTP 403. |
 | Session | No employee login. Router sets `$_SESSION['company_id']` and `$_SESSION['employee_id']` from the key owner for RBAC only. |
 | Rate limit | Same rolling-hour counters as `includes/itm_api_rate_limit.php` (`itm_api_consume_rate_limit`) |

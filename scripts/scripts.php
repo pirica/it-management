@@ -2958,8 +2958,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="apitest_tier_basic.php" target="_blank" rel="nofollow noreferrer">apitest_tier_basic.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Regression: disposable <code>ui_configuration</code> row on <strong>Basic</strong> tier allows the final hourly request then blocks the next. Auto-generates API key and prints browser URL <code>scripts/api.php?rate_limit=1&amp;api_key=…</code>.</td>
+                    <td>Regression: disposable <code>ui_configuration</code> row on <strong>Basic</strong> tier allows the final hourly request then blocks the next. Auto-generates API key; HTTP probe uses <code>X-API-Key</code> (not query <code>api_key</code>).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed ui_configuration">
+                    <td><a href="verify_api_key_hashing.php" target="_blank" rel="nofollow noreferrer">verify_api_key_hashing.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ui_configuration</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression: integration API keys on <code>ui_configuration</code> stored as SHA-256 hash + prefix; rejects query-string <code>api_key</code>; verifies lookup and Settings save path.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_api_key_hashing.php</code></td>
                 </tr>
                 <tr data-tags="Mixed ui_configuration">
                     <td><a href="verify_api_v2.php" target="_blank" rel="nofollow noreferrer">verify_api_v2.php</a></td>

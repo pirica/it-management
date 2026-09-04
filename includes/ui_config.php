@@ -1696,6 +1696,8 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `ui_datetime_readable_enabled` TINYINT(1) NOT NULL DEFAULT 0,
         `ui_datetime_format_default` VARCHAR(16) NOT NULL DEFAULT 'european2',
         `api_key` VARCHAR(191) NOT NULL DEFAULT '',
+        `api_key_prefix` VARCHAR(16) NOT NULL DEFAULT '',
+        `api_key_hash` VARCHAR(64) NOT NULL DEFAULT '',
         `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1,
         `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL,
         `rate_limit_window_start` INT NOT NULL DEFAULT 0,
@@ -1757,7 +1759,9 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         'ui_datetime_readable_enabled' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_datetime_readable_enabled` TINYINT(1) NOT NULL DEFAULT 0 AFTER `ui_datetime_iso_enabled`",
         'ui_datetime_format_default' => "ALTER TABLE `ui_configuration` ADD COLUMN `ui_datetime_format_default` VARCHAR(16) NOT NULL DEFAULT 'european2' AFTER `ui_datetime_readable_enabled`",
         'api_key' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key` VARCHAR(191) NOT NULL DEFAULT '' AFTER `ui_datetime_format_default`",
-        'api_key_is_active' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `api_key`",
+        'api_key_prefix' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_prefix` VARCHAR(16) NOT NULL DEFAULT '' AFTER `api_key`",
+        'api_key_hash' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_hash` VARCHAR(64) NOT NULL DEFAULT '' AFTER `api_key_prefix`",
+        'api_key_is_active' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `api_key_hash`",
         'api_key_last_used_at' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL AFTER `api_key_is_active`",
         'rate_limit_window_start' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_window_start` INT NOT NULL DEFAULT 0 AFTER `api_key_last_used_at`",
         'rate_limit_request_count' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_request_count` INT NOT NULL DEFAULT 0 AFTER `rate_limit_window_start`",
@@ -1911,7 +1915,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null, $clearCac
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_sidebar_section_collapse, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, dashboard_widget_prefs, ui_money_symbol, ui_money_symbol_suffix, ui_money_symbol_prefix, ui_date_format, ui_time_format, ui_datetime_european1_enabled, ui_datetime_european2_enabled, ui_datetime_iso_enabled, ui_datetime_readable_enabled, ui_datetime_format_default, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier, explorer_api_rate_limit_per_hour FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_sidebar_section_collapse, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, dashboard_widget_prefs, ui_money_symbol, ui_money_symbol_suffix, ui_money_symbol_prefix, ui_date_format, ui_time_format, ui_datetime_european1_enabled, ui_datetime_european2_enabled, ui_datetime_iso_enabled, ui_datetime_readable_enabled, ui_datetime_format_default, api_key, api_key_prefix, api_key_hash, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier, explorer_api_rate_limit_per_hour FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;

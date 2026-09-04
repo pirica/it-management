@@ -336,11 +336,17 @@ function itm_apitest_seed_configuration($conn, $companyId, $employeeId, $tier, a
     $windowStart = isset($overrides['rate_limit_window_start']) ? (int)$overrides['rate_limit_window_start'] : time();
     $requestCount = isset($overrides['rate_limit_request_count']) ? (int)$overrides['rate_limit_request_count'] : 0;
     $apiKeyIsActive = isset($overrides['api_key_is_active']) ? (int)$overrides['api_key_is_active'] : 1;
+    $apiKeyPrefix = '';
+    $apiKeyHash = '';
+    if ($apiKey !== '') {
+        $apiKeyPrefix = itm_api_key_prefix($apiKey);
+        $apiKeyHash = itm_api_hash_api_key($apiKey);
+    }
 
     $sql = 'INSERT INTO ui_configuration (
-                company_id, employee_id, api_key, api_key_is_active,
+                company_id, employee_id, api_key, api_key_prefix, api_key_hash, api_key_is_active,
                 rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+            ) VALUES (?, ?, \'\', ?, ?, ?, ?, ?, ?, ?)';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return null;
@@ -348,10 +354,11 @@ function itm_apitest_seed_configuration($conn, $companyId, $employeeId, $tier, a
 
     mysqli_stmt_bind_param(
         $stmt,
-        'iisiiiis',
+        'iissiiiis',
         $companyId,
         $employeeId,
-        $apiKey,
+        $apiKeyPrefix,
+        $apiKeyHash,
         $apiKeyIsActive,
         $windowStart,
         $requestCount,
@@ -375,12 +382,15 @@ function itm_apitest_seed_configuration($conn, $companyId, $employeeId, $tier, a
         'id' => $configId,
         'company_id' => $companyId,
         'employee_id' => $employeeId,
-        'api_key' => $apiKey,
+        'api_key' => '',
+        'api_key_prefix' => $apiKeyPrefix,
+        'api_key_hash' => $apiKeyHash,
         'api_key_is_active' => $apiKeyIsActive,
         'rate_limit_window_start' => $windowStart,
         'rate_limit_request_count' => $requestCount,
         'rate_limit_enabled' => $rateLimitEnabled,
         'tier' => $tier,
+        '_apitest_plain_api_key' => $apiKey,
     ];
 }
 
@@ -393,7 +403,7 @@ function itm_apitest_reload_configuration($conn, $configId, $companyId, $employe
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
 
-    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_is_active, api_key_last_used_at,
+    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_prefix, api_key_hash, api_key_is_active, api_key_last_used_at,
                    rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
             FROM ui_configuration
             WHERE id = ? AND company_id = ? AND employee_id = ?
@@ -413,39 +423,40 @@ function itm_apitest_reload_configuration($conn, $configId, $companyId, $employe
 }
 
 /**
- * Builds the browser/curl URL for scripts/api.php rate-limit probe with embedded api_key.
+ * Builds the browser/curl URL for scripts/api.php rate-limit probe (keyless URL; send X-API-Key header when required).
  */
 function itm_apitest_rate_limit_probe_url($apiKey, $baseUrl = '') {
-    $apiKey = trim((string)$apiKey);
-
     $baseUrl = rtrim(trim((string)$baseUrl), '/');
     if ($baseUrl === '') {
         $baseUrl = 'http://localhost/it-management';
     }
 
-    if ($apiKey === '') {
-        return $baseUrl . '/scripts/api.php?rate_limit=1';
+    return $baseUrl . '/scripts/api.php?rate_limit=1';
+}
+
+function itm_apitest_plain_api_key_from_seed_row(array $row) {
+    if (isset($row['_apitest_plain_api_key'])) {
+        return trim((string)$row['_apitest_plain_api_key']);
     }
 
-    return $baseUrl . '/scripts/api.php?rate_limit=1&api_key=' . rawurlencode($apiKey);
+    return trim((string)($row['api_key'] ?? ''));
 }
 
 function itm_apitest_print_probe_links($apiKey, $tierLabel = '', $includeKeyless = false) {
     $apiKey = trim((string)$apiKey);
     $prefix = $tierLabel !== '' ? $tierLabel . ' ' : '';
+    $url = itm_apitest_rate_limit_probe_url($apiKey);
 
     if ($includeKeyless || $apiKey === '') {
-        $keylessUrl = itm_apitest_rate_limit_probe_url('');
-        if ($keylessUrl !== '') {
-            itm_apitest_output_line('[INFO] Browser probe URL (session, no API key): ' . $keylessUrl, 'info');
+        if ($url !== '') {
+            itm_apitest_output_line('[INFO] Browser probe URL (session, no API key): ' . $url, 'info');
         }
     }
 
     if ($apiKey !== '') {
-        $url = itm_apitest_rate_limit_probe_url($apiKey);
+        itm_apitest_output_line('[INFO] Auto-generated ' . $prefix . 'API key: ' . $apiKey, 'info');
         if ($url !== '') {
-            itm_apitest_output_line('[INFO] Auto-generated ' . $prefix . 'API key: ' . $apiKey, 'info');
-            itm_apitest_output_line('[INFO] Browser probe URL: ' . $url, 'info');
+            itm_apitest_output_line('[INFO] Browser probe URL (send X-API-Key header): ' . $url, 'info');
         }
     }
 

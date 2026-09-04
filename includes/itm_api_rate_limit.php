@@ -115,7 +115,7 @@ function itm_api_reload_rate_limit_row($conn, array $row) {
         return null;
     }
 
-    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_is_active, api_key_last_used_at,
+    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_prefix, api_key_hash, api_key_is_active, api_key_last_used_at,
                    rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
             FROM ui_configuration
             WHERE id = ?
@@ -135,7 +135,7 @@ function itm_api_reload_rate_limit_row($conn, array $row) {
 }
 
 /**
- * Generates a high-entropy API key for ui_configuration.api_key.
+ * Generates a high-entropy API key for ui_configuration integration access.
  */
 function itm_api_generate_key() {
     try {
@@ -146,7 +146,41 @@ function itm_api_generate_key() {
 }
 
 /**
- * Reads API key from X-API-Key header or api_key query/body parameter.
+ * Why: Settings and audit UIs show a short prefix only — full keys are never persisted in plaintext.
+ */
+function itm_api_key_prefix($apiKey) {
+    return substr((string)$apiKey, 0, 16);
+}
+
+/**
+ * Why: Store SHA-256 hex only (same contract as hotel distribution channels, without bcrypt).
+ */
+function itm_api_hash_api_key($apiKey) {
+    return hash('sha256', (string)$apiKey);
+}
+
+function itm_api_verify_api_key($apiKey, $storedHash) {
+    $storedHash = (string)$storedHash;
+    if ($storedHash === '') {
+        return false;
+    }
+
+    return hash_equals($storedHash, itm_api_hash_api_key($apiKey));
+}
+
+/**
+ * Whether a ui_configuration row has a stored integration key (hashed or legacy plaintext).
+ */
+function itm_api_configuration_row_has_api_key(array $row) {
+    if (trim((string)($row['api_key_hash'] ?? '')) !== '') {
+        return true;
+    }
+
+    return trim((string)($row['api_key'] ?? '')) !== '';
+}
+
+/**
+ * Reads API key from X-API-Key header or api_key POST body (never query string — avoids access-log leaks).
  */
 function itm_api_extract_request_key() {
     $headerKey = '';
@@ -155,10 +189,6 @@ function itm_api_extract_request_key() {
     }
     if ($headerKey !== '') {
         return $headerKey;
-    }
-
-    if (isset($_GET['api_key'])) {
-        return trim((string)$_GET['api_key']);
     }
 
     if (isset($_POST['api_key'])) {
@@ -200,23 +230,47 @@ function itm_api_lookup_configuration_by_key($conn, $apiKey) {
         return null;
     }
 
-    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_is_active, api_key_last_used_at,
-                   rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
-            FROM ui_configuration
-            WHERE api_key = ?
-            LIMIT 1';
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
+    $selectColumns = 'id, company_id, employee_id, api_key, api_key_prefix, api_key_hash, api_key_is_active, api_key_last_used_at,
+                      rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier';
+
+    $prefix = itm_api_key_prefix($apiKey);
+    if ($prefix !== '') {
+        $sql = 'SELECT ' . $selectColumns . '
+                FROM ui_configuration
+                WHERE api_key_prefix = ?
+                ORDER BY id ASC';
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 's', $prefix);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            while ($result && ($row = mysqli_fetch_assoc($result))) {
+                if (itm_api_verify_api_key($apiKey, $row['api_key_hash'] ?? '')) {
+                    mysqli_stmt_close($stmt);
+                    return $row;
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+
+    // Why: Legacy rows may still store plaintext until the owner re-saves or generates a key in Settings.
+    $legacySql = 'SELECT ' . $selectColumns . '
+                  FROM ui_configuration
+                  WHERE api_key = ?
+                  LIMIT 1';
+    $legacyStmt = mysqli_prepare($conn, $legacySql);
+    if (!$legacyStmt) {
         return null;
     }
 
-    mysqli_stmt_bind_param($stmt, 's', $apiKey);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $row = $result ? mysqli_fetch_assoc($result) : null;
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_bind_param($legacyStmt, 's', $apiKey);
+    mysqli_stmt_execute($legacyStmt);
+    $legacyResult = mysqli_stmt_get_result($legacyStmt);
+    $legacyRow = $legacyResult ? mysqli_fetch_assoc($legacyResult) : null;
+    mysqli_stmt_close($legacyStmt);
 
-    return is_array($row) ? $row : null;
+    return is_array($legacyRow) ? $legacyRow : null;
 }
 
 /**
@@ -237,7 +291,7 @@ function itm_api_lookup_configuration_by_user($conn, $companyId, $employeeId) {
         return null;
     }
 
-    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_is_active, api_key_last_used_at,
+    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_prefix, api_key_hash, api_key_is_active, api_key_last_used_at,
                    rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
             FROM ui_configuration
             WHERE company_id = ? AND employee_id = ?
@@ -272,6 +326,8 @@ function itm_api_default_free_configuration_row($companyId, $employeeId) {
         'company_id' => (int)$companyId,
         'employee_id' => (int)$employeeId,
         'api_key' => '',
+        'api_key_prefix' => '',
+        'api_key_hash' => '',
         'api_key_is_active' => 1,
         'api_key_last_used_at' => null,
         'rate_limit_window_start' => 0,
@@ -369,7 +425,7 @@ function itm_api_build_rate_limit_probe_payload(array $row) {
 }
 
 /**
- * Persists api_key for the active company/user row (creates row when missing).
+ * Persists hashed integration API key for the active company/user row (creates row when missing).
  */
 function itm_api_save_user_api_key($conn, $companyId, $employeeId, $apiKey) {
     $companyId = (int)$companyId;
@@ -392,15 +448,22 @@ function itm_api_save_user_api_key($conn, $companyId, $employeeId, $apiKey) {
         return false;
     }
 
-    $sql = 'INSERT INTO ui_configuration (company_id, employee_id, api_key)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE api_key = VALUES(api_key)';
+    $prefix = '';
+    $hash = '';
+    if ($apiKey !== '') {
+        $prefix = itm_api_key_prefix($apiKey);
+        $hash = itm_api_hash_api_key($apiKey);
+    }
+
+    $sql = 'INSERT INTO ui_configuration (company_id, employee_id, api_key, api_key_prefix, api_key_hash)
+            VALUES (?, ?, \'\', ?, ?)
+            ON DUPLICATE KEY UPDATE api_key = \'\', api_key_prefix = VALUES(api_key_prefix), api_key_hash = VALUES(api_key_hash)';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return false;
     }
 
-    mysqli_stmt_bind_param($stmt, 'iis', $companyId, $employeeId, $apiKey);
+    mysqli_stmt_bind_param($stmt, 'iiss', $companyId, $employeeId, $prefix, $hash);
     $ok = mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
 
@@ -587,7 +650,7 @@ function itm_api_enforce_rate_limit_or_exit($conn) {
         }
         itm_api_send_json_error(
             401,
-            'Missing API key. Paid tiers require X-API-Key or api_key; Free tier may use an authenticated session without a key.'
+            'Missing API key. Paid tiers require X-API-Key or POST api_key; Free tier may use an authenticated session without a key.'
         );
     }
 
@@ -620,7 +683,7 @@ function itm_api_handle_rate_limit_probe_request($conn) {
         }
         itm_api_send_json_error(
             401,
-            'Missing API key. Paid tiers require X-API-Key or api_key; Free tier may use an authenticated session without a key.'
+            'Missing API key. Paid tiers require X-API-Key or POST api_key; Free tier may use an authenticated session without a key.'
         );
     }
 
