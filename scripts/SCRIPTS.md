@@ -1415,6 +1415,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_bookmarks_import.php` — `modules/bookmarks/import.php` HTML folder paths, duplicate URL skips (no orphan folders), disposable script employee + `scripts/data/bookmarks_import_sample.html`
 - `php scripts/verify_bookmarks_folder_move.php` — bookmarks folder move/merge (`bkm_move_folder()`, duplicate same-name sibling prompt)
 - `php scripts/verify_notes_vault.php` — notes private-field vault encryption (`notes_vault_helpers.php`, shared vs private persistence, label_hash); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
+- `php scripts/verify_vault_gcm.php` — `itm_encrypt()` / `itm_decrypt()` v2 AES-256-GCM round-trip, legacy v1 CBC decrypt, tampered v2 rejection (no MySQL).
 - `php scripts/verify_todo_vault.php` — todo private-field vault encryption (`todo_vault_helpers.php`, shared vs private persistence, `title_hash`)
 - `php scripts/verify_events_vault.php` — events private-field vault encryption (`events_vault_helpers.php`, shared vs private persistence, hydrate when vault locked/unlocked); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_notes_share.php` — notes temporary QR/code share sessions (`note_share_sessions`, `join.php`, `notes_share_helpers.php`)

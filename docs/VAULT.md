@@ -7,6 +7,7 @@ Employee-scoped encryption for Passwords, Notes, Bookmarks, Private Contacts, To
 | **Authentication hash** | `employees.vault_key_hash` — bcrypt of the plaintext master key (`password_hash` / `password_verify`). |
 | **TOTP (optional 2FA)** | `employees.totp_secret` (encrypted at rest via `itm_totp_encrypt_secret()`), `employees.totp_enabled`. Required for vault unlock and master-key create/change when enabled. |
 | **Session derivation key** | `$_SESSION['vault_key']` — `hash('sha256', $plaintext_master_key)` used by `itm_encrypt()` / `itm_decrypt()`. |
+| **Ciphertext format** | **v2 (new writes):** `v2:` + base64(`iv` ‖ `tag` ‖ `ciphertext`) with **AES-256-GCM** and a 16-byte auth tag. **v1 (legacy rows):** base64(`iv` ‖ `ciphertext`) with **AES-256-CBC** — still decryptable until re-written by a save or master-key rotation. |
 | **Re-encryption** | `includes/itm_vault_master_key.php` helpers during master-key change inside a DB transaction. |
 
 ---
