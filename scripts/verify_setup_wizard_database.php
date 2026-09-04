@@ -38,6 +38,19 @@ if (itm_setup_wizard_is_safe_database_name('bad-name')) {
     setup_db_pass('Unsafe database names are rejected');
 }
 
+$defaultFromEnv = itm_setup_wizard_default_db_port(null, ['DB_PORT' => '3307']);
+if ($defaultFromEnv !== 3307) {
+    setup_db_fail('default_db_port must use .env DB_PORT when session port unset');
+} else {
+    setup_db_pass('default_db_port honours .env DB_PORT');
+}
+
+if (itm_setup_wizard_default_db_port(3308) !== 3308) {
+    setup_db_fail('default_db_port must prefer explicit session port');
+} else {
+    setup_db_pass('default_db_port prefers session port');
+}
+
 $rewritten = itm_setup_wizard_rewrite_sql_for_database("USE `itmanagement`;\n", 'itmanagement3');
 if (strpos($rewritten, 'USE `itmanagement3`;') === false) {
     setup_db_fail('SQL bundle rewrite must map canonical database name to target schema');

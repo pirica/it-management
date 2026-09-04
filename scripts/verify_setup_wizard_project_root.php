@@ -183,4 +183,28 @@ if (!$portStatusInvalid) {
     setup_root_pass('Localhost port probe returns open, closed, or unknown');
 }
 
+$mysqlRows = itm_setup_wizard_mysql_port_status_rows();
+$mysqlEndpoints = array_map(static function (array $row): string {
+    return (string)($row['endpoint'] ?? '');
+}, $mysqlRows);
+if ($mysqlEndpoints !== ['127.0.0.1:3306', '127.0.0.1:3307']) {
+    setup_root_fail('MySQL port status must include 127.0.0.1:3306 and 127.0.0.1:3307');
+} else {
+    setup_root_pass('MySQL port status rows include 3306 and 3307 on loopback');
+}
+
+$defaultPort = itm_setup_wizard_default_db_port(null, ['DB_PORT' => '3307']);
+if ($defaultPort !== 3307) {
+    setup_root_fail('Default DB port must honour .env DB_PORT');
+} else {
+    setup_root_pass('Default DB port reads .env DB_PORT');
+}
+
+$refused = itm_setup_wizard_format_database_connection_error('127.0.0.1', 3306, 'No connection could be made because the target machine actively refused it');
+if (stripos($refused, '3307') === false) {
+    setup_root_fail('Connection refused on 3306 must hint Dunebox port 3307');
+} else {
+    setup_root_pass('Connection refused message hints alternate MySQL port');
+}
+
 exit($fail > 0 ? 1 : 0);

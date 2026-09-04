@@ -442,16 +442,17 @@ if (!function_exists('itm_setup_wizard_localhost_port_status_rows')) {
     /**
      * @return array<int, array{host:string,port:int,endpoint:string,status:string,label:string}>
      */
-    function itm_setup_wizard_localhost_port_status_rows(): array
+    function itm_setup_wizard_loopback_port_status_rows(array $ports, array $hosts = ['127.0.0.1', 'localhost']): array
     {
         $rows = [];
-        foreach (['127.0.0.1', 'localhost'] as $host) {
-            foreach ([80, 443] as $port) {
-                $status = itm_setup_wizard_probe_localhost_port($host, (int)$port);
+        foreach ($hosts as $host) {
+            foreach ($ports as $port) {
+                $port = (int)$port;
+                $status = itm_setup_wizard_probe_localhost_port((string)$host, $port);
                 $rows[] = [
-                    'host' => $host,
-                    'port' => (int)$port,
-                    'endpoint' => $host . ':' . (int)$port,
+                    'host' => (string)$host,
+                    'port' => $port,
+                    'endpoint' => (string)$host . ':' . $port,
                     'status' => $status,
                     'label' => itm_setup_wizard_localhost_port_status_label($status),
                 ];
@@ -459,6 +460,74 @@ if (!function_exists('itm_setup_wizard_localhost_port_status_rows')) {
         }
 
         return $rows;
+    }
+
+    function itm_setup_wizard_localhost_port_status_rows(): array
+    {
+        return itm_setup_wizard_loopback_port_status_rows([80, 443]);
+    }
+
+    function itm_setup_wizard_mysql_port_status_rows(): array
+    {
+        return itm_setup_wizard_loopback_port_status_rows([3306, 3307], ['127.0.0.1']);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_default_db_port')) {
+    /**
+     * Suggest MySQL port for step 1 / step 3 defaults (session and .env win over TCP probe).
+     */
+    function itm_setup_wizard_default_db_port(?int $sessionPort = null, array $envFile = [], ?int $step1MysqlPort = null): int
+    {
+        if ($sessionPort !== null && $sessionPort > 0) {
+            return $sessionPort;
+        }
+        if ($step1MysqlPort !== null && $step1MysqlPort > 0) {
+            return $step1MysqlPort;
+        }
+
+        $envPort = getenv('DB_PORT');
+        if ($envPort !== false && $envPort !== '') {
+            return max(1, (int)$envPort);
+        }
+        if (!empty($envFile['DB_PORT'])) {
+            return max(1, (int)$envFile['DB_PORT']);
+        }
+
+        // Why: Dunebox MySQL listens on 3307; Laragon/CI often use 3306.
+        $host = '127.0.0.1';
+        $open3307 = itm_setup_wizard_probe_localhost_port($host, 3307) === 'open';
+        $open3306 = itm_setup_wizard_probe_localhost_port($host, 3306) === 'open';
+        if ($open3307 && !$open3306) {
+            return 3307;
+        }
+        if ($open3306 && !$open3307) {
+            return 3306;
+        }
+        if ($open3307) {
+            return 3307;
+        }
+
+        return 3306;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_format_database_connection_error')) {
+    function itm_setup_wizard_format_database_connection_error(string $host, int $port, string $rawError): string
+    {
+        $message = 'Connection failed: ' . $rawError;
+        if (stripos($rawError, 'refused') === false) {
+            return $message;
+        }
+
+        $message .= ' — no MySQL listener on ' . $host . ':' . $port . '.';
+        if ($port === 3306) {
+            $message .= ' On Dunebox try MySQL port 3307; confirm MySQL is running.';
+        } else {
+            $message .= ' Confirm MySQL is running and the port matches phpMyAdmin / .env DB_PORT.';
+        }
+
+        return $message;
     }
 }
 
@@ -1485,7 +1554,11 @@ if (!function_exists('itm_setup_wizard_test_database')) {
         if (!$serverConn) {
             return [
                 'ok' => false,
-                'message' => 'Connection failed: ' . (mysqli_connect_error() ?: 'unknown error'),
+                'message' => itm_setup_wizard_format_database_connection_error(
+                    $host,
+                    $port,
+                    mysqli_connect_error() ?: 'unknown error'
+                ),
                 'conn' => false,
                 'server_ok' => false,
                 'database_exists' => false,
@@ -1517,7 +1590,11 @@ if (!function_exists('itm_setup_wizard_test_database')) {
 
             return [
                 'ok' => false,
-                'message' => 'Connection failed: ' . (mysqli_connect_error() ?: 'unknown error'),
+                'message' => itm_setup_wizard_format_database_connection_error(
+                    $host,
+                    $port,
+                    mysqli_connect_error() ?: 'unknown error'
+                ),
                 'conn' => false,
                 'server_ok' => true,
                 'database_exists' => true,
