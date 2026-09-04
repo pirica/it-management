@@ -3416,6 +3416,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for setup wizard project-root repair: collapsed Windows session paths, step 1 confirmed root vs PHP runtime fallback, step 2 upload subdirectory resolution (<code>setup/includes/itm_setup_wizard.php</code>).</td>
                     <td class="scripts-catalog-how-stub">CLI: <code>php scripts/verify_setup_wizard_project_root.php</code></td>
                 </tr>
+                <tr data-tags="Codebase setup">
+                    <td><a href="verify_setup_wizard_database.php" target="_blank" rel="nofollow noreferrer">verify_setup_wizard_database.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Regression for setup wizard step 3 database probe/create/replace: missing schema <code>needs_create</code>, existing tables <code>needs_replace_confirm</code>, <code>DROP DATABASE</code> reset before import (<code>setup/includes/itm_setup_wizard.php</code>).</td>
+                    <td class="scripts-catalog-how-stub">CLI: <code>php scripts/verify_setup_wizard_database.php</code></td>
+                </tr>
                 <tr data-tags="Codebase">
                     <td><a href="check_prod_hardening.php" target="_blank" rel="nofollow noreferrer">check_prod_hardening.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
