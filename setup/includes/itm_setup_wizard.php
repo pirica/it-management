@@ -393,17 +393,23 @@ if (!function_exists('itm_setup_wizard_probe_localhost_port')) {
     /**
      * Best-effort TCP probe for informational UI only (does not gate install steps).
      *
+     * @param string $host Loopback host only — 127.0.0.1 or localhost.
      * @return 'open'|'closed'|'unknown'
      */
-    function itm_setup_wizard_probe_localhost_port(int $port, float $timeoutSeconds = 0.35): string
+    function itm_setup_wizard_probe_localhost_port(string $host, int $port, float $timeoutSeconds = 0.35): string
     {
+        $host = strtolower(trim($host));
+        if (!in_array($host, ['127.0.0.1', 'localhost'], true)) {
+            return 'unknown';
+        }
+
         if ($port < 1 || $port > 65535) {
             return 'unknown';
         }
 
         $errno = 0;
         $errstr = '';
-        $socket = @fsockopen('127.0.0.1', $port, $errno, $errstr, $timeoutSeconds);
+        $socket = @fsockopen($host, $port, $errno, $errstr, $timeoutSeconds);
         if (is_resource($socket)) {
             fclose($socket);
 
@@ -434,18 +440,22 @@ if (!function_exists('itm_setup_wizard_localhost_port_status_label')) {
 
 if (!function_exists('itm_setup_wizard_localhost_port_status_rows')) {
     /**
-     * @return array<int, array{port:int,status:string,label:string}>
+     * @return array<int, array{host:string,port:int,endpoint:string,status:string,label:string}>
      */
     function itm_setup_wizard_localhost_port_status_rows(): array
     {
         $rows = [];
-        foreach ([80, 443] as $port) {
-            $status = itm_setup_wizard_probe_localhost_port((int)$port);
-            $rows[] = [
-                'port' => (int)$port,
-                'status' => $status,
-                'label' => itm_setup_wizard_localhost_port_status_label($status),
-            ];
+        foreach (['127.0.0.1', 'localhost'] as $host) {
+            foreach ([80, 443] as $port) {
+                $status = itm_setup_wizard_probe_localhost_port($host, (int)$port);
+                $rows[] = [
+                    'host' => $host,
+                    'port' => (int)$port,
+                    'endpoint' => $host . ':' . (int)$port,
+                    'status' => $status,
+                    'label' => itm_setup_wizard_localhost_port_status_label($status),
+                ];
+            }
         }
 
         return $rows;
