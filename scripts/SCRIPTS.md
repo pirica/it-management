@@ -617,6 +617,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
 | `scripts/lib/itm_codacy_xss_echo_audit.php` | Codacy XSS echo pattern matchers for `check_codacy_xss_echo.php` |
 | `scripts/lib/itm_manual_sql_string_audit.php` | Manual SQL string pattern matchers for `check_manual_sql_string.php` |
+| `scripts/lib/itm_create_post_prepared_statement_audit.php` | Create-handler POST save SQL classifiers for `check_create_post_prepared_statements.php` |
 | `scripts/lib/itm_not_operator_audit.php` | Unary `!` on `$variable` pattern matchers for `check_not_operator.php` [Warning] (Codacy-style; always exit 0; excludes `!is_*()` / `!==`) |
 | `scripts/lib/itm_mojibake_audit.php` | UTF-8 / mojibake scan + repair helpers for `verify_source_utf8_mojibake.php` and `fix_source_utf8_mojibake.php` |
 | `scripts/lib/itm_script_regression_entry.php` | Browser + CLI regressions: `ITM_CLI_SCRIPT` on CLI only, Admin gate in browser, `config.php` at file scope |
@@ -1580,6 +1581,17 @@ php scripts/check_manual_sql_string.php --include-scripts
 ```
 
 Catches real manual SQL construction (`"SELECT … " . $var`, `"INSERT … {$user}"`, `mysqli_query` / `itm_run_query` with user input in the SQL string). Excludes URL `http_build_query()` / `.php?` href patterns (static-tool false positives), `mysqli_prepare` + `?` placeholders, `itm_run_query($conn, $sql)` pass-through, and scaffold `cr_escape_identifier()` table names without user input. Same-line `itm-manual-sql-exempt:` for intentional legacy lines. Default run is informational (exit `0`); `--strict` exits `1`. Complements `check_sql_injection_coverage.php` (proximity audit for unbound queries near `$_GET` / `$_POST`).
+
+**Create POST save SQL (`modules/*/create.php`):** after changing create-handler INSERT/UPDATE paths or auditing legacy `escape_sql()` / `$sqlValues` scaffold saves, run:
+
+```bash
+php scripts/check_create_post_prepared_statements.php
+php scripts/check_create_post_prepared_statements.php --strict   # fail when escape_sql / scaffold / bespoke string saves remain
+php scripts/check_create_post_prepared_statements.php --module=departments
+php scripts/check_create_post_prepared_statements.php --verbose  # list wrapper + no_local_post_save rows
+```
+
+Classifies each `modules/{slug}/create.php` as `[FAIL] escape_sql`, `[WARN] scaffold_string_sql` (`$sqlValues` + concatenated INSERT/UPDATE), `[WARN] bespoke_string_sql` (POST INSERT/UPDATE without `mysqli_prepare`), `[OK] prepared`, `[SKIP] wrapper` (delegates to `index.php`), or `[INFO] no_local_post_save`. Default exit `0`; `--strict` exits `1` when any legacy POST save path remains. Browser: [check_create_post_prepared_statements.php?run=1](http://localhost/it-management/scripts/check_create_post_prepared_statements.php?run=1) (Administrator).
 
 **UTF-8 / mojibake:** after copy/paste from Excel or editors that mis-save encoding, or when UI shows corrupted emoji instead of the intended symbol:
 
