@@ -135,4 +135,50 @@ if ($cleanupConn) {
     mysqli_close($cleanupConn);
 }
 
+$importDb = 'itm_setup_wizard_import_' . substr(sha1((string)getmypid() . 'import'), 0, 8);
+$importCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $importDb);
+if (!$importCreate['ok']) {
+    if (stripos($importCreate['message'], 'schema directory') !== false) {
+        fwrite(STDOUT, '[SKIP] Import live test skipped — CREATE DATABASE unavailable.' . PHP_EOL);
+    } else {
+        setup_db_fail('Import test create database failed: ' . $importCreate['message']);
+    }
+} else {
+    $importResult = itm_setup_wizard_import_database($host, $port, $user, $pass, $importDb);
+    if (!$importResult['ok']) {
+        setup_db_fail('mysqli import failed: ' . $importResult['message']);
+    } else {
+        setup_db_pass('Full db/ bundle import succeeds via mysqli (including triggers)');
+    }
+
+    $importConn = itm_mysqli_connect($host, $user, $pass, $importDb, $port);
+    if (!$importConn) {
+        setup_db_fail('Could not connect after import for trigger verification');
+    } else {
+        $tables = itm_setup_wizard_count_tables($importConn, $importDb);
+        $triggers = itm_setup_wizard_count_triggers($importConn, $importDb);
+        $expectedTables = itm_setup_wizard_expected_table_count();
+        $expectedTriggers = itm_setup_wizard_expected_trigger_count();
+        mysqli_close($importConn);
+
+        if ($tables < $expectedTables) {
+            setup_db_fail('Import table count ' . $tables . ' < expected ' . $expectedTables);
+        } else {
+            setup_db_pass('Import table count matches schema (' . $tables . ')');
+        }
+
+        if ($expectedTriggers > 0 && $triggers < $expectedTriggers) {
+            setup_db_fail('Import trigger count ' . $triggers . ' < expected ' . $expectedTriggers);
+        } else {
+            setup_db_pass('Import trigger count matches 03_triggers.sql (' . $triggers . ')');
+        }
+    }
+
+    $importCleanup = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+    if ($importCleanup) {
+        mysqli_query($importCleanup, 'DROP DATABASE IF EXISTS `' . $importDb . '`');
+        mysqli_close($importCleanup);
+    }
+}
+
 exit($fail > 0 ? 1 : 0);
