@@ -113,9 +113,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pass = (string)($_POST['db_pass'] ?? '');
         $name = trim((string)($_POST['db_name'] ?? 'itmanagement'));
         $test = itm_setup_wizard_test_database($host, $port, $user, $pass, $name);
+        $flashType = 'error';
+        if ($test['ok']) {
+            $flashType = 'success';
+        } elseif (!empty($test['needs_create'])) {
+            $flashType = 'info';
+        }
         itm_setup_wizard_state_set([
             'db' => compact('host', 'port', 'user', 'pass', 'name'),
-            'flash' => ['type' => $test['ok'] ? 'success' : 'error', 'message' => $test['message']],
+            'db_probe' => [
+                'needs_create' => !empty($test['needs_create']),
+                'needs_replace_confirm' => !empty($test['needs_replace_confirm']),
+                'table_count' => (int)($test['table_count'] ?? 0),
+                'database_exists' => !empty($test['database_exists']),
+            ],
+            'flash' => ['type' => $flashType, 'message' => $test['message']],
         ]);
         if ($test['ok']) {
             itm_setup_wizard_write_env_file([
@@ -130,6 +142,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'step3_create_db') {
+        $host = trim((string)($_POST['db_host'] ?? '127.0.0.1'));
+        $port = (int)($_POST['db_port'] ?? 3306);
+        $user = trim((string)($_POST['db_user'] ?? 'root'));
+        $pass = (string)($_POST['db_pass'] ?? '');
+        $name = trim((string)($_POST['db_name'] ?? 'itmanagement'));
+        $create = itm_setup_wizard_create_database($host, $port, $user, $pass, $name);
+        itm_setup_wizard_state_set([
+            'db' => compact('host', 'port', 'user', 'pass', 'name'),
+            'db_probe' => [
+                'needs_create' => !$create['ok'],
+                'needs_replace_confirm' => false,
+                'table_count' => 0,
+                'database_exists' => $create['ok'],
+            ],
+            'flash' => ['type' => $create['ok'] ? 'success' : 'error', 'message' => $create['message']],
+        ]);
+        header('Location: ' . BASE_URL . 'setup/index.php?step=3');
+        exit;
+    }
+
     if ($action === 'step3_import') {
         $db = $state['db'] ?? [];
         $host = (string)($db['host'] ?? trim((string)($_POST['db_host'] ?? '127.0.0.1')));
@@ -137,6 +170,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = (string)($db['user'] ?? trim((string)($_POST['db_user'] ?? 'root')));
         $pass = (string)($db['pass'] ?? (string)($_POST['db_pass'] ?? ''));
         $name = (string)($db['name'] ?? trim((string)($_POST['db_name'] ?? 'itmanagement')));
+        $confirmReplace = !empty($_POST['confirm_replace']);
+        $probe = itm_setup_wizard_probe_database($host, $port, $user, $pass, $name);
+
+        if (!$probe['database_exists']) {
+            itm_setup_wizard_state_set([
+                'db' => compact('host', 'port', 'user', 'pass', 'name'),
+                'db_probe' => [
+                    'needs_create' => true,
+                    'needs_replace_confirm' => false,
+                    'table_count' => 0,
+                    'database_exists' => false,
+                ],
+                'flash' => [
+                    'type' => 'error',
+                    'message' => 'Database "' . $name . '" does not exist. Create it before importing.',
+                ],
+            ]);
+            header('Location: ' . BASE_URL . 'setup/index.php?step=3');
+            exit;
+        }
+
+        if ($probe['needs_replace_confirm'] && !$confirmReplace) {
+            itm_setup_wizard_state_set([
+                'db' => compact('host', 'port', 'user', 'pass', 'name'),
+                'db_probe' => [
+                    'needs_create' => false,
+                    'needs_replace_confirm' => true,
+                    'table_count' => (int)$probe['table_count'],
+                    'database_exists' => true,
+                ],
+                'flash' => [
+                    'type' => 'error',
+                    'message' => 'Database "' . $name . '" already contains ' . (int)$probe['table_count']
+                        . ' table(s). Confirm replacement to destroy all existing structure and data.',
+                ],
+            ]);
+            header('Location: ' . BASE_URL . 'setup/index.php?step=3');
+            exit;
+        }
+
+        if ($probe['needs_replace_confirm'] && $confirmReplace) {
+            $reset = itm_setup_wizard_reset_database($host, $port, $user, $pass, $name);
+            if (!$reset['ok']) {
+                itm_setup_wizard_state_set([
+                    'flash' => ['type' => 'error', 'message' => $reset['message']],
+                ]);
+                header('Location: ' . BASE_URL . 'setup/index.php?step=3');
+                exit;
+            }
+        }
+
         $import = itm_setup_wizard_import_database($host, $port, $user, $pass, $name);
         $connAfter = itm_setup_wizard_reload_connection();
         $tableCount = $connAfter instanceof mysqli ? itm_setup_wizard_count_tables($connAfter, $name) : 0;
@@ -308,6 +392,10 @@ $extensions = itm_setup_wizard_extension_matrix();
 $fileChecks = $currentStep === 2
     ? itm_setup_wizard_verify_files()
     : ($state['file_checks'] ?? itm_setup_wizard_verify_files());
+$dbProbe = isset($state['db_probe']) && is_array($state['db_probe']) ? $state['db_probe'] : [];
+$dbNeedsCreate = !empty($dbProbe['needs_create']);
+$dbNeedsReplaceConfirm = !empty($dbProbe['needs_replace_confirm']);
+$dbExistingTableCount = (int)($dbProbe['table_count'] ?? 0);
 $csrfToken = itm_get_csrf_token();
 
 header('Content-Type: text/html; charset=utf-8');
@@ -399,7 +487,7 @@ header('Content-Type: text/html; charset=utf-8');
                         <button type="button" class="btn btn-primary" id="setup-step1-save-preview" title="Save">💾</button>
                     </div>
                     <p id="setup-step1-preview-status" class="sub" style="margin-top:8px;" aria-live="polite"></p>
-                    <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. Use Windows backslashes after the drive letter (example: <code>C:\laragon\www\it-management3</code>). Click <strong>💾</strong> to validate the folder and refresh the preview rows below. When the path does not exist, the wizard creates it and downloads <code>pirica/it-management</code> from GitHub on Continue. If the folder already exists, step 1 fails — use the auto-detected current install path for in-place setup.</p>
+                    <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. Use Windows backslashes after the drive letter (example: <code>C:\laragon\www\it-management3</code>). Click <strong>💾</strong> to validate the folder and refresh the preview rows below. When the path does not exist, the wizard creates it and downloads <code>pirica/it-management</code> from GitHub on Download. If the folder already exists, step 1 fails — use the auto-detected current install path for in-place setup.</p>
                     <table>
                         <tr><th>Auto-detect</th><td><code id="setup-auto-detect-path"><?php echo sanitize($projectRootPreview); ?></code></td></tr>
                         <tr><th>Document root</th><td><code id="setup-document-root-path"><?php echo sanitize($step1DocumentRoot !== '' ? $step1DocumentRoot : '(not detected)'); ?></code></td></tr>
@@ -411,8 +499,9 @@ header('Content-Type: text/html; charset=utf-8');
                     <label for="install_notes">Install notes (optional)</label>
                     <textarea id="install_notes" name="install_notes" rows="3" placeholder="e.g. Laragon alias /it-management/"><?php echo sanitize((string)($state['install_notes'] ?? '')); ?></textarea>
                     <div class="actions">
-                        <button class="btn btn-primary" type="submit" title="Continue">Continue</button>
+                        <button class="btn btn-primary" type="submit" id="setup-step1-download" title="Download">Download</button>
                     </div>
+                    <p id="setup-step1-wait-status" class="sub" style="margin-top:8px;" aria-live="polite"></p>
                 </form>
 
             <?php elseif ($currentStep === 2): ?>
@@ -442,7 +531,12 @@ header('Content-Type: text/html; charset=utf-8');
             <?php elseif ($currentStep === 3): ?>
                 <h2>3. Verify database connection</h2>
                 <p>Test MySQL credentials, save <code>.env</code>, then import <code>01_schema → 02_data → 03_triggers</code>.</p>
-                <form method="post">
+                <?php if ($dbNeedsCreate): ?>
+                    <div class="flash info">Database not found — use <strong>Create database</strong> below (server credentials are OK).</div>
+                <?php elseif ($dbNeedsReplaceConfirm): ?>
+                    <div class="flash error">Database <code><?php echo sanitize($dbName); ?></code> already has <?php echo (int)$dbExistingTableCount; ?> table(s). Import will <strong>destroy all existing tables and data</strong> after you confirm.</div>
+                <?php endif; ?>
+                <form method="post" id="setup-step3-test-form">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step3_test">
                     <input type="hidden" name="step" value="3">
@@ -473,7 +567,20 @@ header('Content-Type: text/html; charset=utf-8');
                         <button class="btn" type="submit" title="Test connection">Test connection</button>
                     </div>
                 </form>
+                <?php if ($dbNeedsCreate): ?>
                 <form method="post" style="margin-top:12px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <input type="hidden" name="wizard_action" value="step3_create_db">
+                    <input type="hidden" name="step" value="3">
+                    <input type="hidden" name="db_host" value="<?php echo sanitize($dbHost); ?>">
+                    <input type="hidden" name="db_port" value="<?php echo (int)$dbPort; ?>">
+                    <input type="hidden" name="db_user" value="<?php echo sanitize($dbUser); ?>">
+                    <input type="hidden" name="db_name" value="<?php echo sanitize($dbName); ?>">
+                    <input type="hidden" name="db_pass" value="<?php echo sanitize($dbPass); ?>">
+                    <button class="btn btn-primary" type="submit" title="Create database">Create database</button>
+                </form>
+                <?php endif; ?>
+                <form method="post" id="setup-step3-import-form" style="margin-top:12px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step3_import">
                     <input type="hidden" name="step" value="3">
@@ -482,6 +589,7 @@ header('Content-Type: text/html; charset=utf-8');
                     <input type="hidden" name="db_user" value="<?php echo sanitize($dbUser); ?>">
                     <input type="hidden" name="db_name" value="<?php echo sanitize($dbName); ?>">
                     <input type="hidden" name="db_pass" value="<?php echo sanitize($dbPass); ?>">
+                    <input type="hidden" name="confirm_replace" id="setup-step3-confirm-replace" value="0">
                     <button class="btn btn-primary" type="submit" title="Import database">Import database bundle</button>
                     <?php if (!empty($state['table_count'])): ?>
                         <span class="ok">Tables: <?php echo (int)$state['table_count']; ?> / <?php echo itm_setup_wizard_expected_table_count(); ?></span>
@@ -627,6 +735,8 @@ header('Content-Type: text/html; charset=utf-8');
     var documentRootEl = document.getElementById('setup-document-root-path');
     var saveBtn = document.getElementById('setup-step1-save-preview');
     var statusEl = document.getElementById('setup-step1-preview-status');
+    var downloadBtn = document.getElementById('setup-step1-download');
+    var waitEl = document.getElementById('setup-step1-wait-status');
     if (!form || !input || !preview || !saveBtn) {
         return;
     }
@@ -700,7 +810,48 @@ header('Content-Type: text/html; charset=utf-8');
             });
     }
 
+    form.addEventListener('submit', function () {
+        if (downloadBtn) {
+            downloadBtn.disabled = true;
+        }
+        if (saveBtn) {
+            saveBtn.disabled = true;
+        }
+        if (waitEl) {
+            waitEl.textContent = 'Please wait...';
+            waitEl.className = 'sub';
+        }
+    });
+
     saveBtn.addEventListener('click', savePreview);
+})();
+</script>
+<?php elseif ($currentStep === 3): ?>
+<script>
+(function () {
+    var importForm = document.getElementById('setup-step3-import-form');
+    var confirmField = document.getElementById('setup-step3-confirm-replace');
+    var needsReplace = <?php echo $dbNeedsReplaceConfirm ? 'true' : 'false'; ?>;
+    var dbName = <?php echo json_encode($dbName, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    var tableCount = <?php echo (int)$dbExistingTableCount; ?>;
+    if (!importForm) {
+        return;
+    }
+    importForm.addEventListener('submit', function (event) {
+        if (!needsReplace) {
+            return;
+        }
+        var message = 'Database "' + dbName + '" already contains ' + tableCount + ' table(s).\n\n'
+            + 'Import will DROP and recreate the database, destroying ALL existing tables and data.\n\n'
+            + 'Continue?';
+        if (!window.confirm(message)) {
+            event.preventDefault();
+            return;
+        }
+        if (confirmField) {
+            confirmField.value = '1';
+        }
+    });
 })();
 </script>
 <?php endif; ?>

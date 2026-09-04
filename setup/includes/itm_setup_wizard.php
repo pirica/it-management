@@ -1232,22 +1232,225 @@ if (!function_exists('itm_setup_wizard_verify_files')) {
 
 if (!function_exists('itm_setup_wizard_test_database')) {
     /**
-     * @return array{ok:bool,message:string,conn:mysqli|false}
+     * @return array{ok:bool,message:string,conn:mysqli|false,server_ok?:bool,database_exists?:bool,table_count?:int,needs_create?:bool,needs_replace_confirm?:bool}
      */
-    function itm_setup_wizard_test_database(string $host, int $port, string $user, string $pass, string $database): array
+    function itm_setup_wizard_is_safe_database_name(string $name): bool
     {
-        $conn = itm_mysqli_connect($host, $user, $pass, $database, $port);
-        if (!$conn) {
+        return $name !== '' && (bool)preg_match('/^[A-Za-z0-9_]+$/', $name);
+    }
+
+    function itm_setup_wizard_connect_mysql_server(string $host, int $port, string $user, string $pass)
+    {
+        return itm_mysqli_connect($host, $user, $pass, '', $port);
+    }
+
+    function itm_setup_wizard_database_exists(mysqli $conn, string $database): bool
+    {
+        if (!itm_setup_wizard_is_safe_database_name($database)) {
+            return false;
+        }
+
+        $stmt = mysqli_prepare($conn, 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ? LIMIT 1');
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 's', $database);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $exists = $res && mysqli_fetch_assoc($res);
+        if ($res) {
+            mysqli_free_result($res);
+        }
+        mysqli_stmt_close($stmt);
+
+        return (bool)$exists;
+    }
+
+    /**
+     * @return array{ok:bool,message:string,conn:mysqli|false,server_ok:bool,database_exists:bool,table_count:int,needs_create:bool,needs_replace_confirm:bool}
+     */
+    function itm_setup_wizard_probe_database(string $host, int $port, string $user, string $pass, string $database): array
+    {
+        $database = trim($database);
+        if ($database === '') {
+            return [
+                'ok' => false,
+                'message' => 'Database name is required.',
+                'conn' => false,
+                'server_ok' => false,
+                'database_exists' => false,
+                'table_count' => 0,
+                'needs_create' => false,
+                'needs_replace_confirm' => false,
+            ];
+        }
+        if (!itm_setup_wizard_is_safe_database_name($database)) {
+            return [
+                'ok' => false,
+                'message' => 'Database name may only contain letters, numbers, and underscores.',
+                'conn' => false,
+                'server_ok' => false,
+                'database_exists' => false,
+                'table_count' => 0,
+                'needs_create' => false,
+                'needs_replace_confirm' => false,
+            ];
+        }
+
+        $serverConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+        if (!$serverConn) {
             return [
                 'ok' => false,
                 'message' => 'Connection failed: ' . (mysqli_connect_error() ?: 'unknown error'),
                 'conn' => false,
+                'server_ok' => false,
+                'database_exists' => false,
+                'table_count' => 0,
+                'needs_create' => false,
+                'needs_replace_confirm' => false,
+            ];
+        }
+        mysqli_set_charset($serverConn, 'utf8mb4');
+
+        if (!itm_setup_wizard_database_exists($serverConn, $database)) {
+            mysqli_close($serverConn);
+
+            return [
+                'ok' => false,
+                'message' => 'Database "' . $database . '" does not exist yet. Create it below, then test the connection again.',
+                'conn' => false,
+                'server_ok' => true,
+                'database_exists' => false,
+                'table_count' => 0,
+                'needs_create' => true,
+                'needs_replace_confirm' => false,
             ];
         }
 
-        mysqli_set_charset($conn, 'utf8mb4');
+        $dbConn = itm_mysqli_connect($host, $user, $pass, $database, $port);
+        if (!$dbConn) {
+            mysqli_close($serverConn);
 
-        return ['ok' => true, 'message' => 'Connected to ' . $database . ' on ' . $host . ':' . $port, 'conn' => $conn];
+            return [
+                'ok' => false,
+                'message' => 'Connection failed: ' . (mysqli_connect_error() ?: 'unknown error'),
+                'conn' => false,
+                'server_ok' => true,
+                'database_exists' => true,
+                'table_count' => 0,
+                'needs_create' => false,
+                'needs_replace_confirm' => false,
+            ];
+        }
+        mysqli_set_charset($dbConn, 'utf8mb4');
+        $tableCount = itm_setup_wizard_count_tables($dbConn, $database);
+        mysqli_close($serverConn);
+
+        $message = 'Connected to ' . $database . ' on ' . $host . ':' . $port;
+        if ($tableCount > 0) {
+            $message .= ' (' . $tableCount . ' existing table(s) — import will replace all tables and data after confirmation).';
+        }
+
+        return [
+            'ok' => true,
+            'message' => $message,
+            'conn' => $dbConn,
+            'server_ok' => true,
+            'database_exists' => true,
+            'table_count' => $tableCount,
+            'needs_create' => false,
+            'needs_replace_confirm' => $tableCount > 0,
+        ];
+    }
+
+    /**
+     * @return array{ok:bool,message:string}
+     */
+    function itm_setup_wizard_create_database(string $host, int $port, string $user, string $pass, string $database): array
+    {
+        $database = trim($database);
+        if (!itm_setup_wizard_is_safe_database_name($database)) {
+            return ['ok' => false, 'message' => 'Database name may only contain letters, numbers, and underscores.'];
+        }
+
+        $serverConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+        if (!$serverConn) {
+            return ['ok' => false, 'message' => 'Connection failed: ' . (mysqli_connect_error() ?: 'unknown error')];
+        }
+
+        if (itm_setup_wizard_database_exists($serverConn, $database)) {
+            mysqli_close($serverConn);
+
+            return ['ok' => false, 'message' => 'Database "' . $database . '" already exists.'];
+        }
+
+        $sql = 'CREATE DATABASE `' . $database . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
+        if (!mysqli_query($serverConn, $sql)) {
+            $error = mysqli_error($serverConn);
+            mysqli_close($serverConn);
+
+            return ['ok' => false, 'message' => 'Could not create database: ' . ($error ?: 'unknown error')];
+        }
+        mysqli_close($serverConn);
+
+        return ['ok' => true, 'message' => 'Created database "' . $database . '". Test the connection, then import the bundle.'];
+    }
+
+    /**
+     * @return array{ok:bool,message:string}
+     */
+    function itm_setup_wizard_reset_database(string $host, int $port, string $user, string $pass, string $database): array
+    {
+        $database = trim($database);
+        if (!itm_setup_wizard_is_safe_database_name($database)) {
+            return ['ok' => false, 'message' => 'Database name may only contain letters, numbers, and underscores.'];
+        }
+
+        $serverConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+        if (!$serverConn) {
+            return ['ok' => false, 'message' => 'Connection failed: ' . (mysqli_connect_error() ?: 'unknown error')];
+        }
+
+        if (!itm_setup_wizard_database_exists($serverConn, $database)) {
+            mysqli_close($serverConn);
+
+            return itm_setup_wizard_create_database($host, $port, $user, $pass, $database);
+        }
+
+        $dropSql = 'DROP DATABASE `' . $database . '`';
+        if (!mysqli_query($serverConn, $dropSql)) {
+            $error = mysqli_error($serverConn);
+            mysqli_close($serverConn);
+
+            return ['ok' => false, 'message' => 'Could not drop database: ' . ($error ?: 'unknown error')];
+        }
+
+        $createSql = 'CREATE DATABASE `' . $database . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
+        if (!mysqli_query($serverConn, $createSql)) {
+            $error = mysqli_error($serverConn);
+            mysqli_close($serverConn);
+
+            return ['ok' => false, 'message' => 'Database dropped but recreate failed: ' . ($error ?: 'unknown error')];
+        }
+        mysqli_close($serverConn);
+
+        return ['ok' => true, 'message' => 'Replaced database "' . $database . '" with an empty schema.'];
+    }
+
+    function itm_setup_wizard_test_database(string $host, int $port, string $user, string $pass, string $database): array
+    {
+        $probe = itm_setup_wizard_probe_database($host, $port, $user, $pass, $database);
+
+        return [
+            'ok' => $probe['ok'],
+            'message' => $probe['message'],
+            'conn' => $probe['conn'],
+            'server_ok' => $probe['server_ok'],
+            'database_exists' => $probe['database_exists'],
+            'table_count' => $probe['table_count'],
+            'needs_create' => $probe['needs_create'],
+            'needs_replace_confirm' => $probe['needs_replace_confirm'],
+        ];
     }
 }
 
