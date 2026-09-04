@@ -15,7 +15,7 @@ Touches the full schema when **Import database bundle** runs (`db/01_schema.sql`
 ## 3. Required Relationships
 
 - Requires writable project root for `.env` and upload trees (`itm_ensure_upload_directory()`).
-- Database import expects an empty schema or explicit replace confirmation when tables already exist (destructive `DROP DATABASE` + bundle import).
+- Database import expects an empty schema or explicit replace confirmation when tables already exist (destructive `DROP DATABASE` + bundle import). Steps 4–8 are blocked until step 3 import succeeds and live table/trigger counts still match the canonical bundle; sidebar navigation cannot skip ahead. Starting step 1 again clears prior `completed_steps` and import markers.
 - Admin step updates an existing seed row (`username = Admin` by default) — import must run before step 6.
 
 ## 4. Business Rules (Critical for Agents)
@@ -36,7 +36,7 @@ Step 1 exposes an editable **project root** field with a **💾** save control (
 
 Step 3 probes MySQL at the server level before selecting a schema. Step 3 repeats the **MySQL listener probe** table from step 1 and pre-fills **MySQL port** from step 1 / open loopback probe / `.env` `DB_PORT` (auto-saves an open loopback port to session when step 1 did not). When the named database does not exist, **Test connection** returns an info flash (not raw `Unknown database`) and shows **Create database** (`step3_create_db`). When the schema exists with tables, import requires browser `confirm()` plus POST `confirm_replace=1`; the wizard **DROP DATABASE** + recreates the schema before `01_schema → 02_data → 03_triggers` import. Custom `DB_NAME` values rewrite canonical `` `itmanagement` `` DDL in the import bundle so tables land in the selected schema. Import uses DELIMITER-aware mysqli execution (required for `03_triggers.sql`); mysql CLI via `proc_open` array command + `MYSQL_EXE`/`itm_resolve_cli_mysql_binary()` is the fallback when mysqli import fails. Success requires expected table and trigger counts from `information_schema`.
 
-Step 7 lists active seed companies from `companies` (or the canonical five-company catalog from `db/02_data.sql` when the step 3 session DB is not connected yet) with per-company checkboxes, always-visible **Select All** / **Unselect All**, and POST `sample_company_ids[]` to `itm_setup_wizard_install_sample_data_for_companies()` (wraps `itm_seed_all_tables_from_database_sql()` per tenant).
+Step 7 lists active seed companies from `companies` (or the canonical five-company catalog from `db/02_data.sql` when the step 3 session DB is not connected yet) with per-company checkboxes, always-visible **Select All** / **Unselect All**, and POST `sample_company_ids[]` to `itm_setup_wizard_install_sample_data_for_companies()` (wraps `itm_seed_all_tables_from_database_sql()` per tenant). **Skip sample data** only skips `db/02_data_sample.sql` — seed Admin/demo users remain from step 3 `db/02_data.sql`.
 
 Step 2 always re-runs file verification on page load (no stale cached `file_checks` from a prior runtime path). Writable upload paths and the **Confirmed project root** header resolve via `itm_setup_wizard_project_root()`, which repairs collapsed Windows session paths (e.g. `C:Users…it-management2`) and, after step 1 is complete, never falls back to the PHP runtime install folder when the session path differs.
 
@@ -69,6 +69,7 @@ Step 5 may set `enable_all_error_reporting` on all `ui_configuration` rows when 
 
 - Large `db/` import may fail when `max_allowed_packet` is low — wizard falls back to `mysql` CLI when mysqli import fails. `03_triggers.sql` uses `DELIMITER $$` blocks; mysqli import must use `itm_database_migrations_execute_sql_text()` (not `mysqli_multi_query`). Some trigger clusters use semicolon-terminated `DROP TRIGGER` lines **inside** an active `$$` delimiter block — the parser must flush those as separate statements (same as the mysql CLI), not batch them with the following `CREATE TRIGGER`.
 - Cross-folder install: run the wizard from any copy with `setup/`, but confirm step 1 **project root** matches the Apache alias you will use (e.g. `it-management4`). `.env`, `setup/.installed`, and setup file removal all target that confirmed root — not necessarily the folder serving the wizard PHP.
+- Re-running the wizard in the same browser session without completing step 1 again may retain stale `completed_steps` — step 1 **Download** resets progress; steps 4–8 also verify live schema counts and send you back to step 3 when import was skipped.
 - Do not leave the wizard reachable in production — step 8 links to [check_prod_hardening.php?run=1&enforce=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1&enforce=1) (Administrator; new tab) and [login.php](http://localhost/it-management/login.php) (new tab) before finish.
 
 ## 11. Testing / Verification

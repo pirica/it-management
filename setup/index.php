@@ -75,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $successMessage = $rootCheck['message'] !== ''
             ? $rootCheck['message']
             : 'Install folder confirmed.';
+        itm_setup_wizard_reset_install_progress();
         itm_setup_wizard_state_set([
             'project_root' => itm_setup_wizard_format_path_for_input($rootCheck['path']),
             'itm_app_url' => $appUrl,
@@ -261,6 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'step4_continue') {
+        itm_setup_wizard_require_import_bundle_or_redirect();
         itm_setup_wizard_state_set([
             'extensions' => itm_setup_wizard_extension_matrix(),
             'flash' => ['type' => 'success', 'message' => 'Extension scan recorded.'],
@@ -272,6 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'step5_save') {
+        itm_setup_wizard_require_import_bundle_or_redirect();
         $appUrl = rtrim(trim((string)($_POST['itm_app_url'] ?? ($state['itm_app_url'] ?? BASE_URL))), '/') . '/';
         $appEnv = trim((string)($_POST['app_env'] ?? 'development'));
         if (!in_array($appEnv, ['development', 'production'], true)) {
@@ -312,6 +315,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'step6_save') {
+        itm_setup_wizard_require_import_bundle_or_redirect();
         $connAdmin = itm_setup_wizard_reload_connection();
         if (!($connAdmin instanceof mysqli)) {
             itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => 'Database connection required — complete step 3 first.']]);
@@ -340,6 +344,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'step7_skip') {
+        itm_setup_wizard_require_import_bundle_or_redirect();
         $envWrite = itm_setup_wizard_persist_env_from_state();
         if (!$envWrite['ok']) {
             itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $envWrite['message']]]);
@@ -354,6 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'step7_install') {
+        itm_setup_wizard_require_import_bundle_or_redirect();
         $connSample = itm_setup_wizard_reload_connection();
         if (!($connSample instanceof mysqli)) {
             itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => 'Database connection required.']]);
@@ -403,6 +409,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'step8_finish') {
+        itm_setup_wizard_require_import_bundle_or_redirect();
         $envWrite = itm_setup_wizard_persist_env_from_state();
         if (!$envWrite['ok']) {
             itm_setup_wizard_state_set(['flash' => ['type' => 'error', 'message' => $envWrite['message']]]);
@@ -421,7 +428,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (isset($_GET['step'])) {
-    itm_setup_wizard_set_step((int)$_GET['step']);
+    $requestedStep = (int)$_GET['step'];
+    $clampedStep = itm_setup_wizard_clamp_step($requestedStep);
+    if ($clampedStep < $requestedStep) {
+        itm_setup_wizard_state_set([
+            'flash' => [
+                'type' => 'info',
+                'message' => 'Complete step ' . $clampedStep . ' before opening later steps.',
+            ],
+        ]);
+    }
+    itm_setup_wizard_set_step($clampedStep);
     $currentStep = itm_setup_wizard_current_step();
 }
 
@@ -691,6 +708,7 @@ header('Content-Type: text/html; charset=utf-8');
             <?php elseif ($currentStep === 3): ?>
                 <h2>3. Verify database connection</h2>
                 <p>Test MySQL credentials, then import <code>01_schema → 02_data → 03_triggers</code>. Database settings are kept in the wizard session until step 7 writes <code>.env</code> to <code class="setup-path"><?php echo itm_setup_wizard_h_path_display($envFileTargetPath); ?></code>.</p>
+                <p class="sub">To replace an existing database, click <strong>Import database bundle</strong> and confirm — the wizard drops and recreates the schema before import. <strong>Skip sample data</strong> on step 7 only skips optional rows from <code>db/02_data_sample.sql</code>; seed Admin and demo users come from <code>db/02_data.sql</code> imported here.</p>
                 <?php if ($dbNeedsCreate): ?>
                     <div class="flash info">Database not found — use <strong>Create database</strong> below (server credentials are OK).</div>
                 <?php elseif ($dbNeedsReplaceConfirm): ?>
@@ -861,6 +879,7 @@ header('Content-Type: text/html; charset=utf-8');
             <?php elseif ($currentStep === 7): ?>
                 <h2>7. Sample data (optional)</h2>
                 <p>Install demo rows from <code>db/02_data_sample.sql</code> for one or more seed companies. Safe to skip for production. Continuing writes <code>.env</code> to <code class="setup-path"><?php echo itm_setup_wizard_h_path_display($envFileTargetPath); ?></code> with database and environment settings from earlier steps.</p>
+                <p class="sub">Skipping sample data does <strong>not</strong> remove seed companies or Admin/demo users — those were loaded during step 3 import (<code>db/02_data.sql</code>). To wipe an existing database, return to step 3 and import with replacement confirmation.</p>
                 <form method="post" id="setup-step7-sample-form">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step7_install">
