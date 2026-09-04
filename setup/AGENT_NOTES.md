@@ -67,7 +67,7 @@ Step 5 may set `enable_all_error_reporting` on all `ui_configuration` rows when 
 
 - Large `db/` import may fail when `max_allowed_packet` is low — wizard falls back to `mysql` CLI when mysqli import fails. `03_triggers.sql` uses `DELIMITER $$` blocks; mysqli import must use `itm_database_migrations_execute_sql_text()` (not `mysqli_multi_query`). Some trigger clusters use semicolon-terminated `DROP TRIGGER` lines **inside** an active `$$` delimiter block — the parser must flush those as separate statements (same as the mysql CLI), not batch them with the following `CREATE TRIGGER`.
 - Step 8 self-deletes `index.php`; keep `setup/.installed` for lock detection.
-- Do not leave the wizard reachable in production — run [check_prod_hardening.php?run=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1) before go-live.
+- Do not leave the wizard reachable in production — step 8 links to [check_prod_hardening.php?run=1&enforce=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1&enforce=1) (Administrator; new tab) and [login.php](http://localhost/it-management/login.php) (new tab) before finish.
 
 ## 11. Testing / Verification
 
