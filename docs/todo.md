@@ -69,17 +69,19 @@ Default run is **informational** (exit `0`). `php scripts/check_env_vars_in_use.
 
 ### 3. Remove last `escape_sql()` POST paths
 
-**Status:** **Open**
+**Status:** **Done**
 
-**Problem:** Deprecated `escape_sql()` survives on a few create handlers. Not known exploitable today (values are escaped), but it bypasses the prepared-statement contract enforced elsewhere.
+**Problem:** Deprecated `escape_sql()` survived on a few create handlers. Not known exploitable today (values were escaped), but it bypassed the prepared-statement contract enforced elsewhere.
 
 **Touch points (spot-check 2026-09-02):**
 
-- `modules/tickets/create.php` — multiple `escape_sql()` calls (~lines 365–371, 464)
-- `modules/inventory_items/create.php` — `escape_sql()` (~lines 65–70)
-- `modules/equipment/create.php` — additional `escape_sql()` usage (same pattern)
+- `modules/tickets/create.php` — ticket create/edit INSERT/UPDATE now use `mysqli_prepare` + `bind_param`
+- `modules/inventory_items/create.php` — inventory create/edit INSERT/UPDATE prepared
+- `modules/equipment/create.php` — `equipment_persist_row_prepared()` for equipment save; switch/idf port sync UPDATEs prepared
 
 **Acceptance:** Convert these POST insert/update paths to MySQLi prepared statements; `php scripts/check_sql_injection_coverage.php` remains exit `0`.
+
+**Regression:** `php scripts/check_sql_injection_coverage.php`; `php -l` on the three `create.php` files; optional MBQA create smoke on tickets/inventory/equipment when MySQL is available.
 
 ---
 
@@ -235,7 +237,7 @@ Browser filter on the same runner: [run_tests.php?run=1&mode=standard&skip_db=1&
 
 ## Suggested sequencing
 
-1. **#3** — remove last `escape_sql()` POST paths (can ride standalone).
+1. ~~**todo item 3** — remove last `escape_sql()` POST paths~~ **Done** (prepared statements on tickets/inventory/equipment create).
 2. **#4** + **#11** — same PR (chokepoint + docs).
 3. **#5** + **#6** — prod hardening pair.
 

@@ -449,13 +449,206 @@ function equipment_sql_nullable_int($value, $fallbackSql = 'NULL')
     return (string)(int)$value;
 }
 
-function equipment_sql_nullable_timestamp(mysqli $conn, $value, $fallbackSql = 'NULL')
+function equipment_nullable_string($value): ?string
 {
     if ($value === null || $value === '') {
-        return $fallbackSql;
+        return null;
     }
 
-    return "'" . escape_sql((string)$value, $conn) . "'";
+    return (string)$value;
+}
+
+function equipment_nullable_int($value): ?int
+{
+    if ($value === null || $value === '') {
+        return null;
+    }
+
+    $int = (int)$value;
+
+    return $int > 0 ? $int : null;
+}
+
+function equipment_nullable_timestamp_bind($value): ?string
+{
+    if ($value === null || $value === '') {
+        return null;
+    }
+
+    return (string)$value;
+}
+
+/**
+ * @param array<string, mixed> $row
+ * @param array<string, bool> $columnFlags
+ * @return array{0:bool,1:int,2:string}
+ */
+function equipment_persist_row_prepared(mysqli $conn, bool $isEdit, int $companyId, int $equipmentId, array $row, array $columnFlags): array
+{
+    $columns = [];
+    $placeholders = [];
+    $types = '';
+    $values = [];
+
+    $append = static function (string $column, string $type, $value) use (&$columns, &$placeholders, &$types, &$values): void {
+        $columns[] = $column;
+        $placeholders[] = '?';
+        $types .= $type;
+        $values[] = $value;
+    };
+
+    if (!$isEdit) {
+        $append('company_id', 'i', $companyId);
+    }
+
+    $append('equipment_type_id', 'i', (int)$row['equipment_type_id']);
+    $append('manufacturer_id', 'i', equipment_nullable_int($row['manufacturer_id'] ?? null));
+    $append('location_id', 'i', equipment_nullable_int($row['location_id'] ?? null));
+    $append('rack_id', 'i', equipment_nullable_int($row['rack_id'] ?? null));
+    $append('idf_id', 'i', equipment_nullable_int($row['idf_id'] ?? null));
+    $append('department_id', 'i', equipment_nullable_int($row['department_id'] ?? null));
+    $append('supplier_id', 'i', equipment_nullable_int($row['supplier_id'] ?? null));
+    $append('name', 's', (string)$row['name']);
+    $append('serial_number', 's', equipment_nullable_string($row['serial_number'] ?? null));
+    $append('model', 's', equipment_nullable_string($row['model'] ?? null));
+    $append('hostname', 's', equipment_nullable_string($row['hostname'] ?? null));
+    $append('ip_address', 's', equipment_nullable_string($row['ip_address'] ?? null));
+    $append('patch_port', 's', equipment_nullable_string($row['patch_port'] ?? null));
+    $append('mac_address', 's', equipment_nullable_string($row['mac_address'] ?? null));
+    $append('status_id', 'i', (int)$row['status_id']);
+    $append('purchase_date', 's', equipment_nullable_string($row['purchase_date'] ?? null));
+    $purchaseCost = $row['purchase_cost'] ?? '';
+    $append('purchase_cost', 'd', $purchaseCost === '' || $purchaseCost === null ? null : (float)$purchaseCost);
+    $append('lifecycle_stage', 's', (string)$row['lifecycle_stage']);
+    $append('depreciation_start_date', 's', equipment_nullable_string($row['depreciation_start_date'] ?? null));
+    $usefulLife = $row['useful_life_months'] ?? '';
+    $append('useful_life_months', 'i', $usefulLife === '' || $usefulLife === null ? null : (int)$usefulLife);
+    $salvage = $row['salvage_value'] ?? '';
+    $append('salvage_value', 'd', $salvage === '' || $salvage === null ? null : (float)$salvage);
+    $append('disposal_date', 's', equipment_nullable_string($row['disposal_date'] ?? null));
+    $append('disposal_reason', 's', equipment_nullable_string($row['disposal_reason'] ?? null));
+    $append('warranty_expiry', 's', equipment_nullable_string($row['warranty_expiry'] ?? null));
+    $append('certificate_expiry', 's', equipment_nullable_string($row['certificate_expiry'] ?? null));
+
+    if (!empty($columnFlags['eol_date'])) {
+        $append('eol_date', 's', equipment_nullable_string($row['eol_date'] ?? null));
+        $append('extended_date', 's', equipment_nullable_string($row['extended_date'] ?? null));
+        $append('esu_date', 's', equipment_nullable_string($row['esu_date'] ?? null));
+    }
+
+    $append('warranty_type_id', 'i', equipment_nullable_int($row['warranty_type_id'] ?? null));
+    $append('printer_device_type_id', 'i', equipment_nullable_int($row['printer_device_type_id'] ?? null));
+    $append('printer_color_capable', 'i', (int)($row['printer_color_capable'] ?? 0));
+    $append('printer_scan', 'i', (int)($row['printer_scan'] ?? 0));
+    $append('workstation_device_type_id', 'i', equipment_nullable_int($row['workstation_device_type_id'] ?? null));
+    $append('workstation_os_type_id', 'i', equipment_nullable_int($row['workstation_os_type_id'] ?? null));
+
+    if (!empty($columnFlags['workstation_office_id'])) {
+        $append('workstation_office_id', 'i', equipment_nullable_int($row['workstation_office_id'] ?? null));
+    }
+    if (!empty($columnFlags['rj45_speed_id'])) {
+        $append('rj45_speed_id', 'i', equipment_nullable_int($row['rj45_speed_id'] ?? null));
+    }
+    if (!empty($columnFlags['workstation_os_version_id'])) {
+        $append('workstation_os_version_id', 'i', equipment_nullable_int($row['workstation_os_version_id'] ?? null));
+    }
+    if (!empty($columnFlags['workstation_ram_id'])) {
+        $append('workstation_ram_id', 'i', equipment_nullable_int($row['workstation_ram_id'] ?? null));
+    }
+
+    $append('workstation_processor', 's', equipment_nullable_string($row['workstation_processor'] ?? null));
+
+    if (!empty($columnFlags['workstation_storage'])) {
+        $append('workstation_storage', 's', equipment_nullable_string($row['workstation_storage'] ?? null));
+    }
+    if (!empty($columnFlags['workstation_os_installed_on'])) {
+        $append('workstation_os_installed_on', 's', equipment_nullable_string($row['workstation_os_installed_on'] ?? null));
+    }
+
+    $append('switch_rj45_id', 'i', equipment_nullable_int($row['switch_rj45_id'] ?? null));
+    $append('switch_port_numbering_layout_id', 'i', (int)$row['switch_port_numbering_layout_id']);
+    $append('switch_fiber_id', 'i', equipment_nullable_int($row['switch_fiber_id'] ?? null));
+    $append('switch_fiber_patch_id', 'i', equipment_nullable_int($row['switch_fiber_patch_id'] ?? null));
+    $append('switch_fiber_rack_id', 'i', equipment_nullable_int($row['switch_fiber_rack_id'] ?? null));
+    $append('switch_fiber_ports_number', 's', equipment_nullable_string($row['switch_fiber_ports_number'] ?? null));
+
+    if (!empty($columnFlags['switch_fiber_port_label'])) {
+        $append('switch_fiber_port_label', 's', equipment_nullable_string($row['switch_fiber_port_label'] ?? null));
+    }
+
+    $append('switch_poe_id', 'i', equipment_nullable_int($row['switch_poe_id'] ?? null));
+    $append('switch_environment_id', 'i', equipment_nullable_int($row['switch_environment_id'] ?? null));
+    $append('notes', 's', equipment_nullable_string($row['notes'] ?? null));
+    $append('photo_filename', 's', equipment_nullable_string($row['photo_filename'] ?? null));
+    $append('active', 'i', (int)($row['active'] ?? 1));
+
+    $createdBy = $row['created_by'] ?? null;
+    $append('created_by', 'i', $createdBy === null || $createdBy === '' ? null : (int)$createdBy);
+
+    if ($isEdit) {
+        $append('created_at', 's', equipment_nullable_timestamp_bind($row['created_at'] ?? null));
+    } else {
+        $columns[] = 'created_at';
+        $placeholders[] = 'CURRENT_TIMESTAMP';
+    }
+
+    $updatedBy = $row['updated_by'] ?? null;
+    $append('updated_by', 'i', $updatedBy === null || $updatedBy === '' ? null : (int)$updatedBy);
+
+    if ($isEdit) {
+        $append('updated_at', 's', (string)($row['updated_at'] ?? date('Y-m-d H:i:s')));
+    } else {
+        $columns[] = 'updated_at';
+        $placeholders[] = 'CURRENT_TIMESTAMP';
+    }
+
+    $deletedBy = $row['deleted_by'] ?? null;
+    $append('deleted_by', 'i', $deletedBy === null || $deletedBy === '' ? null : (int)$deletedBy);
+    $append('deleted_at', 's', equipment_nullable_timestamp_bind($row['deleted_at'] ?? null));
+
+    $savedEquipmentId = $equipmentId;
+    if ($isEdit) {
+        $setSql = implode(', ', array_map(static function (string $column): string {
+            return $column . ' = ?';
+        }, $columns));
+        $sql = 'UPDATE equipment SET ' . $setSql . ' WHERE id = ? AND company_id = ?';
+        $types .= 'ii';
+        $values[] = $equipmentId;
+        $values[] = $companyId;
+    } else {
+        $sql = 'INSERT INTO equipment (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
+    }
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [false, (int)mysqli_errno($conn), (string)mysqli_error($conn)];
+    }
+
+    $bind = [$types];
+    foreach ($values as $index => $value) {
+        $bind[] = &$values[$index];
+    }
+    call_user_func_array([$stmt, 'bind_param'], $bind);
+
+    $ok = mysqli_stmt_execute($stmt);
+    $errno = $ok ? 0 : (int)mysqli_errno($conn);
+    $error = $ok ? '' : (string)mysqli_error($conn);
+    if (!$isEdit && $ok) {
+        $savedEquipmentId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmt);
+
+    return [$ok, $errno, $error, $savedEquipmentId];
+}
+
+function equipment_sql_nullable_timestamp(mysqli $conn, $value, $fallbackSql = 'NULL')
+{
+    unset($conn, $fallbackSql);
+    if ($value === null || $value === '') {
+        return null;
+    }
+
+    return (string)$value;
 }
 
 function equipment_name_exists(mysqli $conn, int $companyId, string $name, int $excludeId = 0): bool
@@ -2091,85 +2284,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$error) {
         $equipment_type_id = (int)$data['equipment_type_id'];
-        $manufacturer_id = (int)$data['manufacturer_id'] ?: 'NULL';
-        $location_id = (int)$data['location_id'] ?: 'NULL';
-        $rack_id = (int)$data['rack_id'] ?: 'NULL';
-        $idf_id = (int)$data['idf_id'] ?: 'NULL';
-        $department_id = (int)$data['department_id'] ?: 'NULL';
-        $supplier_id = (int)$data['supplier_id'] ?: 'NULL';
-        $name = "'" . escape_sql($data['name'], $conn) . "'";
-        $serial_number = $data['serial_number'] === '' ? 'NULL' : "'" . escape_sql($data['serial_number'], $conn) . "'";
-        $model = $data['model'] === '' ? 'NULL' : "'" . escape_sql($data['model'], $conn) . "'";
-        $hostname = $data['hostname'] === '' ? 'NULL' : "'" . escape_sql($data['hostname'], $conn) . "'";
-        $ip_address = $data['ip_address'] === '' ? 'NULL' : "'" . escape_sql($data['ip_address'], $conn) . "'";
-        $patch_port = $data['patch_port'] === '' ? 'NULL' : "'" . escape_sql($data['patch_port'], $conn) . "'";
-        $mac_address = $data['mac_address'] === '' ? 'NULL' : "'" . escape_sql($data['mac_address'], $conn) . "'";
-        $status_id = (int)$data['status_id'];
-        $purchase_date = $data['purchase_date'] === '' ? 'NULL' : "'" . escape_sql($data['purchase_date'], $conn) . "'";
-        $purchase_cost = $data['purchase_cost'] === '' ? 'NULL' : (float)$data['purchase_cost'];
         $allowedStages = array_keys(function_exists('itm_asset_lifecycle_stages') ? itm_asset_lifecycle_stages() : ['in_service' => 'In service']);
         $lifecycleStageRaw = trim((string)($data['lifecycle_stage'] ?? 'in_service'));
         if (!in_array($lifecycleStageRaw, $allowedStages, true)) {
             $lifecycleStageRaw = 'in_service';
         }
-        $lifecycle_stage = "'" . escape_sql($lifecycleStageRaw, $conn) . "'";
-        $depreciation_start_date = $data['depreciation_start_date'] === '' ? 'NULL' : "'" . escape_sql($data['depreciation_start_date'], $conn) . "'";
-        $useful_life_months = $data['useful_life_months'] === '' ? 'NULL' : (int)$data['useful_life_months'];
-        $salvage_value = $data['salvage_value'] === '' ? 'NULL' : (float)$data['salvage_value'];
-        $disposal_date = $data['disposal_date'] === '' ? 'NULL' : "'" . escape_sql($data['disposal_date'], $conn) . "'";
-        $disposal_reason = $data['disposal_reason'] === '' ? 'NULL' : "'" . escape_sql($data['disposal_reason'], $conn) . "'";
-        $warranty_expiry = $data['warranty_expiry'] === '' ? 'NULL' : "'" . escape_sql($data['warranty_expiry'], $conn) . "'";
-        $certificate_expiry = ($isServerEquipment && $data['certificate_expiry'] !== '')
-            ? "'" . escape_sql($data['certificate_expiry'], $conn) . "'"
-            : 'NULL';
-        $eol_date = ($hasEquipmentEolDateColumn && $data['eol_date'] !== '')
-            ? "'" . escape_sql($data['eol_date'], $conn) . "'"
-            : 'NULL';
-        $extended_date = ($hasEquipmentEolDateColumn && $data['extended_date'] !== '')
-            ? "'" . escape_sql($data['extended_date'], $conn) . "'"
-            : 'NULL';
-        $esu_date = ($hasEquipmentEolDateColumn && $data['esu_date'] !== '')
-            ? "'" . escape_sql($data['esu_date'], $conn) . "'"
-            : 'NULL';
-        $eolUpdateSql = $hasEquipmentEolDateColumn ? "eol_date=$eol_date, extended_date=$extended_date, esu_date=$esu_date,\n                    " : '';
-        $eolInsertColumns = $hasEquipmentEolDateColumn ? ', eol_date, extended_date, esu_date' : '';
-        $eolInsertValues = $hasEquipmentEolDateColumn ? ", $eol_date, $extended_date, $esu_date" : '';
-        $warranty_type_id = (int)$data['warranty_type_id'] ?: 'NULL';
-        $printer_device_type_id = (int)$data['printer_device_type_id'] ?: 'NULL';
-        $printer_color_capable = (int)$data['printer_color_capable'];
-        $printer_scan = (int)$data['printer_scan'];
-        $workstation_device_type_id = (int)$data['workstation_device_type_id'] ?: 'NULL';
-        $workstation_os_type_id = (int)$data['workstation_os_type_id'] ?: 'NULL';
-        $workstation_office_id = (int)$data['workstation_office_id'] ?: 'NULL';
-        $rj45_speed_id = (int)$data['rj45_speed_id'] ?: 'NULL';
-        $workstation_os_version_id = (int)$data['workstation_os_version_id'] ?: 'NULL';
-        $workstation_ram_id = (int)$data['workstation_ram_id'] ?: 'NULL';
-        $workstation_processor = $data['workstation_processor'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_processor'], $conn) . "'";
-        $workstation_storage = $data['workstation_storage'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_storage'], $conn) . "'";
-        $workstation_os_installed_on = $data['workstation_os_installed_on'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_os_installed_on'], $conn) . "'";
-        $switch_rj45_id = (int)$data['switch_rj45_id'] ?: 'NULL';
+
         $switch_port_numbering_layout_id = (int)$data['switch_port_numbering_layout_id'];
         if ($switch_port_numbering_layout_id <= 0) {
             $switch_port_numbering_layout_id = equipment_resolve_switch_port_numbering_layout_id($conn, (int)$company_id, 0);
         }
-        $switch_fiber_id = (int)$data['switch_fiber_id'] ?: 'NULL';
-        $switch_fiber_patch_id = (int)$data['switch_fiber_patch_id'] ?: 'NULL';
-        $switch_fiber_rack_id = (int)$data['switch_fiber_rack_id'] ?: 'NULL';
-        $switch_fiber_ports_number = $data['switch_fiber_ports_number'] === ''
-            ? 'NULL'
-            : "'" . escape_sql($data['switch_fiber_ports_number'], $conn) . "'";
-        $switch_fiber_port_label = $data['switch_fiber_port_label'] === ''
-            ? 'NULL'
-            : "'" . escape_sql($data['switch_fiber_port_label'], $conn) . "'";
-        $switch_fiber_ports_number_fk_sql = 'NULL';
+
+        $switch_fiber_ports_number_fk = null;
         if ($data['switch_fiber_ports_number'] !== '' && equipment_table_exists($conn, 'equipment_fiber_count')) {
             $stmtFiberCountFk = mysqli_prepare(
                 $conn,
-                "SELECT id
+                'SELECT id
                  FROM equipment_fiber_count
                  WHERE company_id = ? AND name = ?
                  ORDER BY id ASC
-                 LIMIT 1"
+                 LIMIT 1'
             );
             if ($stmtFiberCountFk) {
                 $switchFiberCountName = (string)$data['switch_fiber_ports_number'];
@@ -2180,86 +2314,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_close($stmtFiberCountFk);
                 $resolvedFiberCountId = (int)($fiberCountFkRow['id'] ?? 0);
                 if ($resolvedFiberCountId > 0) {
-                    $switch_fiber_ports_number_fk_sql = (string)$resolvedFiberCountId;
+                    $switch_fiber_ports_number_fk = $resolvedFiberCountId;
                 }
             }
         }
-        $switch_poe_id = (int)$data['switch_poe_id'] ?: 'NULL';
-        $switch_environment_id = (int)$data['switch_environment_id'] ?: 'NULL';
-        $notes = $data['notes'] === '' ? 'NULL' : "'" . escape_sql($data['notes'], $conn) . "'";
+
         $encodedPhotoFilenames = equipment_encode_photo_filenames($photoFilenames);
-        $photo = $encodedPhotoFilenames === '' ? 'NULL' : "'" . escape_sql($encodedPhotoFilenames, $conn) . "'";
-        $currentEmployeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 'NULL';
-        $active = 1;
+        $currentEmployeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : null;
+        $createdByRaw = $data['created_by'] ?? '';
+        $createdByPersist = ($createdByRaw === '' || $createdByRaw === null)
+            ? $currentEmployeeId
+            : (int)$createdByRaw;
+        $deletedByRaw = $data['deleted_by'] ?? '';
+        $deletedByPersist = ($deletedByRaw === '' || $deletedByRaw === null) ? null : (int)$deletedByRaw;
 
-        $created_by = equipment_sql_nullable_int($data['created_by'], (string)$currentEmployeeId);
-        if ($isEdit) {
-            $created_at = equipment_sql_nullable_timestamp($conn, $data['created_at'], 'CURRENT_TIMESTAMP');
-        } else {
-            $created_at = 'CURRENT_TIMESTAMP';
+        $persistRow = $data;
+        $persistRow['equipment_type_id'] = $equipment_type_id;
+        $persistRow['lifecycle_stage'] = $lifecycleStageRaw;
+        $persistRow['switch_port_numbering_layout_id'] = $switch_port_numbering_layout_id;
+        $persistRow['status_id'] = (int)$data['status_id'];
+        $persistRow['certificate_expiry'] = ($isServerEquipment && $data['certificate_expiry'] !== '') ? $data['certificate_expiry'] : '';
+        if (!$hasEquipmentEolDateColumn) {
+            $persistRow['eol_date'] = '';
+            $persistRow['extended_date'] = '';
+            $persistRow['esu_date'] = '';
         }
-        $updated_by = $currentEmployeeId;
-        $updated_at = 'CURRENT_TIMESTAMP';
-        $deleted_by = equipment_sql_nullable_int($data['deleted_by']);
-        $deleted_at = equipment_sql_nullable_timestamp($conn, $data['deleted_at']);
-
-        $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
-        $workstationOfficeInsertColumns = $hasWorkstationOfficeIdColumn ? ', workstation_office_id' : '';
-        $workstationOfficeInsertValues = $hasWorkstationOfficeIdColumn ? ", $workstation_office_id" : '';
-        $rj45SpeedUpdateSql = $hasEquipmentRj45SpeedColumn ? "rj45_speed_id=$rj45_speed_id,\n                    " : '';
-        $rj45SpeedInsertColumns = $hasEquipmentRj45SpeedColumn ? ', rj45_speed_id' : '';
-        $rj45SpeedInsertValues = $hasEquipmentRj45SpeedColumn ? ", $rj45_speed_id" : '';
-        $workstationOsVersionUpdateSql = $hasWorkstationOsVersionIdColumn ? "workstation_os_version_id=$workstation_os_version_id,\n                    " : '';
-        $workstationOsVersionInsertColumns = $hasWorkstationOsVersionIdColumn ? ', workstation_os_version_id' : '';
-        $workstationOsVersionInsertValues = $hasWorkstationOsVersionIdColumn ? ", $workstation_os_version_id" : '';
-        $workstationRamUpdateSql = $hasWorkstationRamIdColumn ? "workstation_ram_id=$workstation_ram_id,\n                    " : '';
-        $workstationRamInsertColumns = $hasWorkstationRamIdColumn ? ', workstation_ram_id' : '';
-        $workstationRamInsertValues = $hasWorkstationRamIdColumn ? ", $workstation_ram_id" : '';
-        $workstationStorageUpdateSql = $hasWorkstationStorageColumn ? "workstation_storage=$workstation_storage,\n                    " : '';
-        $workstationStorageInsertColumns = $hasWorkstationStorageColumn ? ', workstation_storage' : '';
-        $workstationStorageInsertValues = $hasWorkstationStorageColumn ? ", $workstation_storage" : '';
-        $workstationOsInstalledOnUpdateSql = $hasWorkstationOsInstalledOnColumn ? "workstation_os_installed_on=$workstation_os_installed_on,\n                    " : '';
-        $workstationOsInstalledOnInsertColumns = $hasWorkstationOsInstalledOnColumn ? ', workstation_os_installed_on' : '';
-        $workstationOsInstalledOnInsertValues = $hasWorkstationOsInstalledOnColumn ? ", $workstation_os_installed_on" : '';
-        $switchFiberPortLabelUpdateSql = $hasSwitchFiberPortLabelColumn ? "switch_fiber_port_label=$switch_fiber_port_label, " : '';
-        $switchFiberPortLabelInsertColumns = $hasSwitchFiberPortLabelColumn ? ', switch_fiber_port_label' : '';
-        $switchFiberPortLabelInsertValues = $hasSwitchFiberPortLabelColumn ? ", $switch_fiber_port_label" : '';
-
+        $persistRow['photo_filename'] = $encodedPhotoFilenames;
+        $persistRow['active'] = 1;
+        $persistRow['created_by'] = $createdByPersist;
+        $persistRow['updated_by'] = $currentEmployeeId;
         if ($isEdit) {
-            $sql = "UPDATE equipment SET equipment_type_id=$equipment_type_id, manufacturer_id=$manufacturer_id, location_id=$location_id, rack_id=$rack_id, idf_id=$idf_id, department_id=$department_id, supplier_id=$supplier_id,
-                    name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, patch_port=$patch_port, mac_address=$mac_address,
-                    status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost,
-                    lifecycle_stage=$lifecycle_stage, depreciation_start_date=$depreciation_start_date, useful_life_months=$useful_life_months, salvage_value=$salvage_value, disposal_date=$disposal_date, disposal_reason=$disposal_reason,
-                    warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
-                    $eolUpdateSql
-                    warranty_type_id=$warranty_type_id, printer_device_type_id=$printer_device_type_id,
-                    printer_color_capable=$printer_color_capable, printer_scan=$printer_scan,
-                    workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
-                    $workstationOfficeUpdateSql$rj45SpeedUpdateSql$workstationOsVersionUpdateSql$workstationRamUpdateSql
-                    workstation_processor=$workstation_processor, $workstationStorageUpdateSql$workstationOsInstalledOnUpdateSql
-                    switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_patch_id=$switch_fiber_patch_id, switch_fiber_rack_id=$switch_fiber_rack_id, switch_fiber_ports_number=$switch_fiber_ports_number, $switchFiberPortLabelUpdateSql
-                    switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
-                    notes=$notes,
-                    photo_filename=$photo,
-                    active=$active, created_by=$created_by, created_at=$created_at, updated_by=$updated_by, updated_at=$updated_at, deleted_by=$deleted_by, deleted_at=$deleted_at
-                    WHERE id=$id AND company_id=$company_id";
-        } else {
-            $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, idf_id, department_id, supplier_id, name, serial_number, model, hostname,
-                    ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, lifecycle_stage, depreciation_start_date, useful_life_months, salvage_value, disposal_date, disposal_reason, warranty_expiry, certificate_expiry$eolInsertColumns, warranty_type_id,
-                    printer_device_type_id, printer_color_capable, printer_scan, workstation_device_type_id,
-                    workstation_os_type_id$workstationOfficeInsertColumns$rj45SpeedInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename,
-                    active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at)
-                    VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $idf_id, $department_id, $supplier_id, $name, $serial_number, $model, $hostname,
-                    $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $lifecycle_stage, $depreciation_start_date, $useful_life_months, $salvage_value, $disposal_date, $disposal_reason, $warranty_expiry, $certificate_expiry$eolInsertValues, $warranty_type_id,
-                    $printer_device_type_id, $printer_color_capable, $printer_scan, $workstation_device_type_id,
-                    $workstation_os_type_id$workstationOfficeInsertValues$rj45SpeedInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo,
-                    $active, $created_by, $created_at, $updated_by, $updated_at, $deleted_by, $deleted_at)";
+            $persistRow['created_at'] = equipment_nullable_timestamp_bind($data['created_at'] ?? null);
+            $persistRow['updated_at'] = date('Y-m-d H:i:s');
         }
+        $persistRow['deleted_by'] = $deletedByPersist;
+        $persistRow['deleted_at'] = equipment_nullable_timestamp_bind($data['deleted_at'] ?? null);
+
+        $columnFlags = [
+            'eol_date' => $hasEquipmentEolDateColumn,
+            'workstation_office_id' => $hasWorkstationOfficeIdColumn,
+            'rj45_speed_id' => $hasEquipmentRj45SpeedColumn,
+            'workstation_os_version_id' => $hasWorkstationOsVersionIdColumn,
+            'workstation_ram_id' => $hasWorkstationRamIdColumn,
+            'workstation_storage' => $hasWorkstationStorageColumn,
+            'workstation_os_installed_on' => $hasWorkstationOsInstalledOnColumn,
+            'switch_fiber_port_label' => $hasSwitchFiberPortLabelColumn,
+        ];
 
         mysqli_begin_transaction($conn);
-        if (mysqli_query($conn, $sql)) {
+        [$persistOk, $persistErrno, $persistError, $savedEquipmentId] = equipment_persist_row_prepared(
+            $conn,
+            $isEdit,
+            (int)$company_id,
+            (int)$id,
+            $persistRow,
+            $columnFlags
+        );
+        if ($persistOk) {
             if (!$isEdit) {
-                $id = (int)mysqli_insert_id($conn);
+                $id = $savedEquipmentId;
             }
             $idfSyncError = equipment_sync_idf_position_and_ports($conn, (int)$company_id, [
                 'id' => $id,
@@ -2277,48 +2390,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = $idfSyncError;
             }
             if ($error === '' && $equipment_type_id === $switchTypeId) {
+                $hostnameBind = equipment_nullable_string($data['hostname'] ?? null);
+                $rackBind = equipment_nullable_int($data['rack_id'] ?? null);
+                $locationBind = equipment_nullable_int($data['location_id'] ?? null);
+                $idfBind = equipment_nullable_int($data['idf_id'] ?? null);
+                $switchFiberBind = equipment_nullable_int($data['switch_fiber_id'] ?? null);
+                $switchFiberPatchBind = equipment_nullable_int($data['switch_fiber_patch_id'] ?? null);
+                $switchFiberRackBind = equipment_nullable_int($data['switch_fiber_rack_id'] ?? null);
+                $rj45SpeedBind = equipment_nullable_int($data['rj45_speed_id'] ?? null);
+                $switchEnvironmentBind = equipment_nullable_int($data['switch_environment_id'] ?? null);
+                $switchPoeBind = equipment_nullable_int($data['switch_poe_id'] ?? null);
+
                 if (equipment_table_has_column($conn, 'switch_ports', 'management_id')) {
-                    $switchPortsSyncSql = "UPDATE switch_ports
-                                           SET hostname = $hostname,
-                                               idf_id = $idf_id,
-                                               rack_id = $rack_id,
-                                               location_id = $location_id,
-                                               fiber_port_id = $switch_fiber_id,
-                                               fiber_patch_id = $switch_fiber_patch_id,
-                                               fiber_rack_id = $switch_fiber_rack_id,
-                                               management_id = $switch_environment_id
-                                            WHERE company_id = $company_id
-                                              AND equipment_id = $id";
                     if (equipment_table_has_column($conn, 'switch_ports', 'rj45_speed_id')) {
-                        $switchPortsSyncSql = "UPDATE switch_ports
-                                               SET hostname = $hostname,
-                                                   idf_id = $idf_id,
-                                                   rack_id = $rack_id,
-                                                   location_id = $location_id,
-                                                   fiber_port_id = $switch_fiber_id,
-                                                   fiber_patch_id = $switch_fiber_patch_id,
-                                                   fiber_rack_id = $switch_fiber_rack_id,
-                                                   rj45_speed_id = $rj45_speed_id,
-                                                   management_id = $switch_environment_id
-                                                WHERE company_id = $company_id
-                                                  AND equipment_id = $id";
-                    }
-                    if (!mysqli_query($conn, $switchPortsSyncSql)) {
-                        $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
+                        $switchPortsSyncStmt = mysqli_prepare(
+                            $conn,
+                            'UPDATE switch_ports
+                                SET hostname = ?, idf_id = ?, rack_id = ?, location_id = ?,
+                                    fiber_port_id = ?, fiber_patch_id = ?, fiber_rack_id = ?,
+                                    rj45_speed_id = ?, management_id = ?
+                                WHERE company_id = ? AND equipment_id = ?'
+                        );
+                        if ($switchPortsSyncStmt) {
+                            mysqli_stmt_bind_param(
+                                $switchPortsSyncStmt,
+                                'siiiiiiiiii',
+                                $hostnameBind,
+                                $idfBind,
+                                $rackBind,
+                                $locationBind,
+                                $switchFiberBind,
+                                $switchFiberPatchBind,
+                                $switchFiberRackBind,
+                                $rj45SpeedBind,
+                                $switchEnvironmentBind,
+                                $company_id,
+                                $id
+                            );
+                            if (!mysqli_stmt_execute($switchPortsSyncStmt)) {
+                                $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
+                            }
+                            mysqli_stmt_close($switchPortsSyncStmt);
+                        } else {
+                            $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
+                        }
+                    } else {
+                        $switchPortsSyncStmt = mysqli_prepare(
+                            $conn,
+                            'UPDATE switch_ports
+                                SET hostname = ?, idf_id = ?, rack_id = ?, location_id = ?,
+                                    fiber_port_id = ?, fiber_patch_id = ?, fiber_rack_id = ?,
+                                    management_id = ?
+                                WHERE company_id = ? AND equipment_id = ?'
+                        );
+                        if ($switchPortsSyncStmt) {
+                            mysqli_stmt_bind_param(
+                                $switchPortsSyncStmt,
+                                'siiiiiiiii',
+                                $hostnameBind,
+                                $idfBind,
+                                $rackBind,
+                                $locationBind,
+                                $switchFiberBind,
+                                $switchFiberPatchBind,
+                                $switchFiberRackBind,
+                                $switchEnvironmentBind,
+                                $company_id,
+                                $id
+                            );
+                            if (!mysqli_stmt_execute($switchPortsSyncStmt)) {
+                                $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
+                            }
+                            mysqli_stmt_close($switchPortsSyncStmt);
+                        } else {
+                            $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
+                        }
                     }
                 }
                 if ($error === '' && equipment_table_has_column($conn, 'idf_ports', 'management_id')) {
-                    $idfPortsSyncSql = "UPDATE idf_ports ip
-                                        JOIN idf_positions p ON p.id = ip.position_id
-                                        SET ip.speed_id = $switch_fiber_id,
-                                            ip.rj45_speed_id = $rj45_speed_id,
-                                            ip.fiber_ports_number = $switch_fiber_ports_number_fk_sql,
-                                            ip.switch_port_numbering_layout_id = $switch_port_numbering_layout_id,
-                                            ip.management_id = $switch_environment_id,
-                                            ip.poe_id = $switch_poe_id
-                                        WHERE p.company_id = $company_id
-                                          AND p.equipment_id = '$id'";
-                    if (!mysqli_query($conn, $idfPortsSyncSql)) {
+                    $idfPortsSyncStmt = mysqli_prepare(
+                        $conn,
+                        'UPDATE idf_ports ip
+                            JOIN idf_positions p ON p.id = ip.position_id
+                            SET ip.speed_id = ?,
+                                ip.rj45_speed_id = ?,
+                                ip.fiber_ports_number = ?,
+                                ip.switch_port_numbering_layout_id = ?,
+                                ip.management_id = ?,
+                                ip.poe_id = ?
+                            WHERE p.company_id = ?
+                              AND p.equipment_id = ?'
+                    );
+                    if ($idfPortsSyncStmt) {
+                        mysqli_stmt_bind_param(
+                            $idfPortsSyncStmt,
+                            'iiiiiiii',
+                            $switchFiberBind,
+                            $rj45SpeedBind,
+                            $switch_fiber_ports_number_fk,
+                            $switch_port_numbering_layout_id,
+                            $switchEnvironmentBind,
+                            $switchPoeBind,
+                            $company_id,
+                            $id
+                        );
+                        if (!mysqli_stmt_execute($idfPortsSyncStmt)) {
+                            $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
+                        }
+                        mysqli_stmt_close($idfPortsSyncStmt);
+                    } else {
                         $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
                     }
                 }
@@ -2437,8 +2617,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         } else {
-            $dbErrorCode = (int)mysqli_errno($conn);
-            $dbErrorMessage = (string)mysqli_error($conn);
+            $dbErrorCode = $persistErrno;
+            $dbErrorMessage = $persistError;
             mysqli_rollback($conn);
             $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }

@@ -25,6 +25,7 @@ Manages inventory of consumables and spare parts. Tracks quantities on hand and 
 - **Audit meta on forms:** create/edit use `itm_crud_render_form_hidden_audit_inputs()` only — no visible/disabled Created At / Updated At rows (`fields_missing` audit-meta gate).
 - **Stock Indicators**: Visual cues for low stock items.
 - **Active checkbox (create/edit via `create.php`)**: `itm-checkbox-control` + `itm-check-indicator` — unchecked box shows ❌, checked shows ✅; JS listener must live in its own `<script>` block after `select-add-option.js` (do not nest inside the external script tag).
+- **Create/edit POST:** `create.php` INSERT/UPDATE uses `mysqli_prepare` + `bind_param` (no `escape_sql()` on POST paths).
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
