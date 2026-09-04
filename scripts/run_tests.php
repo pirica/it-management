@@ -13,7 +13,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser menu: <a href="run_tests.php" target="_blank" rel="nofollow noreferrer">run_tests.php</a><br> HTML coverage: <code>run_tests.php?run=1&amp;mode=coverage</code><br> CLI: <code>php scripts/run_tests.php</code><br> CLI coverage: <code>php scripts/run_tests.php --coverage</code><br> Skip DB: <code>ITM_SKIP_DB_TESTS=1</code> or browser checkbox
+Browser menu: <a href="run_tests.php" target="_blank" rel="nofollow noreferrer">run_tests.php</a><br> Filtered run: <code>run_tests.php?run=1&amp;mode=standard&amp;skip_db=1&amp;filter=CsrfPostGuard</code><br> HTML coverage: <code>run_tests.php?run=1&amp;mode=coverage</code><br> CLI: <code>php scripts/run_tests.php</code><br> CLI filter: <code>php scripts/run_tests.php --filter TotpTest</code><br> CLI coverage: <code>php scripts/run_tests.php --coverage</code><br> Skip DB: <code>ITM_SKIP_DB_TESTS=1</code> or browser checkbox
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 // Define that we are in a CLI script context to bypass web-only auth/logic
@@ -86,6 +86,57 @@ function itm_run_tests_want_coverage($isCli)
 function itm_run_tests_h($value)
 {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+/**
+ * Why: Browser filter must not pass shell metacharacters; PHPUnit --filter is escaped separately.
+ */
+function itm_run_tests_normalize_browser_filter($raw)
+{
+    $value = trim((string) $raw);
+    if ($value === '') {
+        return '';
+    }
+    if (strlen($value) > 256) {
+        return '';
+    }
+    if (preg_match('/[\x00-\x1F\x7F]/', $value)) {
+        return '';
+    }
+
+    return $value;
+}
+
+/**
+ * Why: Browser ?filter= mirrors CLI --filter; CLI still forwards full argv tail.
+ *
+ * @return string[]
+ */
+function itm_run_tests_collect_extra_phpunit_args($isCli)
+{
+    $extraArgs = [];
+    if ($isCli) {
+        global $argv;
+        foreach (($argv ?? []) as $idx => $arg) {
+            if ($idx === 0) {
+                continue;
+            }
+            if ($arg === '--coverage') {
+                continue;
+            }
+            $extraArgs[] = (string) $arg;
+        }
+
+        return $extraArgs;
+    }
+
+    $filter = itm_run_tests_normalize_browser_filter($_GET['filter'] ?? '');
+    if ($filter !== '') {
+        $extraArgs[] = '--filter';
+        $extraArgs[] = $filter;
+    }
+
+    return $extraArgs;
 }
 
 /**
@@ -191,6 +242,7 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     $skipDbChecked = (($_GET['skip_db'] ?? '') === '1') ? ' checked' : '';
     $modeStandard = (($_GET['mode'] ?? 'standard') !== 'coverage') ? ' checked' : '';
     $modeCoverage = (($_GET['mode'] ?? '') === 'coverage') ? ' checked' : '';
+    $filterValue = itm_run_tests_normalize_browser_filter($_GET['filter'] ?? '');
     $coverageDriverOk = itm_run_tests_has_coverage_driver(itm_resolve_phpunit_cli_binary(true));
     $phpunitPhpBin = itm_resolve_phpunit_cli_binary(false);
     $phpunitMissingExt = itm_cli_php_binary_missing_extensions($phpunitPhpBin, itm_phpunit_required_extensions());
@@ -236,9 +288,15 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     echo '</fieldset>';
     echo '<label style="cursor:pointer;"><input type="checkbox" name="skip_db" value="1"' . $skipDbChecked . '> ';
     echo 'Skip database tests (<code>ITM_SKIP_DB_TESTS=1</code>)</label>';
+    echo '<label style="display:block;margin-top:4px;">PHPUnit filter (optional)';
+    echo '<input type="text" name="filter" value="' . itm_run_tests_h($filterValue) . '" ';
+    echo 'placeholder="CsrfPostGuard or ApiV2|TotpTest" maxlength="256" ';
+    echo 'style="display:block;width:100%;max-width:520px;margin-top:6px;padding:8px 10px;border:1px solid #d0d7de;border-radius:6px;">';
+    echo '<span style="display:block;margin-top:4px;font-size:0.85rem;color:#57606a;">Same as CLI <code>--filter</code>; leave blank for the full suite.</span></label>';
     echo '<button type="submit" class="btn btn-primary" style="padding:10px 16px;font-weight:600;width:fit-content;">Run tests</button>';
     echo '</form>';
     echo '<p style="margin-top:20px;font-size:0.9rem;color:#57606a;">CLI: <code>php scripts/run_tests.php</code> · ';
+    echo '<code>php scripts/run_tests.php --filter TotpTest</code> · ';
     echo '<code>php scripts/run_tests.php --coverage</code></p>';
     echo '</main>';
 }
@@ -301,6 +359,8 @@ if ($run_coverage_html) {
 
 require_once __DIR__ . '/lib/itm_run_tests_browser_coverage.php';
 
+$browserFilter = (!$isCli) ? itm_run_tests_normalize_browser_filter($_GET['filter'] ?? '') : '';
+
 // Why: Browser + Xdebug HTML coverage exceeds Apache/proxy timeouts; run detached CLI instead of passthru.
 $coverage_job_view = (!$isCli && (($_GET['coverage_job'] ?? '') === '1'));
 if (!$isCli && $runRequested && ($run_coverage_html || $coverage_job_view)) {
@@ -316,11 +376,11 @@ if (!$isCli && $runRequested && ($run_coverage_html || $coverage_job_view)) {
         exit;
     }
     if (($_GET['coverage_start'] ?? '') !== '1') {
-        itm_run_tests_browser_coverage_render_intro_page($user_wants_skip, $php_bin);
+        itm_run_tests_browser_coverage_render_intro_page($user_wants_skip, $php_bin, $browserFilter);
         itm_script_output_end();
         exit;
     }
-    if (!itm_run_tests_browser_coverage_spawn_cli_job($php_bin, $user_wants_skip, ROOT_PATH)) {
+    if (!itm_run_tests_browser_coverage_spawn_cli_job($php_bin, $user_wants_skip, ROOT_PATH, $browserFilter)) {
         itm_script_output_begin('PHPUnit Test Suite');
         echo '<p style="color:#cf222e;">Unable to start background coverage job. Use CLI: <code>php scripts/run_tests.php --coverage</code></p>';
         itm_script_output_end();
@@ -347,18 +407,11 @@ $command .= ' ' . escapeshellarg($phpunit_bin)
     . ' -c ' . escapeshellarg($phpunit_xml)
     . ' --verbose';
 
-$extraArgs = [];
-if ($isCli) {
-    global $argv;
-    foreach (($argv ?? []) as $idx => $arg) {
-        if ($idx === 0) continue;
-        if ($arg === '--coverage') continue;
-        $extraArgs[] = escapeshellarg($arg);
-    }
-}
+$extraArgs = itm_run_tests_collect_extra_phpunit_args($isCli);
 if (!empty($extraArgs)) {
-    $command .= ' ' . implode(' ', $extraArgs);
+    $command .= ' ' . implode(' ', array_map('escapeshellarg', $extraArgs));
 }
+$browserFilterLabel = $browserFilter;
 
 if ($run_coverage_html) {
     if (!is_dir($coverage_html_dir)) {
@@ -380,7 +433,11 @@ if (!$isCli) {
     echo '<p><a href="run_tests.php">← Choose another run mode</a></p>';
     echo '<p>Running from <code>phpunit/tests/Unit/</code> — mode: <strong>'
         . itm_run_tests_h($want_coverage ? 'HTML coverage' : 'Standard')
-        . '</strong></p>';
+        . '</strong>';
+    if ($browserFilterLabel !== '') {
+        echo ' — filter: <code>' . itm_run_tests_h($browserFilterLabel) . '</code>';
+    }
+    echo '</p>';
     if ($coverage_skipped_no_driver) {
         echo '<p style="padding:10px 12px;background:#fff8e6;border:1px solid #d4a72c;border-radius:6px;color:#57606a;">';
         echo 'Coverage driver not available — running tests without HTML coverage. ';
