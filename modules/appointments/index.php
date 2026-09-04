@@ -7,6 +7,9 @@ $crud_title = 'Appointments';
 $crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once ROOT_PATH . 'includes/itm_appointment.php';
 require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
 
@@ -163,7 +166,6 @@ if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
 
 // Soft-delete handler (delete.php routes here).
 if ($crud_action === 'delete') {
-    itm_require_crud_role_module_permission($conn, 'delete', 'appointment');
     if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         itm_require_post_csrf();
         $id = (int)($_POST['id'] ?? 0);

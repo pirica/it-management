@@ -1,6 +1,8 @@
 <?php
 require '../../config/config.php';
-itm_require_crud_role_module_permission($conn, 'create', 'bookmarks');
+// Why: Single RBAC chokepoint for POST create/edit/delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 
 require './helpers.php';
 require './bkm_vault_bootstrap.php';

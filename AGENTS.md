@@ -807,6 +807,18 @@ The `roles_permissions` module (`modules/roles_permissions/`) provides a unified
 
     Output: `docs/readme/roles_permissions.png`. The script logs in as Admin through `bypass_login.php`, sets the session cookie for Apache, opens `modules/roles_permissions/index.php`, waits for `#rp-permission-matrix` and at least one matrix row, then saves a 1280×800 PNG. On Cloud Agent VMs, start Apache + MySQL first (see **Cursor Cloud specific instructions → README module screenshots**); do not hand-edit PNGs when the script can regenerate them.
 
+#### CRUD mutation RBAC chokepoint (mandatory)
+
+Flattened CRUD modules must enforce create / edit / delete through one POST chokepoint — not duplicated per-handler `itm_require_crud_role_module_permission()` calls.
+
+1. **Canonical API:** `itm_crud_enforce_mutation_access($conn, $action, $moduleSlug)` in `includes/itm_role_module_permissions.php` (wraps `itm_require_crud_role_module_permission()`).
+2. **Bootstrap:** `itm_crud_mutation_guard_entry($conn, $crudAction, $moduleSlug)` in `includes/itm_crud_mutation_bootstrap.php` (loaded from `config/config.php`). POST-only; infers `create` vs `edit` from `id` when `$crudAction` is empty; infers `$moduleSlug` from the entry folder when empty.
+3. **Index routers:** call `itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table)` once immediately after `config.php` — before create/edit/delete handler blocks.
+4. **Standalone entry files:** same guard after `config.php` on `create.php` / `edit.php` / `delete.php` that are not wrappers (`require 'index.php'`, `require 'create.php'`, equipment IS delegates, or redirect-only stubs).
+5. **Programmatic soft-delete:** outside index handlers, use `itm_crud_soft_delete_sql_for_module()` in `includes/itm_crud_audit_fields.php` (RBAC + `itm_crud_build_soft_delete_sql()`).
+6. **Exempt slugs:** `itm_crud_rbac_exempt_module_slugs()` — bespoke admin gates, vault, explorer, employees, equipment, etc. Do not add flattened scaffold modules without a documented alternate guard.
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/check_crud_rbac_coverage.php`; repair: `php scripts/apply_crud_rbac_guards.php --apply`, `php scripts/apply_crud_mutation_bootstrap.php --apply`.
+
 #### Bulk delete toolbar and Cancel button (mandatory)
 
 Standard index markup (inside the list card, above the search row). `department-bulk-form` is the legacy id for `modules/departments/` only; all other modules use `bulk-delete-form`.

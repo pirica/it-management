@@ -30,6 +30,7 @@ $redirect = 'index.php?' . http_build_query($redirectParams);
 
 $bulkAction = trim((string)($_POST['bulk_action'] ?? ''));
 if ($bulkAction === 'bulk_delete' || $bulkAction === 'clear_table') {
+    itm_crud_enforce_mutation_access($conn, 'delete', 'webmail');
     $listFilters = [
         'status' => trim((string)($_POST['status'] ?? '')),
         'starred' => trim((string)($_POST['starred'] ?? '')),
@@ -78,6 +79,7 @@ if ($bulkAction === 'bulk_delete' || $bulkAction === 'clear_table') {
 }
 
 if ($id > 0 && $action === 'soft_delete') {
+    itm_crud_enforce_mutation_access($conn, 'delete', 'webmail');
     if (webmail_soft_delete($conn, $id, $company_id, $employee_id, $sessionEmail)) {
         $_SESSION['webmail_notice'] = 'Message moved to Trash.';
     }
@@ -87,6 +89,7 @@ if ($id > 0 && $action === 'soft_delete') {
 } elseif ($id > 0 && $action === 'restore') {
     webmail_restore($conn, $id, $company_id, $employee_id);
 } elseif ($id > 0 && $action === 'hard_delete') {
+    itm_crud_enforce_mutation_access($conn, 'delete', 'webmail');
     webmail_hard_delete($conn, $id, $company_id, $employee_id, $sessionEmail);
 } elseif ($id > 0 && $action === 'toggle_star') {
     webmail_toggle_star($conn, $id, $company_id, $employee_id, $sessionEmail);

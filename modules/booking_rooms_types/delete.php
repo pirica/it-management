@@ -5,8 +5,10 @@ $crud_action = 'delete';
 ?>
 <?php
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once __DIR__ . '/includes/brt_fk_helpers.php';
-itm_require_crud_role_module_permission($conn, 'delete', 'booking_rooms_types');
 
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {

@@ -8,6 +8,9 @@ $crud_action = $crud_action ?? 'index';
 $expiring_action = $expiring_action ?? 'index';
 
 require_once '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 
 if (!function_exists('expiring_format_duration')) {
     function expiring_format_duration(DateTimeImmutable $fromDate, DateTimeImmutable $toDate) {

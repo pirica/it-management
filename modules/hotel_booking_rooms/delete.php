@@ -11,6 +11,9 @@ $crud_action = 'delete';
 ?>
 <?php
 require_once '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 
 // Validate configuration
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
@@ -105,7 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 cr_require_valid_csrf_token();
-itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
 $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 $dbErrorCode = 0;

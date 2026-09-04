@@ -1,7 +1,9 @@
 <?php
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once '../../includes/itm_hotel_booking.php';
-itm_require_crud_role_module_permission($conn, 'create', 'hotel_booking_room_photos');
 
 $crud_table = 'hotel_booking_room_photos';
 $crud_title = 'Room Photos';

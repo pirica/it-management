@@ -316,6 +316,18 @@ if (!function_exists('itm_crud_build_soft_delete_sql')) {
     }
 }
 
+if (!function_exists('itm_crud_soft_delete_sql_for_module')) {
+    /**
+     * RBAC + soft-delete SQL for programmatic delete paths outside index handlers.
+     */
+    function itm_crud_soft_delete_sql_for_module($conn, $table, $whereSql, $employeeId, $moduleSlug): string
+    {
+        itm_crud_enforce_mutation_access($conn, 'delete', (string)$moduleSlug);
+
+        return itm_crud_build_soft_delete_sql($table, $whereSql, $employeeId);
+    }
+}
+
 if (!function_exists('itm_crud_render_form_hidden_active_input')) {
     /**
      * Emit hidden active=1 for status-driven modules (business Active/Inactive lives on *_statuses FKs).

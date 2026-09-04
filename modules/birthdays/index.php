@@ -6,6 +6,9 @@
  */
 
 require_once '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 itm_require_crud_role_module_permission($conn, 'view', 'birthdays');
 require_once '../../includes/employee_profile_photo.php';
 

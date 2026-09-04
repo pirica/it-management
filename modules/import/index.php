@@ -7,6 +7,9 @@
 $crud_title = 'Bulk Import';
 
 require '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 // Admin access usually required for bulk imports
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 

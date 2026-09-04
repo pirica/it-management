@@ -9,6 +9,9 @@ $crud_title = 'Visitors Access Log';
 $crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete (do not duplicate per handler).
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
 itm_require_role_module_permission(
     $conn,
@@ -63,7 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) 
     $value = trim((string)($_POST['value'] ?? ''));
 
     // Why: Server-side RBAC before CSRF/mutation SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'edit', $crud_table);
 
     // Whitelist allowed fields to prevent SQL Injection
     $allowedFields = [
@@ -104,7 +106,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_timestamp'])) 
     header('Content-Type: application/json; charset=UTF-8');
 
     // Why: Server-side RBAC before CSRF/mutation SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'edit', $crud_table);
 
     $id = (int)($_POST['id'] ?? 0);
     $type = trim((string)($_POST['type'] ?? '')); // 'in' or 'out'
@@ -144,7 +145,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_quick_add'])) 
     itm_require_post_csrf();
 
     // Why: Server-side RBAC before CSRF/mutation SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'create', $crud_table);
 
     $visitor_name = trim((string)($_POST['visitor_name'] ?? ''));
     $company_department = trim((string)($_POST['company_department'] ?? ''));
@@ -189,8 +189,6 @@ if ($crud_action === 'delete') {
         exit('Method not allowed.');
     }
 
-    // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
     itm_require_post_csrf();
 
@@ -256,7 +254,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     itm_require_post_csrf();
 
     // Why: Server-side RBAC before CSRF/mutation SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, $crud_action, $crud_table);
 
     $id = (int)($_POST['id'] ?? 0);
     $visitor_name = trim((string)($_POST['visitor_name'] ?? ''));

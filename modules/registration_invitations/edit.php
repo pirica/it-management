@@ -14,6 +14,9 @@ $crud_action = 'edit';
 ?>
 <?php
 require_once '../../config/config.php';
+// Why: Single RBAC chokepoint for POST create/edit/delete on standalone entry files.
+itm_crud_mutation_guard_entry($conn, $crud_action, $crud_table);
+
 require_once ROOT_PATH . 'includes/itm_registration_invitation_email.php';
 require_once ROOT_PATH . 'includes/itm_role_assignment_rights.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);

@@ -89,17 +89,19 @@ Default run is **informational** (exit `0`). `php scripts/check_env_vars_in_use.
 
 ### 4. Single RBAC chokepoint for create / edit / delete
 
-**Status:** **Open** (audit net exists; chokepoint does not)
+**Status:** **Done** — `itm_crud_mutation_guard_entry()` on index routers and standalone entry files; `itm_crud_enforce_mutation_access()` canonical API; `itm_crud_soft_delete_sql_for_module()` for programmatic soft-delete paths.
 
-**Problem:** RBAC gates for mutations live in three placements: wrapper `delete.php`, `index.php` delete branch, or direct `itm_require_role_module_permission()`. New modules can skip a gate silently.
+**Problem:** RBAC gates for mutations lived in three placements: wrapper `delete.php`, `index.php` delete branch, or direct `itm_require_role_module_permission()`. New modules could skip a gate silently.
 
 **Touch points:**
 
-- `includes/itm_role_module_permissions.php` — `itm_require_crud_role_module_permission()`, `itm_require_role_module_permission()`
-- Callers inside `itm_crud_build_soft_delete_sql()` paths or a shared pre-handler
-- Static audit (keep): [`check_crud_rbac_coverage.php?run=1`](http://localhost/it-management/scripts/check_crud_rbac_coverage.php?run=1)
+- `includes/itm_crud_mutation_bootstrap.php` — `itm_crud_mutation_guard_entry()` (POST-only; infers create/edit from record id when needed)
+- `includes/itm_role_module_permissions.php` — `itm_crud_enforce_mutation_access()`, `itm_require_crud_role_module_permission()`
+- `includes/itm_crud_audit_fields.php` — `itm_crud_soft_delete_sql_for_module()` (RBAC + soft-delete SQL outside index handlers)
+- Apply: [apply_crud_rbac_guards.php?run=1&apply=1](http://localhost/it-management/scripts/apply_crud_rbac_guards.php?run=1&apply=1), [apply_crud_mutation_bootstrap.php?run=1&apply=1](http://localhost/it-management/scripts/apply_crud_mutation_bootstrap.php?run=1&apply=1) (Admin session)
+- Static audit: [check_crud_rbac_coverage.php?run=1](http://localhost/it-management/scripts/check_crud_rbac_coverage.php?run=1)
 
-**Acceptance:** One enforced entry path for create/edit/delete; `php scripts/check_crud_rbac_coverage.php` still exit `0`.
+**Acceptance:** One enforced entry path for create/edit/delete; `php scripts/check_crud_rbac_coverage.php` exit `0`.
 
 ---
 
@@ -238,7 +240,7 @@ Browser filter on the same runner: [run_tests.php?run=1&mode=standard&skip_db=1&
 ## Suggested sequencing
 
 1. ~~**todo item 3** — remove last `escape_sql()` POST paths~~ **Done** (prepared statements on tickets/inventory/equipment create).
-2. **#4** + **#11** — same PR (chokepoint + docs).
+2. ~~**#4** + **#11** — same PR (chokepoint + docs)~~ **Done** (mutation guard bootstrap + apply scripts + coverage audit).
 3. **#5** + **#6** — prod hardening pair.
 
 ---
