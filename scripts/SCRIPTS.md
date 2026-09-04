@@ -519,11 +519,12 @@ php scripts/auth_register_reset_human_test.php
 | Script | Purpose |
 |--------|---------|
 | `php scripts/apitest_tier_free.php` | Disposable **Free** tier row (empty `api_key`): unlimited status, in-process session resolve via disposable test user (`itm_script_with_test_session_context()`), repeated consumes allowed. **Browser + CLI** (browser: Admin login). HTTP probe uses isolated test-user cookie — not Admin. |
-| `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. **Browser + CLI** (browser: Admin login). HTTP probe requires `api_key`. |
+| `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. **Browser + CLI** (browser: Admin login). HTTP probe sends `X-API-Key` header (query `api_key` not accepted). |
+| `php scripts/verify_api_key_hashing.php` | Regression: SHA-256 + prefix storage on `ui_configuration`, lookup helpers, query-string rejection, Settings save path. |
 
-Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`employee_id` slots, browser URL with optional `api_key`, HTTP probe). Slot employees (`apitest-user-{id}`) are created with prepared INSERTs; helpers clear stale `@app_employee_id` audit session vars before `employees` / `ui_configuration` mutations so `audit_logs_ibfk_employee` does not reject seeding. Session resolve/consume tests use **`itm_script_with_test_session_context()`** (disposable test user — not Admin). HTTP probes use **`itm_script_publish_isolated_http_session()`**. Entry: **`scripts/lib/itm_script_regression_entry.php`** (browser + CLI; Admin required in browser). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
+Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`employee_id` slots, keyless probe URL + `X-API-Key` HTTP probe). Slot employees (`apitest-user-{id}`) are created with prepared INSERTs; helpers clear stale `@app_employee_id` audit session vars before `employees` / `ui_configuration` mutations so `audit_logs_ibfk_employee` does not reject seeding. Session resolve/consume tests use **`itm_script_with_test_session_context()`** (disposable test user — not Admin). HTTP probes use **`itm_script_publish_isolated_http_session()`**. Entry: **`scripts/lib/itm_script_regression_entry.php`** (browser + CLI; Admin required in browser). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
 
-**Free** tier prints a session probe URL (`scripts/api.php?rate_limit=1` without `api_key`). The Free apitest publishes an **isolated** disposable test-user `PHPSESSID` (`itm_script_publish_isolated_http_session()` via `itm_apitest_publish_http_session()`) **before any script output** so the curl HTTP probe can pass without an API key when Apache is running — it does **not** reuse or overwrite the signed-in Admin browser session. **Paid** tiers print `…&api_key=…`. Probe returns JSON without a PHP session redirect (`ITM_API_RATE_LIMIT_PROBE`). Disposable rows remain until the next apitest run for that slot.
+**Free** tier prints a session probe URL (`scripts/api.php?rate_limit=1` without `api_key`). The Free apitest publishes an **isolated** disposable test-user `PHPSESSID` (`itm_script_publish_isolated_http_session()` via `itm_apitest_publish_http_session()`) **before any script output** so the curl HTTP probe can pass without an API key when Apache is running — it does **not** reuse or overwrite the signed-in Admin browser session. **Paid** tiers print the same keyless probe URL; send the disposable key via **`X-API-Key`** (not `?api_key=`). Probe returns JSON without a PHP session redirect (`ITM_API_RATE_LIMIT_PROBE`). Disposable rows remain until the next apitest run for that slot.
 
 **Verify after rate-limit helper or tier cap changes:**
 
@@ -532,6 +533,7 @@ php -l scripts/apitest_tier_free.php
 php -l scripts/apitest_tier_basic.php
 php scripts/apitest_tier_free.php
 php scripts/apitest_tier_basic.php
+php scripts/verify_api_key_hashing.php
 ```
 
 #### API v2 partner gateway (`verify_api_v2.php`, `openapi.php`)

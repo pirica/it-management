@@ -143,7 +143,7 @@ if ($settingsUserId > 0 && function_exists('itm_api_resolve_configuration_employ
     $apiAccessEmployeeId = itm_api_resolve_configuration_employee_id($conn, (int) $company_id, $settingsUserId);
     $apiAccessRow = itm_api_lookup_configuration_by_user($conn, (int) $company_id, $apiAccessEmployeeId);
     if (is_array($apiAccessRow)) {
-        foreach (['id', 'api_key', 'api_key_is_active', 'api_key_last_used_at', 'rate_limit_window_start', 'rate_limit_request_count', 'rate_limit_enabled', 'tier', 'explorer_api_rate_limit_per_hour'] as $apiAccessField) {
+        foreach (['id', 'api_key', 'api_key_prefix', 'api_key_hash', 'api_key_is_active', 'api_key_last_used_at', 'rate_limit_window_start', 'rate_limit_request_count', 'rate_limit_enabled', 'tier', 'explorer_api_rate_limit_per_hour'] as $apiAccessField) {
             if (array_key_exists($apiAccessField, $apiAccessRow)) {
                 $currentUiConfig[$apiAccessField] = $apiAccessRow[$apiAccessField];
             }
@@ -579,17 +579,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Unable to save API key: your session user is missing. Please sign in again.';
         } else {
             $submittedApiKey = trim((string)($_POST['api_key'] ?? ''));
+            $clearApiKey = !empty($_POST['clear_api_key']);
+            $hasStoredApiKey = function_exists('itm_api_configuration_row_has_api_key')
+                ? itm_api_configuration_row_has_api_key($currentUiConfig)
+                : (trim((string)($currentUiConfig['api_key'] ?? '')) !== '' || trim((string)($currentUiConfig['api_key_hash'] ?? '')) !== '');
             if ($submittedApiKey !== '' && strlen($submittedApiKey) > 191) {
                 $error = 'API key must be 191 characters or fewer.';
+            } elseif ($clearApiKey) {
+                if (!itm_api_save_user_api_key($conn, (int)$company_id, $settingsUserId, '')) {
+                    $error = 'Unable to clear API key.';
+                } else {
+                    if (function_exists('itm_api_v2_replace_scopes_from_post')) {
+                        itm_api_v2_replace_scopes_from_post($conn, (int)$company_id, $settingsUserId);
+                    }
+                    $_SESSION['settings_flash_message'] = 'API key cleared successfully.';
+                    header('Location: index.php?api_saved=1');
+                    exit;
+                }
+            } elseif ($submittedApiKey === '' && $hasStoredApiKey) {
+                if (function_exists('itm_api_v2_replace_scopes_from_post')) {
+                    itm_api_v2_replace_scopes_from_post($conn, (int)$company_id, $settingsUserId);
+                }
+                $_SESSION['settings_flash_message'] = 'API v2 scopes saved. Existing API key unchanged (paste a new key to replace it).';
+                header('Location: index.php?api_scopes_saved=1');
+                exit;
             } elseif (!itm_api_save_user_api_key($conn, (int)$company_id, $settingsUserId, $submittedApiKey)) {
                 $error = 'Unable to save API key.';
             } else {
                 if (function_exists('itm_api_v2_replace_scopes_from_post')) {
                     itm_api_v2_replace_scopes_from_post($conn, (int)$company_id, $settingsUserId);
                 }
+                if ($submittedApiKey !== '') {
+                    $_SESSION['settings_reveal_api_key'] = $submittedApiKey;
+                }
                 $_SESSION['settings_flash_message'] = $submittedApiKey === ''
                     ? 'API key cleared successfully.'
-                    : 'API key saved successfully.';
+                    : 'API key saved successfully. Copy the full key below — it is shown once.';
                 header('Location: index.php?api_saved=1');
                 exit;
             }
@@ -654,7 +679,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (function_exists('itm_api_v2_seed_default_scopes_for_settings_user')) {
                     itm_api_v2_seed_default_scopes_for_settings_user($conn, (int)$company_id, $settingsUserId);
                 }
-                $_SESSION['settings_flash_message'] = 'New API key generated successfully.';
+                $_SESSION['settings_reveal_api_key'] = $generatedApiKey;
+                $_SESSION['settings_flash_message'] = 'New API key generated successfully. Copy the full key below — it is shown once.';
                 header('Location: index.php?api_saved=1');
                 exit;
             }
@@ -784,7 +810,15 @@ $currentFaviconUrl = itm_ui_config_favicon_url($currentUiConfig, (int) $company_
 $currentFaviconPath = $currentFaviconResolvedPath;
 $currentFaviconDisplayPath = $currentFaviconPath !== '' ? '/' . ltrim($currentFaviconPath, '/') : '';
 $currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
-$currentApiKey = trim((string)($currentUiConfig['api_key'] ?? ''));
+$currentApiKeyPrefix = trim((string)($currentUiConfig['api_key_prefix'] ?? ''));
+$currentApiKeyConfigured = function_exists('itm_api_configuration_row_has_api_key')
+    ? itm_api_configuration_row_has_api_key($currentUiConfig)
+    : ($currentApiKeyPrefix !== '' || trim((string)($currentUiConfig['api_key'] ?? '')) !== '');
+$revealedApiKey = '';
+if (isset($_SESSION['settings_reveal_api_key'])) {
+    $revealedApiKey = trim((string)$_SESSION['settings_reveal_api_key']);
+    unset($_SESSION['settings_reveal_api_key']);
+}
 $currentApiKeyIsActive = ((int)($currentUiConfig['api_key_is_active'] ?? 1) === 1);
 $currentApiKeyLastUsedLabel = itm_api_format_key_last_used_display_label($currentUiConfig['api_key_last_used_at'] ?? null);
 $currentRateLimitEnabled = ((int)($currentUiConfig['rate_limit_enabled'] ?? 1) === 1);
@@ -1277,10 +1311,29 @@ if (!isset($crud_title)) {
                         <form method="post" style="margin-bottom:16px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <div class="form-group" style="max-width:640px;">
-                                <label for="api_key">API Key</label>
-                                <input id="api_key" name="api_key" type="text" maxlength="191" value="<?php echo sanitize($currentApiKey); ?>" placeholder="Paste or generate an API key">
-                                <p class="form-hint" style="margin-top:6px;">Send this value as the <code>X-API-Key</code> header (or <code>api_key</code> query parameter) on programmatic requests. API v2 (<code>modules/api_v2/router.php</code>) requires a paid tier key and granted scopes below.</p>
+                                <label for="api_key_prefix_display">API Key prefix</label>
+                                <input id="api_key_prefix_display" type="text" value="<?php echo $currentApiKeyConfigured ? sanitize($currentApiKeyPrefix . '…') : 'Not configured'; ?>" readonly disabled>
                             </div>
+                            <?php if ($revealedApiKey !== ''): ?>
+                            <div class="form-group" style="max-width:640px;">
+                                <label for="api_key_reveal">New API key (copy now)</label>
+                                <input id="api_key_reveal" type="text" readonly value="<?php echo sanitize($revealedApiKey); ?>" onclick="this.select();">
+                                <p class="form-hint" style="margin-top:6px;">This full key is shown once after save or generate. Only the prefix is stored for display afterward.</p>
+                            </div>
+                            <?php endif; ?>
+                            <div class="form-group" style="max-width:640px;">
+                                <label for="api_key">Replace API key</label>
+                                <input id="api_key" name="api_key" type="text" maxlength="191" value="" placeholder="Paste a new integration API key">
+                                <p class="form-hint" style="margin-top:6px;">Send the key as the <code>X-API-Key</code> header or <code>api_key</code> POST field — not in the URL query string. API v2 (<code>modules/api_v2/router.php</code>) requires a paid tier key and granted scopes below. Leave blank to keep the current key.</p>
+                            </div>
+                            <?php if ($currentApiKeyConfigured): ?>
+                            <div class="form-group" style="max-width:640px;">
+                                <label class="itm-checkbox-control">
+                                    <input type="checkbox" name="clear_api_key" value="1">
+                                    <span>Clear stored API key</span>
+                                </label>
+                            </div>
+                            <?php endif; ?>
                             <?php if ($currentApiV2ScopeCatalog !== []): ?>
                             <div class="form-group" style="max-width:640px;">
                                 <label>API v2 scopes</label>

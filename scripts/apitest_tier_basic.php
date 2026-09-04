@@ -38,7 +38,8 @@ if ($row === null) {
     exit(1);
 }
 
-itm_apitest_print_probe_links((string)$row['api_key'], 'Basic-tier');
+$plainApiKey = itm_apitest_plain_api_key_from_seed_row($row);
+itm_apitest_print_probe_links($plainApiKey, 'Basic-tier');
 
 $status = itm_api_rate_limit_status_from_row($row);
 $allPassed = itm_apitest_assert('Basic status is not unlimited', empty($status['unlimited'])) && $allPassed;
@@ -77,7 +78,7 @@ if (is_array($atCapRow)) {
     $allPassed = itm_apitest_assert('Basic status at cap shows zero remaining', (int)($atCapStatus['remaining'] ?? -1) === 0) && $allPassed;
 }
 
-$probe = itm_apitest_probe_rate_limit_http((string)$row['api_key']);
+$probe = itm_apitest_probe_rate_limit_http($plainApiKey);
 if (is_array($probe)) {
     if (!empty($probe['ok'])) {
         $allPassed = itm_apitest_assert('HTTP probe returns ok=1', true) && $allPassed;

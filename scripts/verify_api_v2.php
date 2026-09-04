@@ -93,7 +93,7 @@ if ($row === null) {
 }
 
 $uiConfigId = (int)($row['id'] ?? 0);
-$apiKey = (string)($row['api_key'] ?? '');
+$apiKey = itm_apitest_plain_api_key_from_seed_row($row);
 if ($uiConfigId <= 0 || $apiKey === '') {
     api_v2_fail('seed row missing id or api_key');
 } else {

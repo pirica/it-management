@@ -116,4 +116,34 @@ class ApiRateLimitTest extends TestCase
         $this->assertSame('18/Jun/2026 14:30', itm_api_format_key_last_used_display_label($stamp));
         $this->assertSame('18/Jun/2026 14:30', itm_api_format_key_last_used_display_label('  ' . $stamp . '  '));
     }
+
+    public function testApiKeyHashPrefixAndVerify(): void
+    {
+        $key = 'integration-test-key-' . bin2hex(random_bytes(4));
+        $prefix = itm_api_key_prefix($key);
+        $hash = itm_api_hash_api_key($key);
+
+        $this->assertSame(16, strlen($prefix));
+        $this->assertSame(64, strlen($hash));
+        $this->assertTrue(itm_api_verify_api_key($key, $hash));
+        $this->assertFalse(itm_api_verify_api_key($key . 'x', $hash));
+    }
+
+    public function testApiKeyExtractIgnoresQueryString(): void
+    {
+        $_GET['api_key'] = 'should-not-read';
+        $_POST = [];
+        unset($_SERVER['HTTP_X_API_KEY']);
+
+        $this->assertSame('', itm_api_extract_request_key());
+
+        unset($_GET['api_key']);
+    }
+
+    public function testConfigurationRowHasApiKeyDetectsHash(): void
+    {
+        $this->assertTrue(itm_api_configuration_row_has_api_key(['api_key_hash' => hash('sha256', 'x')]));
+        $this->assertTrue(itm_api_configuration_row_has_api_key(['api_key' => 'legacy-plain']));
+        $this->assertFalse(itm_api_configuration_row_has_api_key(['api_key' => '', 'api_key_hash' => '']));
+    }
 }

@@ -3736,6 +3736,8 @@ CREATE TABLE `ui_configuration` (
   `ui_datetime_readable_enabled` tinyint(1) NOT NULL DEFAULT '0',
   `ui_datetime_format_default` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'european2',
   `api_key` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `api_key_prefix` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `api_key_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `api_key_is_active` tinyint(1) NOT NULL DEFAULT '1',
   `api_key_last_used_at` timestamp NULL DEFAULT NULL,
   `rate_limit_window_start` int NOT NULL DEFAULT '0',
@@ -3752,6 +3754,7 @@ CREATE TABLE `ui_configuration` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_ui_configuration_company_employee` (`company_id`,`employee_id`),
+  KEY `idx_ui_configuration_api_key_prefix` (`api_key_prefix`),
   CONSTRAINT `fk_ui_configuration_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_ui_configuration_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
