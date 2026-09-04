@@ -426,13 +426,14 @@ if (!function_exists('itm_setup_wizard_assess_project_root_for_step1')) {
     function itm_setup_wizard_assess_project_root_for_step1(string $normalized): array
     {
         if ($normalized === '') {
-            return ['ok' => false, 'message' => 'Project root is required.'];
+            return ['ok' => false, 'message' => 'Project root is required.', 'needs_replace_confirm' => false];
         }
 
         if (!itm_setup_wizard_is_safe_project_root_path($normalized)) {
             return [
                 'ok' => false,
                 'message' => 'Enter a valid absolute path (example: C:\\laragon\\www\\it-management). Use backslashes after the drive letter.',
+                'needs_replace_confirm' => false,
             ];
         }
 
@@ -440,12 +441,13 @@ if (!function_exists('itm_setup_wizard_assess_project_root_for_step1')) {
         $resolved = realpath($normalized);
         if ($resolved !== false && is_dir($resolved)) {
             if (itm_setup_wizard_paths_equal($resolved, $runtimeRoot) && itm_setup_wizard_project_root_has_schema($resolved)) {
-                return ['ok' => true, 'message' => 'Current install folder is valid.'];
+                return ['ok' => true, 'message' => 'Current install folder is valid.', 'needs_replace_confirm' => false];
             }
 
             return [
                 'ok' => false,
-                'message' => 'Project root folder already exists. Choose a path that does not exist yet, or keep the auto-detected current install path.',
+                'needs_replace_confirm' => true,
+                'message' => 'Project root folder already exists. Confirm replacement to delete all files inside and download a fresh copy.',
             ];
         }
 
@@ -463,7 +465,7 @@ if (!function_exists('itm_setup_wizard_assess_project_root_for_step1')) {
             ];
         }
 
-        return ['ok' => true, 'message' => 'New folder path accepted — folder will be created when you Continue.'];
+        return ['ok' => true, 'message' => 'New folder path accepted — folder will be created when you Download.', 'needs_replace_confirm' => false];
     }
 }
 
@@ -491,6 +493,7 @@ if (!function_exists('itm_setup_wizard_step1_preview_payload')) {
         return [
             'ok' => $validation['ok'],
             'message' => $validation['message'],
+            'needsReplaceConfirm' => !empty($validation['needs_replace_confirm']),
             'projectRoot' => $repaired,
             'autoDetect' => $repaired,
             'documentRoot' => $documentRoot !== '' ? $documentRoot : '(not detected)',
@@ -922,11 +925,11 @@ if (!function_exists('itm_setup_wizard_provision_project_root')) {
      *
      * @return array{ok:bool,path:string,message:string}
      */
-    function itm_setup_wizard_provision_project_root(string $input): array
+    function itm_setup_wizard_provision_project_root(string $input, bool $confirmReplace = false): array
     {
         $normalized = itm_setup_wizard_normalize_path_input($input);
         if ($normalized === '') {
-            return ['ok' => false, 'path' => '', 'message' => 'Project root is required.'];
+            return ['ok' => false, 'path' => '', 'message' => 'Project root is required.', 'needs_replace_confirm' => false];
         }
 
         if (!itm_setup_wizard_is_safe_project_root_path($normalized)) {
@@ -934,6 +937,7 @@ if (!function_exists('itm_setup_wizard_provision_project_root')) {
                 'ok' => false,
                 'path' => $normalized,
                 'message' => 'Enter a valid absolute path (example: C:\\laragon\\www\\it-management). Use backslashes after the drive letter.',
+                'needs_replace_confirm' => false,
             ];
         }
 
@@ -942,14 +946,57 @@ if (!function_exists('itm_setup_wizard_provision_project_root')) {
 
         if ($resolved !== false && is_dir($resolved)) {
             if (itm_setup_wizard_paths_equal($resolved, $runtimeRoot) && itm_setup_wizard_project_root_has_schema($resolved)) {
-                return ['ok' => true, 'path' => $resolved, 'message' => 'Using current install folder.'];
+                return ['ok' => true, 'path' => $resolved, 'message' => 'Using current install folder.', 'needs_replace_confirm' => false];
             }
 
-            return [
-                'ok' => false,
-                'path' => $resolved,
-                'message' => 'Project root folder already exists. Choose a path that does not exist yet, or keep the auto-detected current install path.',
-            ];
+            if (!$confirmReplace) {
+                return [
+                    'ok' => false,
+                    'path' => $resolved,
+                    'needs_replace_confirm' => true,
+                    'message' => 'Project root folder already exists. Confirm replacement to delete all files inside and download a fresh copy.',
+                ];
+            }
+
+            if (!is_writable($resolved)) {
+                return [
+                    'ok' => false,
+                    'path' => $resolved,
+                    'needs_replace_confirm' => false,
+                    'message' => 'Project root folder is not writable: ' . itm_setup_wizard_format_path_for_input($resolved),
+                ];
+            }
+
+            itm_setup_wizard_remove_directory_tree($resolved);
+            if (is_dir($resolved) && !@rmdir($resolved)) {
+                return [
+                    'ok' => false,
+                    'path' => $resolved,
+                    'needs_replace_confirm' => false,
+                    'message' => 'Could not clear existing project root folder.',
+                ];
+            }
+            if (!@mkdir($normalized, 0755, false)) {
+                return ['ok' => false, 'path' => $normalized, 'message' => 'Could not recreate project root folder.', 'needs_replace_confirm' => false];
+            }
+
+            $download = itm_setup_wizard_download_project_from_github($normalized);
+            if (!$download['ok']) {
+                itm_setup_wizard_remove_directory_tree($normalized);
+                @rmdir($normalized);
+
+                return ['ok' => false, 'path' => $normalized, 'message' => $download['message'], 'needs_replace_confirm' => false];
+            }
+
+            $resolved = realpath($normalized);
+            if ($resolved === false || !itm_setup_wizard_project_root_has_schema($resolved)) {
+                itm_setup_wizard_remove_directory_tree($normalized);
+                @rmdir($normalized);
+
+                return ['ok' => false, 'path' => $normalized, 'message' => 'Download finished but db/01_schema.sql was not found.', 'needs_replace_confirm' => false];
+            }
+
+            return ['ok' => true, 'path' => $resolved, 'message' => $download['message'], 'needs_replace_confirm' => false];
         }
 
         $parent = dirname($normalized);
@@ -1493,49 +1540,104 @@ if (!function_exists('itm_setup_wizard_expected_table_count')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_canonical_database_name')) {
+    function itm_setup_wizard_canonical_database_name(): string
+    {
+        return 'itmanagement';
+    }
+}
+
+if (!function_exists('itm_setup_wizard_rewrite_sql_for_database')) {
+    function itm_setup_wizard_rewrite_sql_for_database(string $sql, string $targetDatabase): string
+    {
+        $targetDatabase = trim($targetDatabase);
+        $canonical = itm_setup_wizard_canonical_database_name();
+        if ($targetDatabase === '' || strcasecmp($targetDatabase, $canonical) === 0) {
+            return $sql;
+        }
+        if (!itm_setup_wizard_is_safe_database_name($targetDatabase)) {
+            return $sql;
+        }
+
+        return str_replace('`' . $canonical . '`', '`' . $targetDatabase . '`', $sql);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_build_import_sql_bundle')) {
+    function itm_setup_wizard_build_import_sql_bundle(string $targetDatabase): array
+    {
+        $bundle = '';
+        foreach (itm_setup_wizard_required_db_files() as $file) {
+            $chunk = file_get_contents($file);
+            if ($chunk === false) {
+                return ['ok' => false, 'message' => 'Could not read ' . $file, 'sql' => ''];
+            }
+            $bundle .= itm_setup_wizard_rewrite_sql_for_database($chunk, $targetDatabase) . "\n";
+        }
+
+        return ['ok' => true, 'message' => '', 'sql' => $bundle];
+    }
+}
+
 if (!function_exists('itm_setup_wizard_import_via_shell')) {
     /**
      * @return array{ok:bool,message:string}
      */
     function itm_setup_wizard_import_via_shell(string $host, int $port, string $user, string $pass, string $database): array
     {
-        $files = itm_setup_wizard_required_db_files();
-        $bundle = '';
-        foreach ($files as $file) {
-            $chunk = file_get_contents($file);
-            if ($chunk === false) {
-                return ['ok' => false, 'message' => 'Could not read ' . $file];
-            }
-            $bundle .= $chunk . "\n";
+        $bundleResult = itm_setup_wizard_build_import_sql_bundle($database);
+        if (!$bundleResult['ok']) {
+            return ['ok' => false, 'message' => $bundleResult['message']];
         }
-
-        $tmp = tempnam(sys_get_temp_dir(), 'itm_setup_import_');
-        if ($tmp === false) {
-            return ['ok' => false, 'message' => 'Could not create temp SQL bundle'];
-        }
-        file_put_contents($tmp, $bundle);
+        $bundle = $bundleResult['sql'];
 
         $mysqlBin = getenv('MYSQL_BIN') ?: 'mysql';
         $cmd = sprintf(
-            '%s -h %s -P %d -u %s %s --default-character-set=utf8mb4 %s < %s',
+            '%s -h %s -P %d -u %s --default-character-set=utf8mb4 %s',
             escapeshellarg($mysqlBin),
             escapeshellarg($host),
             $port,
             escapeshellarg($user),
-            $pass !== '' ? '-p' . escapeshellarg($pass) : '',
-            escapeshellarg($database),
-            escapeshellarg($tmp)
+            escapeshellarg($database)
         );
 
-        if (PHP_SAPI === 'win32' || strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $cmd = 'cmd /c ' . $cmd;
+        $env = $_ENV;
+        if ($pass !== '') {
+            $env['MYSQL_PWD'] = $pass;
         }
 
-        passthru($cmd, $exitCode);
-        @unlink($tmp);
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $process = @proc_open($cmd, $descriptors, $pipes, null, $env);
+        if (!is_resource($process)) {
+            return ['ok' => false, 'message' => 'Could not start mysql CLI for import.'];
+        }
+
+        fwrite($pipes[0], $bundle);
+        fclose($pipes[0]);
+
+        $stdout = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+
+        $exitCode = proc_close($process);
 
         if ($exitCode !== 0) {
-            return ['ok' => false, 'message' => 'mysql CLI import failed (exit ' . (int)$exitCode . ')'];
+            $detail = trim((string)$stderr);
+            if ($detail === '') {
+                $detail = trim((string)$stdout);
+            }
+            $message = 'mysql CLI import failed (exit ' . (int)$exitCode . ')';
+            if ($detail !== '') {
+                $message .= ': ' . $detail;
+            }
+
+            return ['ok' => false, 'message' => $message];
         }
 
         return ['ok' => true, 'message' => 'Imported db/ bundle via mysql CLI'];
@@ -1546,9 +1648,12 @@ if (!function_exists('itm_setup_wizard_import_via_mysqli')) {
     /**
      * @return array{ok:bool,message:string}
      */
-    function itm_setup_wizard_import_via_mysqli(mysqli $conn): array
+    function itm_setup_wizard_import_via_mysqli(mysqli $conn, string $database): array
     {
         if (!function_exists('itm_database_migrations_execute_sql_file')) {
+            require_once ROOT_PATH . 'includes/itm_database_migrations.php';
+        }
+        if (!function_exists('itm_database_migrations_drain_multi_query')) {
             require_once ROOT_PATH . 'includes/itm_database_migrations.php';
         }
 
@@ -1556,9 +1661,20 @@ if (!function_exists('itm_setup_wizard_import_via_mysqli')) {
         mysqli_query($conn, 'SET NAMES utf8mb4');
 
         foreach (itm_setup_wizard_required_db_files() as $file) {
-            [$ok, $message] = itm_database_migrations_execute_sql_file($conn, $file);
-            if (!$ok) {
-                return ['ok' => false, 'message' => basename($file) . ': ' . $message];
+            $sql = file_get_contents($file);
+            if ($sql === false || trim($sql) === '') {
+                return ['ok' => false, 'message' => basename($file) . ': file is empty or unreadable'];
+            }
+            if (strncmp($sql, "\xEF\xBB\xBF", 3) === 0) {
+                $sql = substr($sql, 3);
+            }
+            $sql = itm_setup_wizard_rewrite_sql_for_database($sql, $database);
+            if (!mysqli_multi_query($conn, $sql)) {
+                return ['ok' => false, 'message' => basename($file) . ': ' . mysqli_error($conn)];
+            }
+            [$drained, $drainError] = itm_database_migrations_drain_multi_query($conn);
+            if (!$drained) {
+                return ['ok' => false, 'message' => basename($file) . ': ' . $drainError];
             }
         }
 
@@ -1574,15 +1690,23 @@ if (!function_exists('itm_setup_wizard_import_database')) {
      */
     function itm_setup_wizard_import_database(string $host, int $port, string $user, string $pass, string $database): array
     {
+        $mysqliError = '';
         $test = itm_setup_wizard_test_database($host, $port, $user, $pass, $database);
         if ($test['ok'] && $test['conn'] instanceof mysqli) {
-            $mysqliResult = itm_setup_wizard_import_via_mysqli($test['conn']);
+            $mysqliResult = itm_setup_wizard_import_via_mysqli($test['conn'], $database);
+            mysqli_close($test['conn']);
             if ($mysqliResult['ok']) {
                 return $mysqliResult;
             }
+            $mysqliError = $mysqliResult['message'];
         }
 
-        return itm_setup_wizard_import_via_shell($host, $port, $user, $pass, $database);
+        $shellResult = itm_setup_wizard_import_via_shell($host, $port, $user, $pass, $database);
+        if (!$shellResult['ok'] && $mysqliError !== '') {
+            $shellResult['message'] = $mysqliError . ' Shell fallback: ' . $shellResult['message'];
+        }
+
+        return $shellResult;
     }
 }
 

@@ -38,6 +38,19 @@ if (itm_setup_wizard_is_safe_database_name('bad-name')) {
     setup_db_pass('Unsafe database names are rejected');
 }
 
+$rewritten = itm_setup_wizard_rewrite_sql_for_database("USE `itmanagement`;\n", 'itmanagement3');
+if (strpos($rewritten, 'USE `itmanagement3`;') === false) {
+    setup_db_fail('SQL bundle rewrite must map canonical database name to target schema');
+} else {
+    setup_db_pass('SQL bundle rewrite maps itmanagement to custom DB name');
+}
+
+if (strpos(itm_setup_wizard_rewrite_sql_for_database('USE `itmanagement`;', 'itmanagement'), 'itmanagement3') !== false) {
+    setup_db_fail('SQL rewrite must be a no-op when target matches canonical name');
+} else {
+    setup_db_pass('SQL rewrite is a no-op for canonical database name');
+}
+
 $host = getenv('DB_HOST') ?: '127.0.0.1';
 $port = (int)(getenv('DB_PORT') ?: '3306');
 $user = getenv('DB_USER') ?: 'root';
