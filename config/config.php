@@ -2461,34 +2461,84 @@ if (!function_exists('get_company_name')) {
 }
 
 /**
- * Encrypts a string using AES-256-CBC.
+ * Encrypts a string using AES-256-GCM (v2) with an authentication tag.
+ * Legacy rows remain AES-256-CBC until re-written by callers.
  */
 if (!function_exists('itm_encrypt')) {
     function itm_encrypt($data, $key) {
-        $cipher = 'aes-256-cbc';
-        $iv_len = openssl_cipher_iv_length($cipher);
-        $iv = openssl_random_pseudo_bytes($iv_len);
-        $encrypted = openssl_encrypt($data, $cipher, $key, 0, $iv);
-        return base64_encode($iv . $encrypted);
+        $cipher = 'aes-256-gcm';
+        $ivLen = openssl_cipher_iv_length($cipher);
+        if ($ivLen === false) {
+            return false;
+        }
+        $iv = openssl_random_pseudo_bytes($ivLen);
+        if ($iv === false) {
+            return false;
+        }
+        $tag = '';
+        $encrypted = openssl_encrypt((string) $data, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
+        if ($encrypted === false || $tag === '') {
+            return false;
+        }
+        return 'v2:' . base64_encode($iv . $tag . $encrypted);
     }
 }
 
 /**
- * Decrypts a string using AES-256-CBC.
+ * Decrypts v2 GCM (`v2:` prefix) or legacy v1 AES-256-CBC ciphertext.
  */
 if (!function_exists('itm_decrypt')) {
     function itm_decrypt($data, $key) {
+        $data = (string) $data;
+        if (strncmp($data, 'v2:', 3) === 0) {
+            return itm_decrypt_v2_gcm(substr($data, 3), $key);
+        }
+
+        return itm_decrypt_v1_cbc($data, $key);
+    }
+}
+
+if (!function_exists('itm_decrypt_v2_gcm')) {
+    function itm_decrypt_v2_gcm($payload, $key) {
+        $cipher = 'aes-256-gcm';
+        $raw = base64_decode((string) $payload, true);
+        if ($raw === false) {
+            return false;
+        }
+        $ivLen = openssl_cipher_iv_length($cipher);
+        if ($ivLen === false) {
+            return false;
+        }
+        $tagLen = 16;
+        if (strlen($raw) <= $ivLen + $tagLen) {
+            return false;
+        }
+        $iv = substr($raw, 0, $ivLen);
+        $tag = substr($raw, $ivLen, $tagLen);
+        $encrypted = substr($raw, $ivLen + $tagLen);
+        $plain = openssl_decrypt($encrypted, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
+        if ($plain === false) {
+            return false;
+        }
+
+        return $plain;
+    }
+}
+
+if (!function_exists('itm_decrypt_v1_cbc')) {
+    function itm_decrypt_v1_cbc($data, $key) {
         $cipher = 'aes-256-cbc';
-        $data = base64_decode((string)$data, true);
+        $data = base64_decode((string) $data, true);
         if ($data === false) {
             return false;
         }
         $iv_len = openssl_cipher_iv_length($cipher);
-        if (strlen($data) <= $iv_len) {
+        if ($iv_len === false || strlen($data) <= $iv_len) {
             return false;
         }
         $iv = substr($data, 0, $iv_len);
         $encrypted = substr($data, $iv_len);
+
         return openssl_decrypt($encrypted, $cipher, $key, 0, $iv);
     }
 }

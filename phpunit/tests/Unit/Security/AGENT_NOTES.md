@@ -12,7 +12,7 @@ CSRF, SQLi, and security guardrail tests.
 ## 7. File Structure
 - **ExplorerPathBypassTest.php** — `./Private` ACL regression for `get_full_path()` after `explorer_normalize_relative_path()`.
 - **CsrfPostGuardTest.php** — `itm_try_post_csrf()` POST guard + `itm_csrf_cookie_params()` contract (no DB).
-- **ItmEncryptDecryptTest.php** — `itm_encrypt()` / `itm_decrypt()` round-trip and wrong-key contract without vault DB fixtures.
+- **ItmEncryptDecryptTest.php** — `itm_encrypt()` / `itm_decrypt()` v2 GCM round-trip, legacy v1 CBC read, tampered v2 rejection, wrong-key contract without vault DB fixtures.
 - **ExplorerZipSlipTest.php** — Zip Slip blocked by `explorer_extract_zip_safely()`.
 - **AttemptsDataLeakTest.php** — login attempt identifier redaction via `itm_normalize_login_attempt_identifier()`.
 - **SelectOptionsBypassTest.php** — `companies` blocked from Select Options quick-add whitelist.

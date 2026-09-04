@@ -2,7 +2,7 @@
 
 Living register of **still-valid** items migrated from the retired GitHub Wiki page `TO-DO-3.md` (removed during the wiki sync — scratchpad retirement, not “all fixed”). For penetration-test status use [`docs/report.md`](report.md) and [`verify_pentest_report.php?run=1`](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Admin session). For product/feature gaps use [`docs/PRODUCT_GAPS_AND_MISSING.md`](PRODUCT_GAPS_AND_MISSING.md).
 
-**Last validated against codebase:** 2026-09-04 (items **#1**, **#10**, and **#12** closed).
+**Last validated against codebase:** 2026-09-04 (items **#1**, **#2**, **#10**, and **#12** closed).
 
 **Environment drift audit:** [check_env_vars_in_use.php?run=1](http://localhost/it-management/scripts/check_env_vars_in_use.php?run=1) (Admin session) — re-run after changing `.env.example` or `getenv()` reads. Canonical catalog: [`docs/ENV.md`](ENV.md).
 
@@ -51,18 +51,19 @@ Default run is **informational** (exit `0`). `php scripts/check_env_vars_in_use.
 
 ### 2. Authenticated vault encryption (AES-256-GCM)
 
-**Status:** **Open**
+**Status:** **Done**
 
-**Problem:** `itm_encrypt()` / `itm_decrypt()` in `config/config.php` use AES-256-CBC with random IV and **no authentication tag**. Tampered ciphertext is not cryptographically detected.
+**Problem:** `itm_encrypt()` / `itm_decrypt()` in `config/config.php` used AES-256-CBC with random IV and **no authentication tag**. Tampered ciphertext was not cryptographically detected.
 
-**Touch points:**
+**Shipped (2026-09-04):**
 
-- `config/config.php` — `itm_encrypt()`, `itm_decrypt()` (~lines 2450–2477)
-- All vault/SMTP/TOTP/LDAP/Stripe callers via `itm_encrypt()` (see `docs/VAULT.md`, `docs/report.md` cryptography section)
+- `config/config.php` — `itm_encrypt()` writes **`v2:`** + base64(`iv` ‖ 16-byte `tag` ‖ `ciphertext`) with **AES-256-GCM**; `itm_decrypt()` routes `v2:` to `itm_decrypt_v2_gcm()` and legacy base64 CBC to `itm_decrypt_v1_cbc()` unchanged
+- `docs/VAULT.md` — ciphertext format table (v2 GCM vs v1 CBC)
+- PHPUnit `ItmEncryptDecryptTest` — v2 prefix, legacy v1 read, tamper rejection
 
-**Acceptance:** New writes use versioned prefix `v2:` + base64(iv ‖ tag ‖ ciphertext) with `aes-256-gcm`; `itm_decrypt()` reads legacy v1 (CBC) rows unchanged. Add `php scripts/verify_vault_gcm.php` round-trip + legacy read.
+**Regression:** `php scripts/verify_vault_gcm.php` — exit `0`. Browser: [verify_vault_gcm.php?run=1](http://localhost/it-management/scripts/verify_vault_gcm.php?run=1) (Administrator session). Also: `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php --filter ItmEncryptDecrypt`.
 
-**Do not** change the vault re-encryption pipeline or master-key rotation flows without an explicit request — GCM must remain backward-compatible with existing rows.
+**Note:** Master-key rotation / re-encryption pipelines unchanged — they call `itm_encrypt()` and therefore emit v2 on rewrite without separate migration.
 
 ---
 
@@ -234,11 +235,9 @@ Browser filter on the same runner: [run_tests.php?run=1&mode=standard&skip_db=1&
 
 ## Suggested sequencing
 
-1. **#2** — vault GCM (`verify_vault_gcm.php`).
-2. **#3** — can ride with either P1 PR.
-3. **#4** + **#11** — same PR (chokepoint + docs).
-4. **#5** + **#6** — prod hardening pair.
-5. **#12** — can ride with doc-only PRs touching integration examples or `.env.example`.
+1. **#3** — remove last `escape_sql()` POST paths (can ride standalone).
+2. **#4** + **#11** — same PR (chokepoint + docs).
+3. **#5** + **#6** — prod hardening pair.
 
 ---
 

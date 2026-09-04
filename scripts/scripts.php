@@ -2962,6 +2962,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed ui_configuration">
+                    <td><a href="verify_vault_gcm.php" target="_blank" rel="nofollow noreferrer">verify_vault_gcm.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression: <code>itm_encrypt()</code> / <code>itm_decrypt()</code> v2 AES-256-GCM (<code>v2:</code> prefix), legacy v1 CBC read, tamper rejection.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_vault_gcm.php</code></td>
+                </tr>
+                <tr data-tags="Mixed ui_configuration">
                     <td><a href="verify_api_key_hashing.php" target="_blank" rel="nofollow noreferrer">verify_api_key_hashing.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ui_configuration</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
