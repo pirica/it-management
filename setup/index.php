@@ -41,6 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'step1_preview') {
+        header('Content-Type: application/json; charset=utf-8');
+        $payload = itm_setup_wizard_step1_preview_payload((string)($_POST['project_root'] ?? ''), true);
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     if ($action === 'step1_save') {
         $projectRootRaw = (string)($_POST['project_root'] ?? '');
         $rootCheck = itm_setup_wizard_provision_project_root($projectRootRaw);
@@ -292,6 +299,8 @@ $dbName = (string)($dbDefaults['name'] ?? $envFile['DB_NAME'] ?? 'itmanagement')
 $appUrl = (string)($state['itm_app_url'] ?? $envFile['ITM_APP_URL'] ?? $paths['base_url']);
 $projectRootInput = itm_setup_wizard_project_root_input_value();
 $projectRootPreview = itm_setup_wizard_preview_project_root_path($projectRootInput);
+$step1DocumentRoot = itm_setup_wizard_resolve_step1_document_root($projectRootPreview);
+$step1DocrootAligned = itm_setup_wizard_docroot_aligned($projectRootPreview, $step1DocumentRoot);
 $step1PreviewConfig = $currentStep === 1 ? itm_setup_wizard_step1_preview_config() : [];
 $appEnv = (string)($state['app_env'] ?? $envFile['APP_ENV'] ?? 'development');
 $extensions = itm_setup_wizard_extension_matrix();
@@ -337,6 +346,11 @@ header('Content-Type: text/html; charset=utf-8');
         th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); }
         .ok { color:var(--ok); } .warn { color:var(--warn); } .bad { color:var(--err); }
         code { background:#0d1117; padding:2px 6px; border-radius:4px; }
+        .setup-project-root-row { display:flex; gap:8px; align-items:stretch; }
+        .setup-project-root-row input[type=text] { flex:1; margin:0; }
+        .setup-project-root-row .btn { flex:0 0 auto; min-width:48px; }
+        #setup-step1-preview-status.ok { color:var(--ok); }
+        #setup-step1-preview-status.bad { color:var(--err); }
         @media (max-width:900px) { .grid { grid-template-columns:1fr; } .row { grid-template-columns:1fr; } }
     </style>
 </head>
@@ -377,20 +391,24 @@ header('Content-Type: text/html; charset=utf-8');
                     <input type="hidden" name="wizard_action" value="step1_save">
                     <input type="hidden" name="step" value="1">
                     <label for="project_root">Project root</label>
-                    <input type="text" id="project_root" name="project_root" value="<?php echo sanitize($projectRootInput); ?>" required>
-                    <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. Use Windows backslashes after the drive letter (example: <code>C:\laragon\www\it-management3</code>). If backslashes were stripped when pasting, the wizard tries to rebuild the path from your current install location. When the path does not exist, the wizard creates it and downloads <code>pirica/it-management</code> from GitHub. If the folder already exists, step 1 fails — use the auto-detected current install path for in-place setup.</p>
+                    <div class="setup-project-root-row">
+                        <input type="text" id="project_root" name="project_root" value="<?php echo sanitize($projectRootInput); ?>" required>
+                        <button type="button" class="btn btn-primary" id="setup-step1-save-preview" title="Save">💾</button>
+                    </div>
+                    <p id="setup-step1-preview-status" class="sub" style="margin-top:8px;" aria-live="polite"></p>
+                    <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. Use Windows backslashes after the drive letter (example: <code>C:\laragon\www\it-management3</code>). Click <strong>💾</strong> to validate the folder and refresh the preview rows below. When the path does not exist, the wizard creates it and downloads <code>pirica/it-management</code> from GitHub on Continue. If the folder already exists, step 1 fails — use the auto-detected current install path for in-place setup.</p>
                     <table>
                         <tr><th>Auto-detect</th><td><code id="setup-auto-detect-path"><?php echo sanitize($projectRootPreview); ?></code></td></tr>
-                        <tr><th>Document root</th><td><code id="setup-document-root-path"><?php echo sanitize($paths['document_root'] !== '' ? $paths['document_root'] : '(not detected)'); ?></code></td></tr>
+                        <tr><th>Document root</th><td><code id="setup-document-root-path"><?php echo sanitize($step1DocumentRoot !== '' ? $step1DocumentRoot : '(not detected)'); ?></code></td></tr>
                         <tr><th>Detected BASE_URL</th><td><code id="setup-detected-base-url"><?php echo sanitize($paths['base_url']); ?></code></td></tr>
-                        <tr><th>Docroot aligned</th><td id="setup-docroot-aligned"><?php echo $paths['docroot_aligned'] === 'yes' ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
+                        <tr><th>Docroot aligned</th><td id="setup-docroot-aligned"><?php echo $step1DocrootAligned ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
                     </table>
                     <label for="itm_app_url">Public application URL (ITM_APP_URL)</label>
                     <input type="text" id="itm_app_url" name="itm_app_url" value="<?php echo sanitize($appUrl); ?>" required>
                     <label for="install_notes">Install notes (optional)</label>
                     <textarea id="install_notes" name="install_notes" rows="3" placeholder="e.g. Laragon alias /it-management/"><?php echo sanitize((string)($state['install_notes'] ?? '')); ?></textarea>
                     <div class="actions">
-                        <button class="btn btn-primary" type="submit" title="Save">Continue</button>
+                        <button class="btn btn-primary" type="submit" title="Continue">Continue</button>
                     </div>
                 </form>
 
@@ -593,152 +611,93 @@ header('Content-Type: text/html; charset=utf-8');
         </main>
     </div>
 </div>
-<?php if ($currentStep === 1 && !empty($step1PreviewConfig)): ?>
+<?php if ($currentStep === 1): ?>
 <script>
 (function () {
-    var cfg = <?php echo json_encode($step1PreviewConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    var form = document.querySelector('form input[name="wizard_action"][value="step1_save"]');
+    form = form ? form.closest('form') : null;
     var input = document.getElementById('project_root');
     var preview = document.getElementById('setup-auto-detect-path');
     var aligned = document.getElementById('setup-docroot-aligned');
     var appUrlInput = document.getElementById('itm_app_url');
     var detectedBaseUrl = document.getElementById('setup-detected-base-url');
-    if (!input || !preview) {
+    var documentRootEl = document.getElementById('setup-document-root-path');
+    var saveBtn = document.getElementById('setup-step1-save-preview');
+    var statusEl = document.getElementById('setup-step1-preview-status');
+    if (!form || !input || !preview || !saveBtn) {
         return;
     }
 
-    function collapseToken(value) {
-        return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    function applyPreview(data) {
+        if (data.projectRoot) {
+            input.value = data.projectRoot;
+        }
+        preview.textContent = data.autoDetect || data.projectRoot || '—';
+        if (documentRootEl) {
+            documentRootEl.textContent = data.documentRoot || '—';
+        }
+        if (detectedBaseUrl) {
+            detectedBaseUrl.textContent = data.baseUrl || '';
+        }
+        if (appUrlInput) {
+            appUrlInput.value = data.appUrl || '';
+        }
+        if (aligned) {
+            aligned.innerHTML = data.docrootAlignedHtml || '';
+        }
+        if (statusEl) {
+            statusEl.textContent = data.message || '';
+            statusEl.className = 'sub ' + (data.ok ? 'ok' : 'bad');
+        }
     }
 
-    function formatWindowsPath(path) {
-        if (/^[A-Za-z]:/.test(path)) {
-            return path.replace(/\//g, '\\');
-        }
-
-        return path.replace(/\\/g, '/');
-    }
-
-    function repairWindowsPath(inputValue) {
-        var value = String(inputValue || '').trim();
-        if (!value) {
-            return '';
-        }
-        if (/^[A-Za-z]:[\\/].+/.test(value) || value.indexOf('\\\\') === 0) {
-            return formatWindowsPath(value);
-        }
-        var match = /^([A-Za-z]):(.*)$/s.exec(value);
-        if (!match) {
-            return value;
-        }
-        var drive = match[1];
-        var rest = match[2];
-        var detected = cfg.runtimeRoot || '';
-        if (!/^[A-Za-z]:[\\/]/.test(detected)) {
-            return drive + ':\\' + rest.replace(/^[\\/]+/, '');
-        }
-        var restCollapsed = collapseToken(rest);
-        if (!restCollapsed) {
-            return detected;
-        }
-        var parentCollapsed = cfg.parentCollapsed || '';
-        var baseCollapsed = cfg.baseCollapsed || '';
-        var detectedTailCollapsed = collapseToken(detected.replace(/^[A-Za-z]:[\\/]?/, ''));
-        if (restCollapsed === detectedTailCollapsed) {
-            return detected;
-        }
-        if (parentCollapsed && restCollapsed === parentCollapsed) {
-            return cfg.parentPath || detected;
-        }
-        if (parentCollapsed && restCollapsed.indexOf(parentCollapsed) === 0) {
-            var folderCollapsed = restCollapsed.slice(parentCollapsed.length);
-            if (folderCollapsed && baseCollapsed && folderCollapsed.indexOf(baseCollapsed) === 0) {
-                var extra = folderCollapsed.slice(baseCollapsed.length);
-                return (cfg.parentPath || '') + '\\' + (cfg.baseName || '') + extra;
+    function savePreview() {
+        var csrfInput = form.querySelector('input[name="csrf_token"]');
+        if (!csrfInput || !csrfInput.value) {
+            if (statusEl) {
+                statusEl.textContent = 'Missing CSRF token — refresh the page.';
+                statusEl.className = 'sub bad';
             }
+            return;
         }
-        if (baseCollapsed) {
-            var suffixPattern = new RegExp(baseCollapsed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([0-9]*)$');
-            var suffixMatch = suffixPattern.exec(restCollapsed);
-            if (suffixMatch) {
-                return (cfg.parentPath || '') + '\\' + (cfg.baseName || '') + suffixMatch[1];
-            }
+        saveBtn.disabled = true;
+        if (statusEl) {
+            statusEl.textContent = 'Validating folder…';
+            statusEl.className = 'sub';
         }
-
-        return drive + ':\\' + rest;
-    }
-
-    function basenameFromPath(path) {
-        var normalized = String(path || '').replace(/\\/g, '/').replace(/\/+$/, '');
-        if (!normalized) {
-            return '';
-        }
-        var parts = normalized.split('/');
-        return parts[parts.length - 1] || '';
-    }
-
-    function ensureTrailingSlash(url) {
-        return String(url || '').replace(/\/?$/, '/');
-    }
-
-    function deriveAppUrl(repairedPath) {
-        var baseUrl = String(cfg.baseUrl || '');
-        var runtimeBase = String(cfg.runtimeBaseName || cfg.baseName || '');
-        var newBase = basenameFromPath(repairedPath);
-        if (!baseUrl || !newBase) {
-            return baseUrl;
-        }
-        if (!runtimeBase || newBase === runtimeBase) {
-            return ensureTrailingSlash(baseUrl);
-        }
-        try {
-            var parsed = new URL(baseUrl);
-            var path = parsed.pathname || '/';
-            var escaped = runtimeBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            var pattern = new RegExp('(^|/)' + escaped + '(?=/|$)');
-            if (pattern.test(path)) {
-                parsed.pathname = path.replace(pattern, '$1' + newBase);
-            } else {
-                var segments = path.split('/').filter(Boolean);
-                if (segments.length === 0) {
-                    parsed.pathname = '/' + newBase + '/';
-                } else {
-                    segments[segments.length - 1] = newBase;
-                    parsed.pathname = '/' + segments.join('/') + '/';
+        var body = new FormData();
+        body.append('csrf_token', csrfInput.value);
+        body.append('wizard_action', 'step1_preview');
+        body.append('project_root', input.value);
+        fetch(form.getAttribute('action') || window.location.href, {
+            method: 'POST',
+            body: body,
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    if (!response.ok) {
+                        throw new Error((data && data.message) ? data.message : 'Validation request failed.');
+                    }
+                    return data;
+                });
+            })
+            .then(function (data) {
+                applyPreview(data);
+            })
+            .catch(function (error) {
+                if (statusEl) {
+                    statusEl.textContent = error && error.message ? error.message : 'Validation request failed.';
+                    statusEl.className = 'sub bad';
                 }
-            }
-            return ensureTrailingSlash(parsed.toString());
-        } catch (e) {
-            var idx = baseUrl.lastIndexOf(runtimeBase);
-            if (idx !== -1) {
-                return ensureTrailingSlash(baseUrl.slice(0, idx) + newBase + baseUrl.slice(idx + runtimeBase.length));
-            }
-            return ensureTrailingSlash(baseUrl);
-        }
+            })
+            .finally(function () {
+                saveBtn.disabled = false;
+            });
     }
 
-    function updatePreview() {
-        var repaired = repairWindowsPath(input.value);
-        preview.textContent = repaired || '—';
-        var nextAppUrl = deriveAppUrl(repaired);
-        if (appUrlInput && nextAppUrl) {
-            appUrlInput.value = nextAppUrl;
-        }
-        if (detectedBaseUrl && nextAppUrl) {
-            detectedBaseUrl.textContent = nextAppUrl;
-        }
-        if (aligned && cfg.documentRoot) {
-            var docRoot = String(cfg.documentRoot).replace(/\\/g, '/').replace(/\/$/, '');
-            var project = String(repaired).replace(/\\/g, '/');
-            var isAligned = docRoot !== '' && project.toLowerCase().indexOf(docRoot.toLowerCase()) === 0;
-            aligned.innerHTML = isAligned
-                ? '<span class="ok">Yes</span>'
-                : '<span class="warn">Check Apache alias / virtual host</span>';
-        }
-    }
-
-    input.addEventListener('input', updatePreview);
-    input.addEventListener('change', updatePreview);
-    updatePreview();
+    saveBtn.addEventListener('click', savePreview);
 })();
 </script>
 <?php endif; ?>
