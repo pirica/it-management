@@ -1074,18 +1074,6 @@ if (!function_exists('itm_setup_wizard_h')) {
     }
 }
 
-if (!function_exists('itm_setup_wizard_h_wrappable_path_text')) {
-    /**
-     * Escape path-bearing text and insert <wbr> after directory separators so long paths wrap cleanly.
-     */
-    function itm_setup_wizard_h_wrappable_path_text(string $value): string
-    {
-        $escaped = itm_setup_wizard_h($value);
-
-        return str_replace(['\\', '/'], ['\\<wbr>', '/<wbr>'], $escaped);
-    }
-}
-
 if (!function_exists('itm_setup_wizard_format_path_display')) {
     function itm_setup_wizard_format_path_display(string $path): string
     {
