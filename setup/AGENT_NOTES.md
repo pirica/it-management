@@ -31,6 +31,8 @@ Touches the full schema when **Import database bundle** runs (`db/01_schema.sql`
 
 Eight steps (sidebar + main panel): install folder → verify files → database → extensions → settings → admin → sample data → finish.
 
+Step 1 exposes an editable **project root** field (pre-filled from PHP `ROOT_PATH`, formatted with Windows backslashes when applicable). The path must exist and contain `db/01_schema.sql`. It is stored in the wizard session and used for step 2 database-bundle checks; `.env` and upload hardening still target the runtime `ROOT_PATH` for the active request.
+
 All mutating POSTs use `itm_try_post_csrf()`. Emoji-only navigation buttons follow NO MIXED on back/submit controls.
 
 ## 6. API Actions (If Applicable)

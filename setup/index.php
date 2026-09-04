@@ -42,11 +42,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'step1_save') {
+        $projectRootRaw = (string)($_POST['project_root'] ?? '');
+        $rootCheck = itm_setup_wizard_validate_project_root_path($projectRootRaw);
+        if (!$rootCheck['ok']) {
+            itm_setup_wizard_state_set([
+                'project_root' => itm_setup_wizard_format_path_for_input($projectRootRaw),
+                'flash' => ['type' => 'error', 'message' => $rootCheck['message']],
+            ]);
+            header('Location: ' . BASE_URL . 'setup/index.php?step=1');
+            exit;
+        }
+
         $appUrl = rtrim(trim((string)($_POST['itm_app_url'] ?? '')), '/') . '/';
         if ($appUrl === '/') {
             $appUrl = itm_setup_wizard_detect_paths()['base_url'];
         }
         itm_setup_wizard_state_set([
+            'project_root' => $rootCheck['path'],
             'itm_app_url' => $appUrl,
             'install_notes' => trim((string)($_POST['install_notes'] ?? '')),
             'flash' => ['type' => 'success', 'message' => 'Install folder confirmed.'],
@@ -275,6 +287,7 @@ $dbUser = (string)($dbDefaults['user'] ?? $envFile['DB_USER'] ?? 'root');
 $dbPass = (string)($dbDefaults['pass'] ?? $envFile['DB_PASS'] ?? '');
 $dbName = (string)($dbDefaults['name'] ?? $envFile['DB_NAME'] ?? 'itmanagement');
 $appUrl = (string)($state['itm_app_url'] ?? $envFile['ITM_APP_URL'] ?? $paths['base_url']);
+$projectRootInput = itm_setup_wizard_project_root_input_value();
 $appEnv = (string)($state['app_env'] ?? $envFile['APP_ENV'] ?? 'development');
 $extensions = itm_setup_wizard_extension_matrix();
 $fileChecks = $state['file_checks'] ?? itm_setup_wizard_verify_files();
@@ -354,16 +367,19 @@ header('Content-Type: text/html; charset=utf-8');
             <?php if ($currentStep === 1): ?>
                 <h2>1. Select install folder</h2>
                 <p>Confirm where the application is deployed and the public base URL used for links and cookies.</p>
-                <table>
-                    <tr><th>Project root</th><td><code><?php echo sanitize($paths['project_root']); ?></code></td></tr>
-                    <tr><th>Document root</th><td><code><?php echo sanitize($paths['document_root'] !== '' ? $paths['document_root'] : '(not detected)'); ?></code></td></tr>
-                    <tr><th>Detected BASE_URL</th><td><code><?php echo sanitize($paths['base_url']); ?></code></td></tr>
-                    <tr><th>Docroot aligned</th><td><?php echo $paths['docroot_aligned'] === 'yes' ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
-                </table>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step1_save">
                     <input type="hidden" name="step" value="1">
+                    <label for="project_root">Project root</label>
+                    <input type="text" id="project_root" name="project_root" value="<?php echo sanitize($projectRootInput); ?>" required>
+                    <p class="sub" style="margin-top:0;">Absolute path to the IT Management folder (must contain <code>db/01_schema.sql</code>). On Windows use backslashes, e.g. <code>C:\laragon\www\it-management</code>.</p>
+                    <table>
+                        <tr><th>Auto-detected root</th><td><code><?php echo sanitize(itm_setup_wizard_format_path_for_input($paths['detected_project_root'])); ?></code></td></tr>
+                        <tr><th>Document root</th><td><code><?php echo sanitize($paths['document_root'] !== '' ? itm_setup_wizard_format_path_for_input($paths['document_root']) : '(not detected)'); ?></code></td></tr>
+                        <tr><th>Detected BASE_URL</th><td><code><?php echo sanitize($paths['base_url']); ?></code></td></tr>
+                        <tr><th>Docroot aligned</th><td><?php echo $paths['docroot_aligned'] === 'yes' ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
+                    </table>
                     <label for="itm_app_url">Public application URL (ITM_APP_URL)</label>
                     <input type="text" id="itm_app_url" name="itm_app_url" value="<?php echo sanitize($appUrl); ?>" required>
                     <label for="install_notes">Install notes (optional)</label>
