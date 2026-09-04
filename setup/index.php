@@ -442,6 +442,8 @@ $dbNeedsReplaceConfirm = !empty($dbProbe['needs_replace_confirm']);
 $dbExistingTableCount = (int)($dbProbe['table_count'] ?? 0);
 $folderProbe = isset($state['folder_probe']) && is_array($state['folder_probe']) ? $state['folder_probe'] : [];
 $folderNeedsReplaceConfirm = !empty($folderProbe['needs_replace_confirm']);
+$setupLoginUrl = rtrim(BASE_URL, '/') . '/login.php';
+$setupProdHardeningUrl = rtrim(BASE_URL, '/') . '/scripts/check_prod_hardening.php?run=1&enforce=1';
 $csrfToken = itm_get_csrf_token();
 
 header('Content-Type: text/html; charset=utf-8');
@@ -813,8 +815,8 @@ header('Content-Type: text/html; charset=utf-8');
                 <h2>8. Finish — remove setup entry point</h2>
                 <p>Writes <code>setup/.installed</code> and deletes <code>setup/index.php</code> so the installer cannot be reached from the web.</p>
                 <ul>
-                    <li>Run <code>php scripts/check_prod_hardening.php --enforce</code> before production go-live.</li>
-                    <li>Sign in at <a href="<?php echo sanitize(BASE_URL); ?>login.php"><?php echo sanitize(BASE_URL); ?>login.php</a></li>
+                    <li>Before production go-live, run the <a href="<?php echo sanitize($setupProdHardeningUrl); ?>" target="_blank" rel="noopener noreferrer">production hardening check</a> (<code>check_prod_hardening.php?run=1&amp;enforce=1</code> — Administrator session; open in a new browser tab).</li>
+                    <li>Sign in at <a href="<?php echo sanitize($setupLoginUrl); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($setupLoginUrl); ?></a> (open in a new browser tab).</li>
                 </ul>
                 <form method="post" onsubmit="return confirm('Delete setup/index.php and lock the installer?');">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
