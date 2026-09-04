@@ -245,20 +245,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         $connAfter = itm_setup_wizard_reload_connection();
         $tableCount = $connAfter instanceof mysqli ? itm_setup_wizard_count_tables($connAfter, $name) : 0;
+        $triggerCount = $connAfter instanceof mysqli ? itm_setup_wizard_count_triggers($connAfter, $name) : 0;
         $expected = itm_setup_wizard_expected_table_count();
+        $expectedTriggers = itm_setup_wizard_expected_trigger_count();
+        $importOk = $import['ok'] && $tableCount >= $expected && $triggerCount >= $expectedTriggers;
         itm_setup_wizard_state_set([
             'db_import' => $import,
             'table_count' => $tableCount,
+            'trigger_count' => $triggerCount,
             'flash' => [
-                'type' => ($import['ok'] && $tableCount >= $expected) ? 'success' : 'error',
-                'message' => $import['message'] . ' — tables: ' . $tableCount . '/' . $expected,
+                'type' => $importOk ? 'success' : 'error',
+                'message' => $import['message']
+                    . ' — tables: ' . $tableCount . '/' . $expected
+                    . '; triggers: ' . $triggerCount . '/' . $expectedTriggers,
             ],
         ]);
-        if ($import['ok'] && $tableCount >= $expected) {
+        if ($importOk) {
             itm_setup_wizard_mark_step_done(3);
             itm_setup_wizard_set_step(4);
         }
-        header('Location: ' . BASE_URL . 'setup/index.php?step=' . ($import['ok'] && $tableCount >= $expected ? 4 : 3));
+        header('Location: ' . BASE_URL . 'setup/index.php?step=' . ($importOk ? 4 : 3));
         exit;
     }
 
@@ -620,6 +626,9 @@ header('Content-Type: text/html; charset=utf-8');
                     <button class="btn btn-primary" type="submit" title="Import database">Import database bundle</button>
                     <?php if (!empty($state['table_count'])): ?>
                         <span class="ok">Tables: <?php echo (int)$state['table_count']; ?> / <?php echo itm_setup_wizard_expected_table_count(); ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($state['trigger_count'])): ?>
+                        <span class="ok">Triggers: <?php echo (int)$state['trigger_count']; ?> / <?php echo itm_setup_wizard_expected_trigger_count(); ?></span>
                     <?php endif; ?>
                 </form>
 

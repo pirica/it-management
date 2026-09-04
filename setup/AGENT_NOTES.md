@@ -33,7 +33,7 @@ Eight steps (sidebar + main panel): install folder → verify files → database
 
 Step 1 exposes an editable **project root** field with a **💾** save control (`title="Save"`). Clicking save POSTs `step1_preview` (JSON) to validate the folder without advancing, repair Windows slashes, persist the path to wizard session state when valid, and refresh **Auto-detect**, **Document root** (repaired `DOCUMENT_ROOT` display), **Detected BASE_URL**, **Docroot aligned**, and **ITM_APP_URL**. **Download** provisions/creates the folder (GitHub archive when missing), shows **Please wait...** while the POST runs, and moves to step 2. When the target folder already exists (and is not the current in-place install), Download requires browser `confirm()` plus POST `confirm_replace_folder=1` before wiping all files inside and re-downloading.
 
-Step 3 probes MySQL at the server level before selecting a schema. When the named database does not exist, **Test connection** returns an info flash (not raw `Unknown database`) and shows **Create database** (`step3_create_db`). When the schema exists with tables, import requires browser `confirm()` plus POST `confirm_replace=1`; the wizard **DROP DATABASE** + recreates the schema before `01_schema → 02_data → 03_triggers` import. Custom `DB_NAME` values rewrite canonical `` `itmanagement` `` DDL in the import bundle so tables land in the selected schema (mysqli first, mysql CLI via `proc_open` fallback with stderr detail).
+Step 3 probes MySQL at the server level before selecting a schema. When the named database does not exist, **Test connection** returns an info flash (not raw `Unknown database`) and shows **Create database** (`step3_create_db`). When the schema exists with tables, import requires browser `confirm()` plus POST `confirm_replace=1`; the wizard **DROP DATABASE** + recreates the schema before `01_schema → 02_data → 03_triggers` import. Custom `DB_NAME` values rewrite canonical `` `itmanagement` `` DDL in the import bundle so tables land in the selected schema. Import uses DELIMITER-aware mysqli execution (required for `03_triggers.sql`); mysql CLI via `proc_open` array command + `MYSQL_EXE`/`itm_resolve_cli_mysql_binary()` is the fallback when mysqli import fails. Success requires expected table and trigger counts from `information_schema`.
 
 Step 2 always re-runs file verification on page load (no stale cached `file_checks` from a prior runtime path). Writable upload paths and the **Confirmed project root** header resolve via `itm_setup_wizard_project_root()`, which repairs collapsed Windows session paths (e.g. `C:Users…it-management2`) and, after step 1 is complete, never falls back to the PHP runtime install folder when the session path differs.
 
@@ -62,7 +62,7 @@ Step 5 may set `enable_all_error_reporting` on all `ui_configuration` rows when 
 
 ## 10. Known Pitfalls
 
-- Large `db/` import via `mysqli_multi_query` may fail when `max_allowed_packet` is low — wizard falls back to `mysql` CLI when mysqli import fails.
+- Large `db/` import may fail when `max_allowed_packet` is low — wizard falls back to `mysql` CLI when mysqli import fails. `03_triggers.sql` uses `DELIMITER $$` blocks; mysqli import must use `itm_database_migrations_execute_sql_text()` (not `mysqli_multi_query`).
 - Step 8 self-deletes `index.php`; keep `setup/.installed` for lock detection.
 - Do not leave the wizard reachable in production — run [check_prod_hardening.php?run=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1) before go-live.
 
@@ -72,7 +72,7 @@ Manual: [setup/index.php](http://localhost/it-management/setup/index.php) (no lo
 
 Regression: `php scripts/verify_setup_wizard_project_root.php` — collapsed Windows path repair, step 1 session root vs runtime fallback, step 2 upload subdirectories.
 
-Regression: `php scripts/verify_setup_wizard_database.php` — step 3 `itm_setup_wizard_probe_database()`, SQL bundle rewrite for custom `DB_NAME`, create/reset helpers, `needs_create` / `needs_replace_confirm` flags (requires MySQL; skips live create tests when server unreachable).
+Regression: `php scripts/verify_setup_wizard_database.php` — step 3 `itm_setup_wizard_probe_database()`, SQL bundle rewrite for custom `DB_NAME`, create/reset helpers, `needs_create` / `needs_replace_confirm` flags, mysqli import + trigger count on empty schema (requires MySQL; skips live create tests when server unreachable).
 
 After finish: `login.php` with rotated admin credentials.
 

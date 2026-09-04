@@ -1528,6 +1528,9 @@ if (!function_exists('itm_setup_wizard_expected_table_count')) {
         if ($count !== null) {
             return $count;
         }
+        if (!function_exists('itm_database_sql_schema_path')) {
+            require_once ROOT_PATH . 'includes/itm_database_sql_source.php';
+        }
         $schemaPath = itm_database_sql_schema_path();
         if (!is_readable($schemaPath)) {
             $count = 0;
@@ -1537,6 +1540,59 @@ if (!function_exists('itm_setup_wizard_expected_table_count')) {
         $count = preg_match_all('/^CREATE TABLE/m', (string)file_get_contents($schemaPath));
 
         return (int)$count;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_triggers_sql_path')) {
+    function itm_setup_wizard_triggers_sql_path(): string
+    {
+        return rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '03_triggers.sql';
+    }
+}
+
+if (!function_exists('itm_setup_wizard_expected_trigger_count')) {
+    function itm_setup_wizard_expected_trigger_count(): int
+    {
+        static $count = null;
+        if ($count !== null) {
+            return $count;
+        }
+        $path = itm_setup_wizard_triggers_sql_path();
+        if (!is_readable($path)) {
+            $count = 0;
+
+            return $count;
+        }
+        $count = preg_match_all('/^CREATE TRIGGER/m', (string)file_get_contents($path));
+
+        return (int)$count;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_count_triggers')) {
+    function itm_setup_wizard_count_triggers(mysqli $conn, string $schema): int
+    {
+        $schema = trim($schema);
+        if ($schema === '') {
+            return 0;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT COUNT(*) AS cnt FROM information_schema.triggers WHERE trigger_schema = ?'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 's', $schema);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        if ($res) {
+            mysqli_free_result($res);
+        }
+        mysqli_stmt_close($stmt);
+
+        return (int)($row['cnt'] ?? 0);
     }
 }
 
@@ -1591,15 +1647,26 @@ if (!function_exists('itm_setup_wizard_import_via_shell')) {
         }
         $bundle = $bundleResult['sql'];
 
-        $mysqlBin = getenv('MYSQL_BIN') ?: 'mysql';
-        $cmd = sprintf(
-            '%s -h %s -P %d -u %s --default-character-set=utf8mb4 %s',
-            escapeshellarg($mysqlBin),
-            escapeshellarg($host),
-            $port,
-            escapeshellarg($user),
-            escapeshellarg($database)
-        );
+        if (!function_exists('itm_resolve_cli_mysql_binary')) {
+            require_once ROOT_PATH . 'includes/itm_cli_binary.php';
+        }
+
+        $mysqlBin = getenv('MYSQL_BIN') ?: '';
+        if ($mysqlBin === '' || !is_file($mysqlBin)) {
+            $mysqlBin = itm_resolve_cli_mysql_binary();
+        }
+
+        $cmd = [
+            $mysqlBin,
+            '-h',
+            $host,
+            '-P',
+            (string)$port,
+            '-u',
+            $user,
+            '--default-character-set=utf8mb4',
+            $database,
+        ];
 
         $env = $_ENV;
         if ($pass !== '') {
@@ -1640,6 +1707,21 @@ if (!function_exists('itm_setup_wizard_import_via_shell')) {
             return ['ok' => false, 'message' => $message];
         }
 
+        $expectedTriggers = itm_setup_wizard_expected_trigger_count();
+        if ($expectedTriggers > 0) {
+            $verifyConn = itm_mysqli_connect($host, $user, $pass, $database, $port);
+            if ($verifyConn instanceof mysqli) {
+                $triggerCount = itm_setup_wizard_count_triggers($verifyConn, $database);
+                mysqli_close($verifyConn);
+                if ($triggerCount < $expectedTriggers) {
+                    return [
+                        'ok' => false,
+                        'message' => '03_triggers.sql: expected ' . $expectedTriggers . ' triggers, found ' . $triggerCount,
+                    ];
+                }
+            }
+        }
+
         return ['ok' => true, 'message' => 'Imported db/ bundle via mysql CLI'];
     }
 }
@@ -1650,10 +1732,7 @@ if (!function_exists('itm_setup_wizard_import_via_mysqli')) {
      */
     function itm_setup_wizard_import_via_mysqli(mysqli $conn, string $database): array
     {
-        if (!function_exists('itm_database_migrations_execute_sql_file')) {
-            require_once ROOT_PATH . 'includes/itm_database_migrations.php';
-        }
-        if (!function_exists('itm_database_migrations_drain_multi_query')) {
+        if (!function_exists('itm_database_migrations_execute_sql_text')) {
             require_once ROOT_PATH . 'includes/itm_database_migrations.php';
         }
 
@@ -1669,16 +1748,30 @@ if (!function_exists('itm_setup_wizard_import_via_mysqli')) {
                 $sql = substr($sql, 3);
             }
             $sql = itm_setup_wizard_rewrite_sql_for_database($sql, $database);
-            if (!mysqli_multi_query($conn, $sql)) {
-                return ['ok' => false, 'message' => basename($file) . ': ' . mysqli_error($conn)];
-            }
-            [$drained, $drainError] = itm_database_migrations_drain_multi_query($conn);
-            if (!$drained) {
-                return ['ok' => false, 'message' => basename($file) . ': ' . $drainError];
+            [$executed, $executeError] = itm_database_migrations_execute_sql_text($conn, $sql);
+            if (!$executed) {
+                $detail = trim($executeError);
+                $message = basename($file);
+                if ($detail !== '') {
+                    $message .= ': ' . $detail;
+                }
+
+                return ['ok' => false, 'message' => $message];
             }
         }
 
         mysqli_query($conn, 'SET FOREIGN_KEY_CHECKS=1');
+
+        $expectedTriggers = itm_setup_wizard_expected_trigger_count();
+        if ($expectedTriggers > 0) {
+            $triggerCount = itm_setup_wizard_count_triggers($conn, $database);
+            if ($triggerCount < $expectedTriggers) {
+                return [
+                    'ok' => false,
+                    'message' => '03_triggers.sql: expected ' . $expectedTriggers . ' triggers, found ' . $triggerCount,
+                ];
+            }
+        }
 
         return ['ok' => true, 'message' => 'Imported db/ bundle via mysqli'];
     }

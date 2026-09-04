@@ -554,6 +554,71 @@ if (!function_exists('itm_database_migrations_drain_multi_query')) {
     }
 }
 
+if (!function_exists('itm_database_migrations_execute_sql_text')) {
+    /**
+     * Execute multi-statement SQL with DELIMITER blocks (e.g. db/03_triggers.sql).
+     *
+     * @return array{0: bool, 1: string}
+     */
+    function itm_database_migrations_execute_sql_text($conn, $sql)
+    {
+        if (!($conn instanceof mysqli)) {
+            return [false, 'No database connection.'];
+        }
+
+        $sql = (string)$sql;
+        if (trim($sql) === '') {
+            return [false, 'SQL text is empty.'];
+        }
+
+        $lines = preg_split('/\R/', $sql);
+        if ($lines === false) {
+            return [false, 'Could not parse SQL text.'];
+        }
+
+        $statement = '';
+        $delimiter = ';';
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if (preg_match('/^DELIMITER\s+(.+)$/i', $trimmed, $delimiterMatch) === 1) {
+                $delimiter = (string)$delimiterMatch[1];
+                continue;
+            }
+            if ($trimmed === '' || strpos($trimmed, '--') === 0 || strpos($trimmed, '/*') === 0 || strpos($trimmed, '*/') === 0) {
+                continue;
+            }
+
+            $statement .= $line . "\n";
+            $lineWithoutTrailingSpaces = rtrim($line);
+            $isStatementComplete = false;
+            if ($delimiter === ';') {
+                $isStatementComplete = substr($lineWithoutTrailingSpaces, -1) === ';';
+            } elseif (strlen($delimiter) > 0) {
+                $isStatementComplete = substr($lineWithoutTrailingSpaces, -strlen($delimiter)) === $delimiter;
+            }
+
+            if ($isStatementComplete) {
+                $statementToRun = rtrim($statement);
+                if ($delimiter !== ';' && strlen($delimiter) > 0 && substr($statementToRun, -strlen($delimiter)) === $delimiter) {
+                    $statementToRun = substr($statementToRun, 0, -strlen($delimiter));
+                }
+                $statementToRun = trim($statementToRun);
+                if ($statementToRun !== '' && !mysqli_query($conn, $statementToRun)) {
+                    return [false, mysqli_error($conn)];
+                }
+                $statement = '';
+            }
+        }
+
+        $tail = trim($statement);
+        if ($tail !== '' && !mysqli_query($conn, $tail)) {
+            return [false, mysqli_error($conn)];
+        }
+
+        return [true, ''];
+    }
+}
+
 if (!function_exists('itm_database_migrations_execute_sql_file')) {
     /**
      * @return array{0: bool, 1: string}
@@ -578,16 +643,7 @@ if (!function_exists('itm_database_migrations_execute_sql_file')) {
             $sql = substr($sql, 3);
         }
 
-        if (!mysqli_multi_query($conn, $sql)) {
-            return [false, mysqli_error($conn)];
-        }
-
-        [$drained, $drainError] = itm_database_migrations_drain_multi_query($conn);
-        if (!$drained) {
-            return [false, $drainError];
-        }
-
-        return [true, ''];
+        return itm_database_migrations_execute_sql_text($conn, $sql);
     }
 }
 
