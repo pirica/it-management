@@ -2,16 +2,16 @@
 
 Living register of **still-valid** items migrated from the retired GitHub Wiki page `TO-DO-3.md` (removed during the wiki sync — scratchpad retirement, not “all fixed”). For penetration-test status use [`docs/report.md`](report.md) and [`verify_pentest_report.php?run=1`](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) (Admin session). For product/feature gaps use [`docs/PRODUCT_GAPS_AND_MISSING.md`](PRODUCT_GAPS_AND_MISSING.md).
 
-**Last validated against codebase:** 2026-09-04 (PHPUnit pure-logic item #10 closed).
+**Last validated against codebase:** 2026-09-04 (items **#10** and **#12** closed).
 
 **Environment drift audit:** [check_env_vars_in_use.php?run=1](http://localhost/it-management/scripts/check_env_vars_in_use.php?run=1) (Admin session) — re-run after changing `.env.example` or `getenv()` reads. Canonical catalog: [`docs/ENV.md`](ENV.md).
 
-| Category | Count (2026-09-03) | Notes |
+| Category | Count (2026-09-04) | Notes |
 |----------|-------------------|--------|
-| **IN USE + DOCUMENTED** | **26** | Keys in `.env.example` and read in app/scripts (includes `APP_ENV`, `ITM_DEV`) |
+| **IN USE + DOCUMENTED** | **33** | Keys in `.env.example` and read in app/scripts (includes optional Mailpit, SNMP, CSAT, Booking.com sandbox) |
 | **DOCUMENTED IN .env.example ONLY** | **0** | Would fail `--strict` |
-| **IN CODE — app/runtime, not in .env.example** | **17** | Strict drift — backlog **#12** |
-| **IN CODE — tooling / CI / scripts only** | **36** | Intentionally omitted from `.env.example` (classified in `scripts/lib/itm_env_vars_audit.php`) |
+| **IN CODE — app/runtime, not in .env.example** | **0** | Item **#12** closed |
+| **IN CODE — tooling / CI / scripts only** | **46** | Example credentials, PHPUnit memory, import CLI overrides, screenshot helpers (`itm_env_vars_audit_known_tooling_vars()`) |
 | **IN CODE — OS / host** | **2** | `PATH`, `WINDIR` |
 
 Default run is **informational** (exit `0`). `php scripts/check_env_vars_in_use.php --strict` exits `1` when example-only keys exist or app/runtime keys are undocumented — **not** wired into smoke CI today; use before tightening `.env.example` policy.
@@ -203,39 +203,20 @@ Browser filter on the same runner: [run_tests.php?run=1&mode=standard&skip_db=1&
 
 ### 12. Close `.env.example` drift for app/runtime env reads
 
-**Status:** **Open**
+**Status:** **Done**
 
-**Problem:** `php scripts/check_env_vars_in_use.php --strict` reports **17** app/runtime keys read in code but missing from `.env.example` (informational default run still exit `0`). Operators and Laragon installs that copy only `.env.example` get no comment for Mailpit, SNMP, CSAT HMAC, Booking.com sandbox URL, PHPUnit memory, or api-examples integration keys.
+**Problem:** `php scripts/check_env_vars_in_use.php --strict` reported app/runtime keys read in code but missing from `.env.example` (Mailpit, SNMP, CSAT HMAC, Booking.com sandbox URL) plus example-only / tooling keys (`ITM_API_V2_*`, `ITM_DIST_*`, PHPUnit memory, screenshot helpers, `MYSQL_BIN`). Unused `DB_CONNECTION` in `.env.example` also failed strict.
 
-**Touch points:**
+**Acceptance:** `php scripts/check_env_vars_in_use.php --strict` exits `0` or remaining keys are explicitly classified (tooling allowlist + `docs/ENV.md`).
 
-- `.env.example` — add commented optional keys **or** document deliberate omission with cross-links
-- `docs/ENV.md` — optional-keys table for runtime secrets not in example file today
-- `api-examples/` — `ITM_API_V2_*`, `ITM_DIST_*` are example-script credentials (document in `api-examples/README` or ENV optional section, not production `.env` unless integrating)
-- `includes/itm_inbound_email_tickets.php` — `ITM_MAILPIT_API_URL`, `ITM_MAILPIT_SMTP_HOST`, `ITM_MAILPIT_SMTP_PORT`
-- `includes/itm_network_discovery.php` — `ITM_NETWORK_DISCOVERY_SNMP_COMMUNITY`
-- `includes/itm_ticket_csat.php` — `ITM_TICKET_CSAT_SECRET`
-- `includes/itm_hotel_booking_distribution_booking_com_connect.php` — `ITM_BOOKING_COM_SANDBOX_URL`
-- `scripts/import_database_split.php` — `MYSQL_BIN` (CLI override; distinct from `MYSQL_EXE` in example)
-- `scripts/run_tests.php` — `ITM_PHPUNIT_MEMORY_LIMIT`
-- Screenshot helpers — `ITM_HOSPITALITY_SCREENSHOT_DIR`, `ITM_SCREENSHOT_FORM_LOGIN` (QA-only; keep out of production `.env` or mark tooling in audit lib)
+**Shipped (2026-09-04):**
 
-**Undocumented app/runtime keys (2026-09-03):**
+- `.env.example` — commented optional blocks for Mailpit, SNMP community, legacy CSAT secret, Booking.com sandbox; `MYSQL_BIN` comment next to `MYSQL_EXE`; removed unused `DB_CONNECTION`
+- `scripts/lib/itm_env_vars_audit.php` — tooling allowlist for API v2 / hotel distribution example credentials, PHPUnit memory, hospitality screenshot helpers, `MYSQL_BIN`
+- `docs/ENV.md` — optional-runtime and tooling-key tables; strict audit green
+- `api-examples/AGENT_NOTES.md` — example env var contract
 
-| Variable | Primary use | Suggested action |
-|----------|-------------|------------------|
-| `ITM_API_V2_KEY` | API v2 example scripts | Comment block in `.env.example` + `docs/API_V2.md` / api-examples header |
-| `ITM_API_V2_EQUIPMENT_ID`, `ITM_API_V2_TICKET_ID`, `ITM_API_V2_EQUIPMENT_STATUS_ID`, `ITM_API_V2_EQUIPMENT_TYPE_ID` | API v2 examples | Same — example-only |
-| `ITM_DIST_API_KEY`, `ITM_DIST_EXTERNAL_RESERVATION_ID` | Hotel distribution api-examples | `docs/HOTEL_BOOKING_DISTRIBUTION.md` + optional `.env.example` comments |
-| `ITM_MAILPIT_API_URL`, `ITM_MAILPIT_SMTP_HOST`, `ITM_MAILPIT_SMTP_PORT` | Local inbound email → tickets | Add to `.env.example` (Mailpit local dev) |
-| `ITM_NETWORK_DISCOVERY_SNMP_COMMUNITY` | Network discovery SNMP default | Add commented optional key |
-| `ITM_TICKET_CSAT_SECRET` | Legacy CSAT token HMAC | Add commented optional key |
-| `ITM_BOOKING_COM_SANDBOX_URL` | Booking.com connect sandbox | Add commented optional key |
-| `MYSQL_BIN` | `import_database_split.php` CLI path override | Document next to `MYSQL_EXE` or add to tooling allowlist |
-| `ITM_PHPUNIT_MEMORY_LIMIT` | PHPUnit runner | Document in `scripts/SCRIPTS.md` or tooling allowlist |
-| `ITM_HOSPITALITY_SCREENSHOT_DIR`, `ITM_SCREENSHOT_FORM_LOGIN` | Playwright hospitality shots | Tooling allowlist or screenshot docs only |
-
-**Acceptance:** `php scripts/check_env_vars_in_use.php --strict` exits `0` **or** remaining keys are explicitly classified (tooling allowlist in `itm_env_vars_audit_known_tooling_vars()` with rationale in `docs/ENV.md`). Update the snapshot table at the top of this file when counts change.
+**Regression:** `php scripts/check_env_vars_in_use.php --strict` → exit `0` (33 matched, 0 app drift, 46 tooling). Browser: [check_env_vars_in_use.php?run=1&strict=1](http://localhost/it-management/scripts/check_env_vars_in_use.php?run=1&strict=1) (Administrator session).
 
 ---
 

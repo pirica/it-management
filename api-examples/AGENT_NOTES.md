@@ -6,6 +6,7 @@ Standalone reference scripts demonstrating how to interact with the system's JSO
 ## 4. Business Rules (Critical for Agents)
 - **Reference Only**: These scripts are examples and should not be used as part of the core application logic.
 - **Authentication**: Session + CSRF for legacy module JSON/import paths; API v2 examples use paid-tier `X-API-Key` only (no session).
+- **Environment variables (example-only — not in `.env.example`):** set in your shell or a local `.env` when running samples; classified as tooling in `scripts/lib/itm_env_vars_audit.php`. API v2: `ITM_API_V2_KEY`, `ITM_API_V2_TICKET_ID`, `ITM_API_V2_EQUIPMENT_ID`, `ITM_API_V2_EQUIPMENT_STATUS_ID`, `ITM_API_V2_EQUIPMENT_TYPE_ID` — see `docs/API_V2.md`. Hotel distribution: `ITM_DIST_API_KEY`, `ITM_DIST_EXTERNAL_RESERVATION_ID` — see `docs/HOTEL_BOOKING_DISTRIBUTION.md`.
 
 ## 7. File Structure
 - **authenticate.php** — full login, session cookie, and CSRF acquisition flow.
