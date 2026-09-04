@@ -270,7 +270,205 @@ if (!function_exists('itm_setup_wizard_step1_preview_config')) {
             'baseCollapsed' => itm_setup_wizard_collapse_path_token(basename($runtime)),
             'runtimeBaseName' => basename($runtime),
             'baseUrl' => $baseUrl,
-            'documentRoot' => itm_setup_wizard_preview_project_root_path((string)($_SERVER['DOCUMENT_ROOT'] ?? '')),
+            'documentRoot' => itm_setup_wizard_preview_document_root(),
+        ];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_preview_document_root')) {
+    function itm_setup_wizard_preview_document_root(): string
+    {
+        $raw = trim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''));
+        if ($raw === '') {
+            return '';
+        }
+
+        if (preg_match('/^[A-Za-z]:[\\\\\\/].+/', $raw)) {
+            return itm_setup_wizard_format_path_for_input($raw);
+        }
+
+        if (preg_match('/^[A-Za-z]:/', $raw)) {
+            $runtime = itm_setup_wizard_detected_project_root();
+            $runtimeParent = dirname($runtime);
+            $rawCollapsed = itm_setup_wizard_collapse_path_token($raw);
+            if ($rawCollapsed === itm_setup_wizard_collapse_path_token($runtimeParent)) {
+                return itm_setup_wizard_format_path_for_input($runtimeParent);
+            }
+            if ($rawCollapsed === itm_setup_wizard_collapse_path_token($runtime)) {
+                return itm_setup_wizard_format_path_for_input($runtime);
+            }
+            $repaired = itm_setup_wizard_repair_windows_path_input($raw);
+            if ($repaired !== $raw) {
+                return itm_setup_wizard_format_path_for_input($repaired);
+            }
+        }
+
+        return itm_setup_wizard_preview_project_root_path($raw);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_resolve_step1_document_root')) {
+    function itm_setup_wizard_resolve_step1_document_root(string $repairedProjectRoot): string
+    {
+        $serverRoot = itm_setup_wizard_preview_document_root();
+        if ($repairedProjectRoot !== '' && $serverRoot !== '' && itm_setup_wizard_docroot_aligned($repairedProjectRoot, $serverRoot)) {
+            return $serverRoot;
+        }
+
+        $normalized = itm_setup_wizard_normalize_path_input($repairedProjectRoot);
+        if ($normalized === '') {
+            return $serverRoot;
+        }
+
+        $parent = dirname($normalized);
+        if ($parent !== '' && $parent !== '.' && itm_setup_wizard_docroot_aligned($repairedProjectRoot, $parent)) {
+            return itm_setup_wizard_format_path_for_input($parent);
+        }
+
+        return $serverRoot;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_docroot_aligned')) {
+    function itm_setup_wizard_docroot_aligned(string $projectRoot, string $documentRoot): bool
+    {
+        if ($projectRoot === '' || $documentRoot === '') {
+            return false;
+        }
+
+        $project = str_replace('\\', '/', $projectRoot);
+        $docRoot = rtrim(str_replace('\\', '/', $documentRoot), '/');
+
+        return stripos($project, $docRoot) === 0;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_derive_app_url_from_project_root')) {
+    function itm_setup_wizard_derive_app_url_from_project_root(string $repairedPath): string
+    {
+        $baseUrl = defined('BASE_URL') ? rtrim((string)BASE_URL, '/') . '/' : '';
+        if ($baseUrl === '') {
+            return '';
+        }
+
+        $runtimeBase = basename(itm_setup_wizard_detected_project_root());
+        $normalized = str_replace('\\', '/', rtrim($repairedPath, '/\\'));
+        $parts = explode('/', $normalized);
+        $newBase = $parts !== [] ? (string)end($parts) : '';
+        if ($newBase === '' || $newBase === $runtimeBase) {
+            return $baseUrl;
+        }
+
+        $parsed = parse_url($baseUrl);
+        if (!is_array($parsed) || empty($parsed['scheme']) || empty($parsed['host'])) {
+            $pos = strrpos($baseUrl, $runtimeBase);
+            if ($pos !== false) {
+                return rtrim(substr_replace($baseUrl, $newBase, $pos, strlen($runtimeBase)), '/') . '/';
+            }
+
+            return $baseUrl;
+        }
+
+        $path = $parsed['path'] ?? '/';
+        $escaped = preg_quote($runtimeBase, '/');
+        if (preg_match('/(^|\/)' . $escaped . '(?=\/|$)/', $path)) {
+            $path = preg_replace('/(^|\/)' . $escaped . '(?=\/|$)/', '$1' . $newBase, $path);
+        } else {
+            $segments = array_values(array_filter(explode('/', $path)));
+            if ($segments === []) {
+                $path = '/' . $newBase . '/';
+            } else {
+                $segments[count($segments) - 1] = $newBase;
+                $path = '/' . implode('/', $segments) . '/';
+            }
+        }
+
+        $port = isset($parsed['port']) ? ':' . (int)$parsed['port'] : '';
+
+        return $parsed['scheme'] . '://' . $parsed['host'] . $port . $path;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_assess_project_root_for_step1')) {
+    /**
+     * @return array{ok:bool,message:string}
+     */
+    function itm_setup_wizard_assess_project_root_for_step1(string $normalized): array
+    {
+        if ($normalized === '') {
+            return ['ok' => false, 'message' => 'Project root is required.'];
+        }
+
+        if (!itm_setup_wizard_is_safe_project_root_path($normalized)) {
+            return [
+                'ok' => false,
+                'message' => 'Enter a valid absolute path (example: C:\\laragon\\www\\it-management). Use backslashes after the drive letter.',
+            ];
+        }
+
+        $runtimeRoot = itm_setup_wizard_detected_project_root();
+        $resolved = realpath($normalized);
+        if ($resolved !== false && is_dir($resolved)) {
+            if (itm_setup_wizard_paths_equal($resolved, $runtimeRoot) && itm_setup_wizard_project_root_has_schema($resolved)) {
+                return ['ok' => true, 'message' => 'Current install folder is valid.'];
+            }
+
+            return [
+                'ok' => false,
+                'message' => 'Project root folder already exists. Choose a path that does not exist yet, or keep the auto-detected current install path.',
+            ];
+        }
+
+        $parent = dirname($normalized);
+        if (!is_dir($parent)) {
+            return [
+                'ok' => false,
+                'message' => 'Parent folder does not exist: ' . itm_setup_wizard_format_path_display($parent),
+            ];
+        }
+        if (!is_writable($parent)) {
+            return [
+                'ok' => false,
+                'message' => 'Parent folder is not writable: ' . itm_setup_wizard_format_path_display($parent),
+            ];
+        }
+
+        return ['ok' => true, 'message' => 'New folder path accepted — folder will be created when you Continue.'];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_step1_preview_payload')) {
+    /**
+     * @return array<string, mixed>
+     */
+    function itm_setup_wizard_step1_preview_payload(string $input, bool $persistState = true): array
+    {
+        $repaired = itm_setup_wizard_preview_project_root_path($input);
+        $normalized = itm_setup_wizard_normalize_path_input($input);
+        $validation = itm_setup_wizard_assess_project_root_for_step1($normalized);
+        $documentRoot = itm_setup_wizard_resolve_step1_document_root($repaired);
+        $appUrl = itm_setup_wizard_derive_app_url_from_project_root($repaired);
+        $aligned = itm_setup_wizard_docroot_aligned($repaired, $documentRoot);
+
+        if ($persistState && $validation['ok']) {
+            itm_setup_wizard_state_set([
+                'project_root' => $repaired,
+                'itm_app_url' => $appUrl,
+            ]);
+        }
+
+        return [
+            'ok' => $validation['ok'],
+            'message' => $validation['message'],
+            'projectRoot' => $repaired,
+            'autoDetect' => $repaired,
+            'documentRoot' => $documentRoot !== '' ? $documentRoot : '(not detected)',
+            'baseUrl' => $appUrl,
+            'appUrl' => $appUrl,
+            'docrootAligned' => $aligned,
+            'docrootAlignedHtml' => $aligned
+                ? '<span class="ok">Yes</span>'
+                : '<span class="warn">Check Apache alias / virtual host</span>',
         ];
     }
 }
@@ -847,7 +1045,7 @@ if (!function_exists('itm_setup_wizard_detect_paths')) {
     {
         $detectedRoot = itm_setup_wizard_detected_project_root();
         $projectRoot = itm_setup_wizard_project_root();
-        $documentRoot = itm_setup_wizard_preview_project_root_path((string)($_SERVER['DOCUMENT_ROOT'] ?? ''));
+        $documentRoot = itm_setup_wizard_preview_document_root();
         $projectRootDisplay = itm_setup_wizard_preview_project_root_path($projectRoot);
         $aligned = $documentRoot !== '' && $projectRootDisplay !== ''
             && stripos(
