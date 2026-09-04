@@ -409,6 +409,7 @@ $projectRootPreview = itm_setup_wizard_preview_project_root_path($projectRootInp
 $step1DocumentRoot = itm_setup_wizard_resolve_step1_document_root($projectRootPreview);
 $step1DocrootAligned = itm_setup_wizard_docroot_aligned($projectRootPreview, $step1DocumentRoot);
 $step1PreviewConfig = $currentStep === 1 ? itm_setup_wizard_step1_preview_config() : [];
+$localhostPortStatuses = $currentStep === 1 ? itm_setup_wizard_localhost_port_status_rows() : [];
 $appEnv = (string)($state['app_env'] ?? $envFile['APP_ENV'] ?? 'development');
 $extensions = itm_setup_wizard_extension_matrix();
 $fileChecks = $currentStep === 2
@@ -472,6 +473,16 @@ header('Content-Type: text/html; charset=utf-8');
         .setup-verify-table td:first-child { width: 2.5rem; vertical-align: top; }
         .setup-verify-table td.setup-path-cell { vertical-align: top; }
         .setup-verify-label { display: block; }
+        .setup-step1-localhost-ports {
+            margin-top: 16px;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(47,129,247,.06);
+        }
+        .setup-step1-localhost-ports .sub { margin-bottom: 8px; }
+        .setup-step1-localhost-ports table { margin-top: 0; }
+        .setup-step1-port-legend { color: var(--muted); font-size: .9rem; }
         .setup-project-root-row { display:flex; gap:8px; align-items:stretch; }
         .setup-project-root-row input[type=text] { flex:1; margin:0; }
         .setup-project-root-row .btn { flex:0 0 auto; min-width:48px; }
@@ -533,6 +544,18 @@ header('Content-Type: text/html; charset=utf-8');
                         <tr><th>Detected BASE_URL</th><td><code id="setup-detected-base-url"><?php echo sanitize($paths['base_url']); ?></code></td></tr>
                         <tr><th>Docroot aligned</th><td id="setup-docroot-aligned"><?php echo $step1DocrootAligned ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
                     </table>
+                    <div class="setup-step1-localhost-ports" aria-label="Localhost port status (informational)">
+                        <p class="sub">Localhost ports (informational only — does not block installation)</p>
+                        <p class="setup-step1-port-legend">🔴 Closed · 🟢 Open · ⭕ Unknown</p>
+                        <table>
+                            <?php foreach ($localhostPortStatuses as $portRow): ?>
+                                <tr>
+                                    <th>127.0.0.1:<?php echo (int)$portRow['port']; ?></th>
+                                    <td><?php echo itm_setup_wizard_h((string)$portRow['label']); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </table>
+                    </div>
                     <label for="itm_app_url">Public application URL (ITM_APP_URL)</label>
                     <input type="text" id="itm_app_url" name="itm_app_url" value="<?php echo sanitize($appUrl); ?>" required>
                     <label for="install_notes">Install notes (optional)</label>

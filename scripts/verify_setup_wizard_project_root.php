@@ -149,4 +149,34 @@ if ($hasRuntimeWarn) {
     setup_root_pass('Step 2 verify omits runtime-path mismatch warning');
 }
 
+$portLabels = [
+    'open' => itm_setup_wizard_localhost_port_status_label('open'),
+    'closed' => itm_setup_wizard_localhost_port_status_label('closed'),
+    'unknown' => itm_setup_wizard_localhost_port_status_label('unknown'),
+];
+if ($portLabels['open'] !== '🟢 Open' || $portLabels['closed'] !== '🔴 Closed' || $portLabels['unknown'] !== '⭕ Unknown') {
+    setup_root_fail('Localhost port status labels must map open/closed/unknown to emoji copy');
+} else {
+    setup_root_pass('Localhost port status labels use 🟢/🔴/⭕ copy');
+}
+
+$portRows = itm_setup_wizard_localhost_port_status_rows();
+if (count($portRows) !== 2 || (int)($portRows[0]['port'] ?? 0) !== 80 || (int)($portRows[1]['port'] ?? 0) !== 443) {
+    setup_root_fail('Localhost port status must include ports 80 and 443');
+} else {
+    setup_root_pass('Localhost port status rows include 80 and 443');
+}
+$portStatusInvalid = false;
+foreach ($portRows as $portRow) {
+    $status = (string)($portRow['status'] ?? '');
+    if (!in_array($status, ['open', 'closed', 'unknown'], true)) {
+        setup_root_fail('Localhost port probe must return open, closed, or unknown');
+        $portStatusInvalid = true;
+        break;
+    }
+}
+if (!$portStatusInvalid) {
+    setup_root_pass('Localhost port probe returns open, closed, or unknown');
+}
+
 exit($fail > 0 ? 1 : 0);
