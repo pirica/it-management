@@ -68,12 +68,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($appUrl === '/') {
             $appUrl = itm_setup_wizard_detect_paths()['base_url'];
         }
+        $mysqlPort = max(1, min(65535, (int)($_POST['mysql_port'] ?? 3306)));
         $successMessage = $rootCheck['message'] !== ''
             ? $rootCheck['message']
             : 'Install folder confirmed.';
         itm_setup_wizard_state_set([
             'project_root' => itm_setup_wizard_format_path_for_input($rootCheck['path']),
             'itm_app_url' => $appUrl,
+            'mysql_port' => $mysqlPort,
             'install_notes' => trim((string)($_POST['install_notes'] ?? '')),
             'file_checks' => null,
             'folder_probe' => ['needs_replace_confirm' => false],
@@ -113,7 +115,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'step3_test') {
         $host = trim((string)($_POST['db_host'] ?? '127.0.0.1'));
-        $port = (int)($_POST['db_port'] ?? 3306);
+        $port = max(1, min(65535, (int)($_POST['db_port'] ?? itm_setup_wizard_default_db_port(
+            null,
+            itm_setup_wizard_read_env_file(),
+            isset($state['mysql_port']) ? (int)$state['mysql_port'] : null
+        ))));
         $user = trim((string)($_POST['db_user'] ?? 'root'));
         $pass = (string)($_POST['db_pass'] ?? '');
         $name = trim((string)($_POST['db_name'] ?? 'itmanagement'));
@@ -140,7 +146,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'step3_create_db') {
         $host = trim((string)($_POST['db_host'] ?? '127.0.0.1'));
-        $port = (int)($_POST['db_port'] ?? 3306);
+        $port = max(1, min(65535, (int)($_POST['db_port'] ?? itm_setup_wizard_default_db_port(
+            null,
+            itm_setup_wizard_read_env_file(),
+            isset($state['mysql_port']) ? (int)$state['mysql_port'] : null
+        ))));
         $user = trim((string)($_POST['db_user'] ?? 'root'));
         $pass = (string)($_POST['db_pass'] ?? '');
         $name = trim((string)($_POST['db_name'] ?? 'itmanagement'));
@@ -162,7 +172,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'step3_import') {
         $db = $state['db'] ?? [];
         $host = (string)($db['host'] ?? trim((string)($_POST['db_host'] ?? '127.0.0.1')));
-        $port = (int)($db['port'] ?? (int)($_POST['db_port'] ?? 3306));
+        $port = max(1, min(65535, (int)($db['port'] ?? (int)($_POST['db_port'] ?? itm_setup_wizard_default_db_port(
+            null,
+            itm_setup_wizard_read_env_file(),
+            isset($state['mysql_port']) ? (int)$state['mysql_port'] : null
+        )))));
         $user = (string)($db['user'] ?? trim((string)($_POST['db_user'] ?? 'root')));
         $pass = (string)($db['pass'] ?? (string)($_POST['db_pass'] ?? ''));
         $name = (string)($db['name'] ?? trim((string)($_POST['db_name'] ?? 'itmanagement')));
@@ -397,9 +411,15 @@ $flash = $state['flash'] ?? ['type' => '', 'message' => ''];
 itm_setup_wizard_state_set(['flash' => ['type' => '', 'message' => '']]);
 
 $dbDefaults = $state['db'] ?? [];
-// Why: During install, DB creds live in wizard session only — do not pre-fill from a stale .env.
+// Why: During install, DB creds live in wizard session only — do not pre-fill password from a stale .env.
 $dbHost = (string)($dbDefaults['host'] ?? '127.0.0.1');
-$dbPort = (int)($dbDefaults['port'] ?? 3306);
+$step1MysqlPort = isset($state['mysql_port']) ? (int)$state['mysql_port'] : null;
+$dbPort = itm_setup_wizard_default_db_port(
+    isset($dbDefaults['port']) ? (int)$dbDefaults['port'] : null,
+    $envFile,
+    $step1MysqlPort
+);
+$step1MysqlPortValue = $step1MysqlPort !== null && $step1MysqlPort > 0 ? $step1MysqlPort : $dbPort;
 $dbUser = (string)($dbDefaults['user'] ?? 'root');
 $dbPass = (string)($dbDefaults['pass'] ?? '');
 $dbName = (string)($dbDefaults['name'] ?? 'itmanagement');
@@ -410,6 +430,7 @@ $step1DocumentRoot = itm_setup_wizard_resolve_step1_document_root($projectRootPr
 $step1DocrootAligned = itm_setup_wizard_docroot_aligned($projectRootPreview, $step1DocumentRoot);
 $step1PreviewConfig = $currentStep === 1 ? itm_setup_wizard_step1_preview_config() : [];
 $localhostPortStatuses = $currentStep === 1 ? itm_setup_wizard_localhost_port_status_rows() : [];
+$mysqlPortStatuses = $currentStep === 1 ? itm_setup_wizard_mysql_port_status_rows() : [];
 $appEnv = (string)($state['app_env'] ?? $envFile['APP_ENV'] ?? 'development');
 $extensions = itm_setup_wizard_extension_matrix();
 $fileChecks = $currentStep === 2
@@ -556,6 +577,20 @@ header('Content-Type: text/html; charset=utf-8');
                             <?php endforeach; ?>
                         </table>
                     </div>
+                    <label for="mysql_port">MySQL port</label>
+                    <input type="number" id="mysql_port" name="mysql_port" min="1" max="65535" value="<?php echo (int)$step1MysqlPortValue; ?>">
+                    <p class="sub">Used on step 3 for database connection. Dunebox usually <strong>3307</strong>; Laragon often <strong>3306</strong>. Match phpMyAdmin / <code>.env</code> <code>DB_PORT</code>.</p>
+                    <div class="setup-step1-localhost-ports" aria-label="MySQL port status (informational)">
+                        <p class="sub">MySQL listener probe on 127.0.0.1 (informational)</p>
+                        <table>
+                            <?php foreach ($mysqlPortStatuses as $portRow): ?>
+                                <tr>
+                                    <th><?php echo itm_setup_wizard_h((string)($portRow['endpoint'] ?? '')); ?></th>
+                                    <td><?php echo itm_setup_wizard_h((string)$portRow['label']); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </table>
+                    </div>
                     <label for="itm_app_url">Public application URL (ITM_APP_URL)</label>
                     <input type="text" id="itm_app_url" name="itm_app_url" value="<?php echo sanitize($appUrl); ?>" required>
                     <label for="install_notes">Install notes (optional)</label>
@@ -615,8 +650,8 @@ header('Content-Type: text/html; charset=utf-8');
                             <input type="text" id="db_host" name="db_host" value="<?php echo sanitize($dbHost); ?>">
                         </div>
                         <div>
-                            <label for="db_port">DB port</label>
-                            <input type="number" id="db_port" name="db_port" value="<?php echo (int)$dbPort; ?>">
+                            <label for="db_port">MySQL port</label>
+                            <input type="number" id="db_port" name="db_port" min="1" max="65535" value="<?php echo (int)$dbPort; ?>">
                         </div>
                     </div>
                     <div class="row">
