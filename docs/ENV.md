@@ -104,11 +104,31 @@ See `.env.example` for the full list. Frequently used:
 
 Integration keys (`MAILERLITE_API_KEY`, `IP2WHOIS_API_KEY`, `RESEND_API_KEY`, `NVD_API_KEY`, etc.) are documented in `.env.example` and module docs (`docs/EMAIL_MANAGEMENT.md`, Network Discovery in README).
 
-### Undocumented app/runtime keys (strict drift)
+### Optional runtime keys (`.env.example` commented blocks)
 
-`php scripts/check_env_vars_in_use.php --strict` fails when keys are read in application or `api-examples/` code but missing from `.env.example`. As of **2026-09-03** there are **17** such keys (Mailpit, SNMP community, CSAT secret, Booking.com sandbox URL, API v2 / hotel distribution example credentials, PHPUnit memory, screenshot helpers, `MYSQL_BIN`). Default audit run is informational only.
+| Variable | Purpose | Canonical doc |
+|----------|---------|----------------|
+| `ITM_MAILPIT_API_URL` | Mailpit HTTP API for inbound email → tickets | `docs/EMAIL_MANAGEMENT.md` |
+| `ITM_MAILPIT_SMTP_HOST` / `ITM_MAILPIT_SMTP_PORT` | Mailpit SMTP for outbound test mail | `docs/EMAIL_MANAGEMENT.md` |
+| `ITM_NETWORK_DISCOVERY_SNMP_COMMUNITY` | Default SNMP community for subnet scans | Network Discovery / IPAM modules |
+| `ITM_TICKET_CSAT_SECRET` | Legacy `ticket-csat.php` HMAC (prefer ticket surveys) | `docs/TICKET_SURVEYS.md` |
+| `ITM_BOOKING_COM_SANDBOX_URL` | Booking.com connect sandbox base URL | `docs/HOTEL_BOOKING_DISTRIBUTION.md` |
 
-**Backlog:** resolve in [`docs/todo.md`](todo.md) item **#12** — add commented optional keys to `.env.example`, document example-only vars in module/api-examples docs, or classify intentional tooling keys in `scripts/lib/itm_env_vars_audit.php`.
+### Tooling / example-only keys (not in `.env.example`)
+
+Classified in `scripts/lib/itm_env_vars_audit_known_tooling_vars()` so `php scripts/check_env_vars_in_use.php --strict` stays green without polluting production `.env` templates:
+
+| Variable | Purpose | Canonical doc |
+|----------|---------|----------------|
+| `ITM_API_V2_KEY`, `ITM_API_V2_*_ID` | `api-examples/api_v2_*.php` integration samples | `docs/API_V2.md`, `api-examples/AGENT_NOTES.md` |
+| `ITM_DIST_API_KEY`, `ITM_DIST_EXTERNAL_RESERVATION_ID` | Hotel distribution `api-examples/hotel_distribution_*.php` | `docs/HOTEL_BOOKING_DISTRIBUTION.md` |
+| `ITM_PHPUNIT_MEMORY_LIMIT` | PHPUnit HTML coverage subprocess memory | `scripts/SCRIPTS.md` → PHPUnit test runner |
+| `MYSQL_BIN` | `import_database_split.php` CLI path override | Comment in `.env.example` next to `MYSQL_EXE` |
+| `ITM_HOSPITALITY_SCREENSHOT_DIR`, `ITM_SCREENSHOT_FORM_LOGIN` | Playwright hospitality screenshot helper | `scripts/SCRIPTS.md` |
+
+`php scripts/check_env_vars_in_use.php --strict` exits `0` when `.env.example` matches scanned reads (as of **2026-09-04**). Default audit run remains informational only — strict is not wired into smoke CI.
+
+Copy templates: `.env.example` (full catalog), `.env.development.sample` / `.env.production.sample` (minimal Laragon / production starters at repo root). See [`docs/todo.md`](todo.md) item **#12** (closed).
 
 ---
 
