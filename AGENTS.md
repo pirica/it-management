@@ -178,6 +178,28 @@ GitHub PR titles and bodies are often pasted from the shell (`gh pr create`, `gh
 
 On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `$`, or `>=`. Treat garbled PR text as a **process** bug until verified with step 3.
 
+### PR descriptions: GitHub `#number` autolinks (mandatory — hard fail)
+
+GitHub **always** turns `#` followed by digits in PR **titles**, **bodies**, **comments**, and **commit messages** into a link to that issue or pull request in the same repo — even when you mean a `docs/todo.md` backlog item, a checklist row, or prose like “item 12 Done”.
+
+| What agents wrote | What GitHub linked | Why it is wrong |
+|---|---|---|
+| `todo #12`, `item #12`, `(#12)` | Pull request **#12** — “Make workstation/CRUD column labels human-readable” | The work closed **section 12** in `docs/todo.md` (`.env.example` drift), not a 2024 PR |
+| `Closes backlog item **#12**` | Same wrong PR #12 | Readers see unrelated workstation/CRUD history in the PR timeline |
+| Title `… (todo #12)` | Title autolink + sidebar cross-ref to PR #12 | Title and linked PR disagree with the actual diff |
+
+**Forbidden on GitHub-hosted text (PR title, PR body, review comments, commit subject/body):**
+
+- Bare `#<digits>` when referring to backlog items, `docs/todo.md` sections, VERIFY.md rows, or internal numbering — use **no hash** (for example: `todo item 12 — Close .env.example drift`, `docs/todo.md section 10`, `backlog: PHPUnit pure-logic coverage`).
+- `PR #<digits>`, `/pull/<digits>`, and `Closes #<digits>` unless the user explicitly asked to link that exact GitHub issue/PR.
+
+**Allowed:**
+
+- Section headings inside committed repo docs (`### 12. Close …` in `docs/todo.md`) — those files are not GitHub PR descriptions.
+- The literal placeholder `PR #N` in this `AGENTS.md` rule text only.
+
+**Before `gh pr create`:** read the draft title and body in a plain-text editor — if any `#<digits>` token appears, rewrite without `#` unless you intentionally target that GitHub issue/PR number.
+
 ## 📂 Directory Map
 * `config/`: Core settings and `config.php`.
 * `db/`: Canonical SQL bundle (`01_schema.sql`, `02_data.sql`, `03_triggers.sql`); see `db/AGENT_NOTES.md`. Path helpers: `includes/itm_database_sql_source.php`.
