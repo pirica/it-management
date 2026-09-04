@@ -322,6 +322,35 @@ if ($persistMissing['ok']) {
     setup_db_pass('persist_env_from_state rejects missing session db');
 }
 
+$_SESSION['itm_setup_wizard'] = [
+    'completed_steps' => [1 => true],
+    'current_step' => 7,
+];
+if (itm_setup_wizard_clamp_step(7) !== 2) {
+    setup_db_fail('clamp_step must block step 7 when step 2 is incomplete');
+} else {
+    setup_db_pass('clamp_step blocks later steps until prerequisites complete');
+}
+
+$_SESSION['itm_setup_wizard'] = [
+    'completed_steps' => [1 => true, 2 => true, 3 => true],
+    'table_count' => 0,
+    'trigger_count' => 0,
+    'db' => [
+        'host' => '127.0.0.1',
+        'port' => 3306,
+        'user' => 'root',
+        'pass' => '',
+        'name' => 'itmanagement',
+    ],
+];
+$staleImport = itm_setup_wizard_import_bundle_satisfied();
+if ($staleImport['ok']) {
+    setup_db_fail('import_bundle_satisfied must fail when step 3 session counts are zero');
+} else {
+    setup_db_pass('import_bundle_satisfied rejects stale step 3 completion without import counts');
+}
+
 $_SESSION['itm_setup_wizard'] = $wizardSessionBackup;
 
 exit($fail > 0 ? 1 : 0);

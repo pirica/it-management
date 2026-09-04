@@ -101,14 +101,14 @@ if (!function_exists('itm_setup_wizard_current_step')) {
             $step = itm_setup_wizard_max_step();
         }
 
-        return $step;
+        return itm_setup_wizard_clamp_step($step);
     }
 }
 
 if (!function_exists('itm_setup_wizard_set_step')) {
     function itm_setup_wizard_set_step(int $step): void
     {
-        $step = max(1, min(itm_setup_wizard_max_step(), $step));
+        $step = itm_setup_wizard_clamp_step($step);
         itm_setup_wizard_state_set(['current_step' => $step]);
     }
 }
@@ -130,6 +130,158 @@ if (!function_exists('itm_setup_wizard_step_done')) {
         $done = $state['completed_steps'] ?? [];
 
         return !empty($done[$step]);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_reset_install_progress')) {
+    /**
+     * Clear step completion and database import markers when starting a fresh install path.
+     */
+    function itm_setup_wizard_reset_install_progress(): void
+    {
+        itm_setup_wizard_state_set([
+            'completed_steps' => [],
+            'db' => null,
+            'db_probe' => null,
+            'db_import' => null,
+            'table_count' => null,
+            'trigger_count' => null,
+        ]);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_first_incomplete_step')) {
+    function itm_setup_wizard_first_incomplete_step(): int
+    {
+        $max = itm_setup_wizard_max_step();
+        for ($step = 1; $step <= $max; $step++) {
+            if (!itm_setup_wizard_step_done($step)) {
+                return $step;
+            }
+        }
+
+        return $max;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_clamp_step')) {
+    function itm_setup_wizard_clamp_step(int $requestedStep): int
+    {
+        $requestedStep = max(1, min(itm_setup_wizard_max_step(), $requestedStep));
+        $firstIncomplete = itm_setup_wizard_first_incomplete_step();
+
+        return min($requestedStep, $firstIncomplete);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_import_bundle_satisfied')) {
+    /**
+     * Step 3 must have imported the canonical db/ bundle; live schema counts must still match.
+     *
+     * @return array{ok:bool,message:string}
+     */
+    function itm_setup_wizard_import_bundle_satisfied(?mysqli $conn = null): array
+    {
+        if (!itm_setup_wizard_step_done(3)) {
+            return [
+                'ok' => false,
+                'message' => 'Complete step 3 — test connection, then Import database bundle — before continuing.',
+            ];
+        }
+
+        $state = itm_setup_wizard_state();
+        $expectedTables = itm_setup_wizard_expected_table_count();
+        $expectedTriggers = itm_setup_wizard_expected_trigger_count();
+        $sessionTables = (int)($state['table_count'] ?? 0);
+        $sessionTriggers = (int)($state['trigger_count'] ?? 0);
+
+        if ($expectedTables > 0 && $sessionTables < $expectedTables) {
+            return [
+                'ok' => false,
+                'message' => 'Step 3 import is incomplete in this wizard session (tables '
+                    . $sessionTables . '/' . $expectedTables . '). Re-run Import database bundle on step 3.',
+            ];
+        }
+        if ($expectedTriggers > 0 && $sessionTriggers < $expectedTriggers) {
+            return [
+                'ok' => false,
+                'message' => 'Step 3 import is incomplete in this wizard session (triggers '
+                    . $sessionTriggers . '/' . $expectedTriggers . '). Re-run Import database bundle on step 3.',
+            ];
+        }
+
+        $credentials = itm_setup_wizard_session_db_credentials();
+        if ($credentials === null) {
+            return [
+                'ok' => false,
+                'message' => 'Database settings are missing from the wizard session — return to step 3.',
+            ];
+        }
+
+        $ownsConnection = false;
+        if (!($conn instanceof mysqli)) {
+            $conn = itm_setup_wizard_connect_database($credentials);
+            $ownsConnection = $conn instanceof mysqli;
+        }
+        if (!($conn instanceof mysqli)) {
+            return [
+                'ok' => false,
+                'message' => 'Cannot connect to the database from step 3 settings — verify credentials and import again.',
+            ];
+        }
+
+        $schema = $credentials['name'];
+        $liveTables = itm_setup_wizard_count_tables($conn, $schema);
+        $liveTriggers = itm_setup_wizard_count_triggers($conn, $schema);
+        if ($ownsConnection) {
+            mysqli_close($conn);
+        }
+
+        if ($expectedTables > 0 && $liveTables < $expectedTables) {
+            return [
+                'ok' => false,
+                'message' => 'Database does not match a fresh bundle import (tables '
+                    . $liveTables . '/' . $expectedTables . '). On step 3, confirm replacement and Import database bundle to wipe existing data.',
+            ];
+        }
+        if ($expectedTriggers > 0 && $liveTriggers < $expectedTriggers) {
+            return [
+                'ok' => false,
+                'message' => 'Database does not match a fresh bundle import (triggers '
+                    . $liveTriggers . '/' . $expectedTriggers . '). On step 3, confirm replacement and Import database bundle to wipe existing data.',
+            ];
+        }
+
+        return ['ok' => true, 'message' => ''];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_require_import_bundle_or_redirect')) {
+    /**
+     * @return bool true when satisfied; otherwise sets flash, redirects to step 3, and exits.
+     */
+    function itm_setup_wizard_require_import_bundle_or_redirect(): bool
+    {
+        $check = itm_setup_wizard_import_bundle_satisfied();
+        if ($check['ok']) {
+            return true;
+        }
+
+        $state = itm_setup_wizard_state();
+        $done = isset($state['completed_steps']) && is_array($state['completed_steps'])
+            ? $state['completed_steps']
+            : [];
+        for ($step = 3; $step <= itm_setup_wizard_max_step(); $step++) {
+            unset($done[$step]);
+        }
+
+        itm_setup_wizard_state_set([
+            'completed_steps' => $done,
+            'flash' => ['type' => 'error', 'message' => $check['message']],
+        ]);
+        itm_setup_wizard_set_step(3);
+        header('Location: ' . BASE_URL . 'setup/index.php?step=3');
+        exit;
     }
 }
 
