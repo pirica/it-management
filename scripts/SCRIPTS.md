@@ -1591,7 +1591,7 @@ php scripts/check_create_post_prepared_statements.php --module=departments
 php scripts/check_create_post_prepared_statements.php --verbose  # list wrapper + no_local_post_save rows
 ```
 
-Classifies each `modules/{slug}/create.php` as `[FAIL] escape_sql`, `[WARN] scaffold_string_sql` (`$sqlValues` + concatenated INSERT/UPDATE), `[WARN] bespoke_string_sql` (POST INSERT/UPDATE without `mysqli_prepare`), `[OK] prepared`, `[SKIP] wrapper` (delegates to `index.php`), or `[INFO] no_local_post_save`. Default exit `0`; `--strict` exits `1` when any legacy POST save path remains. Browser: [check_create_post_prepared_statements.php?run=1](http://localhost/it-management/scripts/check_create_post_prepared_statements.php?run=1) (Administrator).
+Classifies each `modules/{slug}/create.php` as `[FAIL] escape_sql`, `[WARN] scaffold_string_sql` (`$sqlValues` + concatenated INSERT/UPDATE), `[WARN] bespoke_string_sql` (POST INSERT/UPDATE without `mysqli_prepare` or MySQLi OOP `$conn->prepare` + `bind_param`), `[OK] prepared`, `[SKIP] wrapper` (delegates to `index.php`), or `[INFO] no_local_post_save`. Default exit `0`; `--strict` exits `1` when any legacy POST save path remains. Browser: [check_create_post_prepared_statements.php?run=1](http://localhost/it-management/scripts/check_create_post_prepared_statements.php?run=1) (Administrator).
 
 **UTF-8 / mojibake:** after copy/paste from Excel or editors that mis-save encoding, or when UI shows corrupted emoji instead of the intended symbol:
 
