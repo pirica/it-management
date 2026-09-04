@@ -183,6 +183,10 @@ if (!function_exists('itm_setup_wizard_repair_windows_path_input')) {
             return $detected;
         }
 
+        if ($parentCollapsed !== '' && $restCollapsed === $parentCollapsed) {
+            return itm_setup_wizard_format_path_for_input($detectedParent);
+        }
+
         if ($parentCollapsed !== '' && strpos($restCollapsed, $parentCollapsed) === 0) {
             $folderCollapsed = substr($restCollapsed, strlen($parentCollapsed));
             if ($folderCollapsed !== '' && $baseCollapsed !== '' && strpos($folderCollapsed, $baseCollapsed) === 0) {
@@ -220,12 +224,51 @@ if (!function_exists('itm_setup_wizard_normalize_path_input')) {
 if (!function_exists('itm_setup_wizard_format_path_for_input')) {
     function itm_setup_wizard_format_path_for_input(string $path): string
     {
+        $path = trim($path);
+        if ($path === '') {
+            return '';
+        }
+
+        $path = itm_setup_wizard_repair_windows_path_input($path);
+
         // Why: Windows installers expect drive-letter paths with backslashes in editable fields.
         if (preg_match('/^[A-Za-z]:/', $path) || DIRECTORY_SEPARATOR === '\\') {
             return str_replace('/', '\\', $path);
         }
 
         return str_replace('\\', '/', $path);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_preview_project_root_path')) {
+    function itm_setup_wizard_preview_project_root_path(string $input): string
+    {
+        $normalized = itm_setup_wizard_normalize_path_input($input);
+        if ($normalized === '') {
+            return '';
+        }
+
+        return itm_setup_wizard_format_path_for_input($normalized);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_step1_preview_config')) {
+    /**
+     * @return array<string, string>
+     */
+    function itm_setup_wizard_step1_preview_config(): array
+    {
+        $runtime = itm_setup_wizard_detected_project_root();
+        $parent = dirname($runtime);
+
+        return [
+            'runtimeRoot' => itm_setup_wizard_preview_project_root_path($runtime),
+            'parentPath' => itm_setup_wizard_format_path_for_input($parent),
+            'parentCollapsed' => itm_setup_wizard_collapse_path_token($parent),
+            'baseName' => basename($runtime),
+            'baseCollapsed' => itm_setup_wizard_collapse_path_token(basename($runtime)),
+            'documentRoot' => itm_setup_wizard_preview_project_root_path((string)($_SERVER['DOCUMENT_ROOT'] ?? '')),
+        ];
     }
 }
 
@@ -758,10 +801,10 @@ if (!function_exists('itm_setup_wizard_project_root_input_value')) {
     {
         $state = itm_setup_wizard_state();
         if (isset($state['project_root']) && trim((string)$state['project_root']) !== '') {
-            return itm_setup_wizard_format_path_for_input(trim((string)$state['project_root']));
+            return itm_setup_wizard_preview_project_root_path(trim((string)$state['project_root']));
         }
 
-        return itm_setup_wizard_format_path_for_input(itm_setup_wizard_detected_project_root());
+        return itm_setup_wizard_preview_project_root_path(itm_setup_wizard_detected_project_root());
     }
 }
 
@@ -781,10 +824,15 @@ if (!function_exists('itm_setup_wizard_detect_paths')) {
      */
     function itm_setup_wizard_detect_paths(): array
     {
-        $documentRoot = realpath($_SERVER['DOCUMENT_ROOT'] ?? '') ?: '';
         $detectedRoot = itm_setup_wizard_detected_project_root();
         $projectRoot = itm_setup_wizard_project_root();
-        $aligned = $documentRoot !== '' && $projectRoot !== '' && strpos($projectRoot, $documentRoot) === 0;
+        $documentRoot = itm_setup_wizard_preview_project_root_path((string)($_SERVER['DOCUMENT_ROOT'] ?? ''));
+        $projectRootDisplay = itm_setup_wizard_preview_project_root_path($projectRoot);
+        $aligned = $documentRoot !== '' && $projectRootDisplay !== ''
+            && stripos(
+                str_replace('\\', '/', $projectRootDisplay),
+                rtrim(str_replace('\\', '/', $documentRoot), '/')
+            ) === 0;
 
         return [
             'project_root' => $projectRoot,

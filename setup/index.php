@@ -291,6 +291,8 @@ $dbPass = (string)($dbDefaults['pass'] ?? $envFile['DB_PASS'] ?? '');
 $dbName = (string)($dbDefaults['name'] ?? $envFile['DB_NAME'] ?? 'itmanagement');
 $appUrl = (string)($state['itm_app_url'] ?? $envFile['ITM_APP_URL'] ?? $paths['base_url']);
 $projectRootInput = itm_setup_wizard_project_root_input_value();
+$projectRootPreview = itm_setup_wizard_preview_project_root_path($projectRootInput);
+$step1PreviewConfig = $currentStep === 1 ? itm_setup_wizard_step1_preview_config() : [];
 $appEnv = (string)($state['app_env'] ?? $envFile['APP_ENV'] ?? 'development');
 $extensions = itm_setup_wizard_extension_matrix();
 $fileChecks = $state['file_checks'] ?? itm_setup_wizard_verify_files();
@@ -378,10 +380,10 @@ header('Content-Type: text/html; charset=utf-8');
                     <input type="text" id="project_root" name="project_root" value="<?php echo sanitize($projectRootInput); ?>" required>
                     <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. Use Windows backslashes after the drive letter (example: <code>C:\laragon\www\it-management3</code>). If backslashes were stripped when pasting, the wizard tries to rebuild the path from your current install location. When the path does not exist, the wizard creates it and downloads <code>pirica/it-management</code> from GitHub. If the folder already exists, step 1 fails — use the auto-detected current install path for in-place setup.</p>
                     <table>
-                        <tr><th>Auto-detected root</th><td><code><?php echo sanitize(itm_setup_wizard_format_path_for_input($paths['detected_project_root'])); ?></code></td></tr>
-                        <tr><th>Document root</th><td><code><?php echo sanitize($paths['document_root'] !== '' ? itm_setup_wizard_format_path_for_input($paths['document_root']) : '(not detected)'); ?></code></td></tr>
+                        <tr><th>Auto-detect</th><td><code id="setup-auto-detect-path"><?php echo sanitize($projectRootPreview); ?></code></td></tr>
+                        <tr><th>Document root</th><td><code id="setup-document-root-path"><?php echo sanitize($paths['document_root'] !== '' ? $paths['document_root'] : '(not detected)'); ?></code></td></tr>
                         <tr><th>Detected BASE_URL</th><td><code><?php echo sanitize($paths['base_url']); ?></code></td></tr>
-                        <tr><th>Docroot aligned</th><td><?php echo $paths['docroot_aligned'] === 'yes' ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
+                        <tr><th>Docroot aligned</th><td id="setup-docroot-aligned"><?php echo $paths['docroot_aligned'] === 'yes' ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
                     </table>
                     <label for="itm_app_url">Public application URL (ITM_APP_URL)</label>
                     <input type="text" id="itm_app_url" name="itm_app_url" value="<?php echo sanitize($appUrl); ?>" required>
@@ -590,5 +592,96 @@ header('Content-Type: text/html; charset=utf-8');
         </main>
     </div>
 </div>
+<?php if ($currentStep === 1 && !empty($step1PreviewConfig)): ?>
+<script>
+(function () {
+    var cfg = <?php echo json_encode($step1PreviewConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    var input = document.getElementById('project_root');
+    var preview = document.getElementById('setup-auto-detect-path');
+    var aligned = document.getElementById('setup-docroot-aligned');
+    if (!input || !preview) {
+        return;
+    }
+
+    function collapseToken(value) {
+        return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    function formatWindowsPath(path) {
+        if (/^[A-Za-z]:/.test(path)) {
+            return path.replace(/\//g, '\\');
+        }
+
+        return path.replace(/\\/g, '/');
+    }
+
+    function repairWindowsPath(inputValue) {
+        var value = String(inputValue || '').trim();
+        if (!value) {
+            return '';
+        }
+        if (/^[A-Za-z]:[\\/].+/.test(value) || value.indexOf('\\\\') === 0) {
+            return formatWindowsPath(value);
+        }
+        var match = /^([A-Za-z]):(.*)$/s.exec(value);
+        if (!match) {
+            return value;
+        }
+        var drive = match[1];
+        var rest = match[2];
+        var detected = cfg.runtimeRoot || '';
+        if (!/^[A-Za-z]:[\\/]/.test(detected)) {
+            return drive + ':\\' + rest.replace(/^[\\/]+/, '');
+        }
+        var restCollapsed = collapseToken(rest);
+        if (!restCollapsed) {
+            return detected;
+        }
+        var parentCollapsed = cfg.parentCollapsed || '';
+        var baseCollapsed = cfg.baseCollapsed || '';
+        var detectedTailCollapsed = collapseToken(detected.replace(/^[A-Za-z]:[\\/]?/, ''));
+        if (restCollapsed === detectedTailCollapsed) {
+            return detected;
+        }
+        if (parentCollapsed && restCollapsed === parentCollapsed) {
+            return cfg.parentPath || detected;
+        }
+        if (parentCollapsed && restCollapsed.indexOf(parentCollapsed) === 0) {
+            var folderCollapsed = restCollapsed.slice(parentCollapsed.length);
+            if (folderCollapsed && baseCollapsed && folderCollapsed.indexOf(baseCollapsed) === 0) {
+                var extra = folderCollapsed.slice(baseCollapsed.length);
+                return (cfg.parentPath || '') + '\\' + (cfg.baseName || '') + extra;
+            }
+        }
+        if (baseCollapsed) {
+            var suffixPattern = new RegExp(baseCollapsed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([0-9]*)$');
+            var suffixMatch = suffixPattern.exec(restCollapsed);
+            if (suffixMatch) {
+                return (cfg.parentPath || '') + '\\' + (cfg.baseName || '') + suffixMatch[1];
+            }
+        }
+
+        return drive + ':\\' + rest;
+    }
+
+    function updatePreview() {
+        var repaired = repairWindowsPath(input.value);
+        preview.textContent = repaired || '—';
+        if (aligned && cfg.documentRoot) {
+            var docRoot = String(cfg.documentRoot).replace(/\\/g, '/').replace(/\/$/, '');
+            var project = String(repaired).replace(/\\/g, '/');
+            var isAligned = docRoot !== '' && project.toLowerCase().indexOf(docRoot.toLowerCase()) === 0;
+            aligned.innerHTML = isAligned
+                ? '<span class="ok">Yes</span>'
+                : '<span class="warn">Check Apache alias / virtual host</span>';
+        }
+    }
+
+    input.addEventListener('input', updatePreview);
+    input.addEventListener('change', updatePreview);
+    updatePreview();
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>
