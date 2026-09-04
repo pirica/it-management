@@ -461,6 +461,13 @@ header('Content-Type: text/html; charset=utf-8');
         th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); }
         .ok { color:var(--ok); } .warn { color:var(--warn); } .bad { color:var(--err); }
         code { background:#0d1117; padding:2px 6px; border-radius:4px; }
+        .setup-path, .setup-verify-table td.setup-path-cell {
+            word-break: break-all;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+        }
+        .setup-verify-table td:first-child { width: 2.5rem; vertical-align: top; }
+        .setup-verify-table td.setup-path-cell { vertical-align: top; }
         .setup-project-root-row { display:flex; gap:8px; align-items:stretch; }
         .setup-project-root-row input[type=text] { flex:1; margin:0; }
         .setup-project-root-row .btn { flex:0 0 auto; min-width:48px; }
@@ -475,7 +482,7 @@ header('Content-Type: text/html; charset=utf-8');
     <p class="sub">Step-by-step installer with automatic checks. Complete all steps, then remove this wizard from the web root.</p>
 
     <?php if (!empty($flash['message'])): ?>
-        <div class="flash <?php echo sanitize($flash['type']); ?>"><?php echo sanitize($flash['message']); ?></div>
+        <div class="flash <?php echo sanitize($flash['type']); ?>"><?php echo itm_setup_wizard_h((string)$flash['message']); ?></div>
     <?php endif; ?>
 
     <div class="grid">
@@ -511,14 +518,14 @@ header('Content-Type: text/html; charset=utf-8');
                     <input type="hidden" name="confirm_replace_folder" id="setup-step1-confirm-replace" value="0">
                     <label for="project_root">Project root</label>
                     <div class="setup-project-root-row">
-                        <input type="text" id="project_root" name="project_root" value="<?php echo sanitize($projectRootInput); ?>" required>
+                        <input type="text" id="project_root" name="project_root" value="<?php echo itm_setup_wizard_h($projectRootInput); ?>" required>
                         <button type="button" class="btn btn-primary" id="setup-step1-save-preview" title="Save">💾</button>
                     </div>
                     <p id="setup-step1-preview-status" class="sub" style="margin-top:8px;" aria-live="polite"></p>
                     <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. Use Windows backslashes after the drive letter (example: <code>C:\laragon\www\it-management5</code>). Click <strong>💾</strong> to validate the folder and refresh the preview rows below. When the path does not exist, the wizard creates it and downloads <code>pirica/it-management</code> from GitHub on Download. If the folder already exists, confirm replacement to delete all files inside and download again, or keep the auto-detected current install path for in-place setup.</p>
                     <table>
-                        <tr><th>Auto-detect</th><td><code id="setup-auto-detect-path"><?php echo sanitize($projectRootPreview); ?></code></td></tr>
-                        <tr><th>Document root</th><td><code id="setup-document-root-path"><?php echo sanitize($step1DocumentRoot !== '' ? $step1DocumentRoot : '(not detected)'); ?></code></td></tr>
+                        <tr><th>Auto-detect</th><td><code class="setup-path" id="setup-auto-detect-path"><?php echo itm_setup_wizard_h($projectRootPreview); ?></code></td></tr>
+                        <tr><th>Document root</th><td><code class="setup-path" id="setup-document-root-path"><?php echo itm_setup_wizard_h($step1DocumentRoot !== '' ? $step1DocumentRoot : '(not detected)'); ?></code></td></tr>
                         <tr><th>Detected BASE_URL</th><td><code id="setup-detected-base-url"><?php echo sanitize($paths['base_url']); ?></code></td></tr>
                         <tr><th>Docroot aligned</th><td id="setup-docroot-aligned"><?php echo $step1DocrootAligned ? '<span class="ok">Yes</span>' : '<span class="warn">Check Apache alias / virtual host</span>'; ?></td></tr>
                     </table>
@@ -535,14 +542,14 @@ header('Content-Type: text/html; charset=utf-8');
             <?php elseif ($currentStep === 2): ?>
                 <h2>2. Verify files</h2>
                 <p>Checks the canonical <code>db/</code> bundle, writable upload paths, and PHP version before database work.</p>
-                <p class="sub">Confirmed project root from step 1: <code><?php echo sanitize(itm_setup_wizard_format_path_display(itm_setup_wizard_project_root())); ?></code></p>
-                <table>
+                <p class="sub">Confirmed project root from step 1: <code class="setup-path"><?php echo itm_setup_wizard_h(itm_setup_wizard_format_path_display(itm_setup_wizard_project_root())); ?></code></p>
+                <table class="setup-verify-table">
                     <?php foreach ($fileChecks as $row): ?>
                         <tr>
                             <td class="<?php echo sanitize($row['level'] === 'pass' ? 'ok' : ($row['level'] === 'warn' ? 'warn' : 'bad')); ?>">
                                 <?php echo $row['level'] === 'pass' ? '✅' : ($row['level'] === 'warn' ? '⚠️' : '❌'); ?>
                             </td>
-                            <td><?php echo sanitize($row['message']); ?></td>
+                            <td class="setup-path-cell"><?php echo itm_setup_wizard_h($row['message']); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </table>

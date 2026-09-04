@@ -38,6 +38,8 @@ Step 3 probes MySQL at the server level before selecting a schema. When the name
 
 Step 2 always re-runs file verification on page load (no stale cached `file_checks` from a prior runtime path). Writable upload paths and the **Confirmed project root** header resolve via `itm_setup_wizard_project_root()`, which repairs collapsed Windows session paths (e.g. `C:Users…it-management2`) and, after step 1 is complete, never falls back to the PHP runtime install folder when the session path differs.
 
+**Path HTML output:** use `itm_setup_wizard_h()` for project roots, verify-table messages, and flash text that may contain Windows paths. Do **not** use global `sanitize()` for paths — it calls `stripslashes()` and removes `\` from `C:\Users\…` in step 1/2. Long paths use `.setup-path` / `.setup-verify-table td.setup-path-cell` (`word-break: break-all`, `overflow-wrap: anywhere`).
+
 All mutating POSTs use `itm_try_post_csrf()`. Emoji-only navigation buttons follow NO MIXED on back/submit controls.
 
 ## 6. API Actions (If Applicable)
@@ -71,7 +73,7 @@ Step 5 may set `enable_all_error_reporting` on all `ui_configuration` rows when 
 
 Manual: [setup/index.php](http://localhost/it-management/setup/index.php) (no login until finish).
 
-Regression: `php scripts/verify_setup_wizard_project_root.php` — collapsed Windows path repair, step 1 session root vs runtime fallback, step 2 upload subdirectories.
+Regression: `php scripts/verify_setup_wizard_project_root.php` — collapsed Windows path repair, step 1 session root vs runtime fallback, step 2 upload subdirectories, `itm_setup_wizard_h()` vs `sanitize()` path escaping.
 
 Regression: `php scripts/verify_setup_wizard_database.php` — step 3 `itm_setup_wizard_probe_database()`, SQL bundle rewrite for custom `DB_NAME`, create/reset helpers, `needs_create` / `needs_replace_confirm` flags, mysqli import + trigger count on empty schema (requires MySQL; skips live create tests when server unreachable).
 

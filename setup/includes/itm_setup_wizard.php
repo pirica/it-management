@@ -1064,6 +1064,16 @@ if (!function_exists('itm_setup_wizard_project_subdirectory')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_h')) {
+    /**
+     * HTML-escape wizard output without stripslashes — global sanitize() breaks Windows paths.
+     */
+    function itm_setup_wizard_h(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+}
+
 if (!function_exists('itm_setup_wizard_format_path_display')) {
     function itm_setup_wizard_format_path_display(string $path): string
     {

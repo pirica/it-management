@@ -99,4 +99,19 @@ if ($suffixProbe !== 'ok') {
     setup_root_pass('Collapsed path repairs sibling folder suffix (it-management3 runtime → it-management5 target)');
 }
 
+$windowsPath = 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\www\\it-management';
+$wizardEscaped = itm_setup_wizard_h($windowsPath);
+if (strpos($wizardEscaped, 'C:\\Users\\') === false) {
+    setup_root_fail('itm_setup_wizard_h must preserve Windows backslashes in output, got: ' . $wizardEscaped);
+} else {
+    setup_root_pass('itm_setup_wizard_h preserves Windows backslashes for HTML output');
+}
+// Global sanitize() uses stripslashes() — setup wizard must not use it for paths.
+$sanitizeLike = htmlspecialchars(stripslashes($windowsPath), ENT_QUOTES, 'UTF-8');
+if (strpos($sanitizeLike, 'C:Users') !== false && strpos($sanitizeLike, 'C:\\Users\\') === false) {
+    setup_root_pass('sanitize()-style stripslashes removes Windows backslashes (wizard uses itm_setup_wizard_h instead)');
+} else {
+    setup_root_fail('Expected stripslashes contrast to collapse Windows path segments');
+}
+
 exit($fail > 0 ? 1 : 0);
