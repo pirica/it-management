@@ -133,6 +133,76 @@ if (!function_exists('itm_setup_wizard_detected_project_root')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_collapse_path_token')) {
+    function itm_setup_wizard_collapse_path_token(string $value): string
+    {
+        return strtolower(preg_replace('/[^a-z0-9]/', '', $value));
+    }
+}
+
+if (!function_exists('itm_setup_wizard_repair_windows_path_input')) {
+    /**
+     * Restore Windows paths when backslashes were stripped (e.g. C:Users... → C:\Users\...\it-management3).
+     */
+    function itm_setup_wizard_repair_windows_path_input(string $input): string
+    {
+        $input = trim($input);
+        if ($input === '') {
+            return '';
+        }
+
+        if (preg_match('/^[A-Za-z]:[\\\\\\/].+/', $input) || strpos($input, '\\\\') === 0) {
+            return $input;
+        }
+
+        if (!preg_match('/^([A-Za-z]):(.*)$/s', $input, $matches)) {
+            return $input;
+        }
+
+        $drive = $matches[1];
+        $rest = $matches[2];
+        $detected = itm_setup_wizard_detected_project_root();
+
+        if (!preg_match('/^[A-Za-z]:[\\\\\\/]/', $detected)) {
+            return $drive . ':\\' . ltrim($rest, '\\/');
+        }
+
+        $restCollapsed = itm_setup_wizard_collapse_path_token($rest);
+        if ($restCollapsed === '') {
+            return $detected;
+        }
+
+        $detectedParent = dirname($detected);
+        $detectedBase = basename($detected);
+        $parentCollapsed = itm_setup_wizard_collapse_path_token($detectedParent);
+        $baseCollapsed = itm_setup_wizard_collapse_path_token($detectedBase);
+        $detectedTail = preg_replace('/^[A-Za-z]:[\\\\\\/]?/', '', $detected);
+        $detectedTailCollapsed = itm_setup_wizard_collapse_path_token((string)$detectedTail);
+
+        if ($restCollapsed === $detectedTailCollapsed) {
+            return $detected;
+        }
+
+        if ($parentCollapsed !== '' && strpos($restCollapsed, $parentCollapsed) === 0) {
+            $folderCollapsed = substr($restCollapsed, strlen($parentCollapsed));
+            if ($folderCollapsed !== '' && $baseCollapsed !== '' && strpos($folderCollapsed, $baseCollapsed) === 0) {
+                $extra = substr($folderCollapsed, strlen($baseCollapsed));
+                $folder = $detectedBase . $extra;
+
+                return itm_setup_wizard_format_path_for_input($detectedParent) . '\\' . $folder;
+            }
+        }
+
+        if ($baseCollapsed !== '' && preg_match('/' . preg_quote($baseCollapsed, '/') . '([0-9]*)$/', $restCollapsed, $suffixMatch)) {
+            $folder = $detectedBase . $suffixMatch[1];
+
+            return itm_setup_wizard_format_path_for_input($detectedParent) . '\\' . $folder;
+        }
+
+        return $drive . ':\\' . $rest;
+    }
+}
+
 if (!function_exists('itm_setup_wizard_normalize_path_input')) {
     function itm_setup_wizard_normalize_path_input(string $input): string
     {
@@ -140,6 +210,8 @@ if (!function_exists('itm_setup_wizard_normalize_path_input')) {
         if ($input === '') {
             return '';
         }
+
+        $input = itm_setup_wizard_repair_windows_path_input($input);
 
         return rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $input), DIRECTORY_SEPARATOR);
     }
@@ -215,8 +287,9 @@ if (!function_exists('itm_setup_wizard_is_safe_project_root_path')) {
             return false;
         }
 
-        if (DIRECTORY_SEPARATOR === '\\') {
-            return (bool)preg_match('/^[A-Za-z]:[\\\\\\/]/', $normalized) || $normalized[0] === '\\';
+        // Windows absolute paths (validated on Laragon even when path uses backslashes).
+        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $normalized) || (isset($normalized[0]) && ($normalized[0] === '\\'))) {
+            return true;
         }
 
         return $normalized[0] === '/';
@@ -582,7 +655,11 @@ if (!function_exists('itm_setup_wizard_provision_project_root')) {
         }
 
         if (!itm_setup_wizard_is_safe_project_root_path($normalized)) {
-            return ['ok' => false, 'path' => $normalized, 'message' => 'Enter an absolute path without .. segments.'];
+            return [
+                'ok' => false,
+                'path' => $normalized,
+                'message' => 'Enter a valid absolute path (example: C:\\laragon\\www\\it-management). Use backslashes after the drive letter.',
+            ];
         }
 
         $runtimeRoot = itm_setup_wizard_detected_project_root();
