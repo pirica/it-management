@@ -7,8 +7,8 @@ Project-root `.env` is optional but recommended for local and production deploym
 | File | Use |
 |------|-----|
 | `.env.example` | Full catalog with comments |
-| `env.development.sample` | Local Laragon / Dunebox |
-| `env.production.sample` | Production-style |
+| `.env.development.sample` | Local Laragon / Dunebox |
+| `.env.production.sample` | Production-style |
 
 **Drift audit:** `php scripts/check_env_vars_in_use.php` — [check_env_vars_in_use.php?run=1](http://localhost/it-management/scripts/check_env_vars_in_use.php?run=1) (Admin session). Prints an HTML table comparing live `.env` vs `.env.example` (live column shows `(Not Empty)` / `(empty)` only — no real values) plus a code scan vs `.env.example`. Run after changing `.env.example` or `getenv()` reads in code.
 
@@ -57,7 +57,7 @@ ITM_DEV=1
 APP_ENV=development
 ```
 
-Either line is enough for a dev label; using **both** is fine and matches `env.development.sample` at the repo root.
+Either line is enough for a dev label; using **both** is fine and matches `.env.development.sample` at the repo root.
 
 Verify from the repo root:
 
@@ -74,7 +74,7 @@ ITM_DEV=0
 APP_ENV=production
 ```
 
-Or omit both keys (defaults to production). See `env.production.sample` at the repo root.
+Or omit both keys (defaults to production). See `.env.production.sample` at the repo root.
 
 ### Relationship to PHP error display
 
