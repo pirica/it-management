@@ -3,7 +3,7 @@
  * First-run setup wizard (cPanel-style step installer).
  *
  * Open setup/index.php in the browser while installation is incomplete.
- * Step 8 removes this file and writes setup/.installed.
+ * Step 8 writes setup/.installed (entry files stay in place for reinstall).
  */
 
 declare(strict_types=1);
@@ -931,8 +931,8 @@ header('Content-Type: text/html; charset=utf-8');
                 </form>
 
             <?php elseif ($currentStep === 8): ?>
-                <h2>8. Finish — remove setup entry point</h2>
-                <p>Writes <code>setup/.installed</code> under the confirmed project root and deletes <code>setup/index.php</code> there so the installer cannot be reached from the web.</p>
+                <h2>8. Finish — lock installer</h2>
+                <p>Writes <code>setup/.installed</code> under the confirmed project root. The setup wizard files stay on disk so you can reinstall later by deleting that lock file (or open <code>setup/index.php?force=1</code>).</p>
                 <p class="sub"><code>.env</code> target: <code class="setup-path"><?php echo itm_setup_wizard_h_path_display($envFileTargetPath); ?></code></p>
                 <ul>
                     <li>Before production go-live, run the <a href="<?php echo sanitize($setupProdHardeningUrl); ?>" target="_blank" rel="noopener noreferrer">production hardening check</a> (<code>check_prod_hardening.php?run=1&amp;enforce=1</code> — Administrator session; open in a new browser tab).</li>

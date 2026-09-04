@@ -2836,8 +2836,21 @@ if (!function_exists('itm_setup_wizard_install_sample_data_for_companies')) {
 if (!function_exists('itm_setup_wizard_write_lock')) {
     function itm_setup_wizard_write_lock(): bool
     {
-        $payload = "installed_at=" . date('c') . "\napp_version=" . APP_VERSION . "\n";
+        $appVersion = defined('APP_VERSION') ? (string)APP_VERSION : 'unknown';
+        $payload = "installed_at=" . date('c') . "\napp_version=" . $appVersion . "\n";
         return file_put_contents(itm_setup_wizard_lock_path(), $payload) !== false;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_clear_install_lock')) {
+    function itm_setup_wizard_clear_install_lock(): bool
+    {
+        $lockPath = itm_setup_wizard_lock_path();
+        if (!is_file($lockPath)) {
+            return true;
+        }
+
+        return @unlink($lockPath);
     }
 }
 
@@ -2847,28 +2860,14 @@ if (!function_exists('itm_setup_wizard_remove_entrypoint')) {
      */
     function itm_setup_wizard_remove_entrypoint(): array
     {
-        $removed = [];
-        $setupDir = itm_setup_wizard_setup_directory();
-        $targets = [
-            $setupDir . 'index.php',
-            $setupDir . 'includes' . DIRECTORY_SEPARATOR . 'itm_setup_wizard.php',
-        ];
-
-        foreach ($targets as $path) {
-            if (is_file($path) && @unlink($path)) {
-                $projectRoot = rtrim(itm_setup_wizard_project_root(), '/\\') . DIRECTORY_SEPARATOR;
-                $removed[] = str_replace($projectRoot, '', $path);
-            }
-        }
-
         if (!itm_setup_wizard_write_lock()) {
-            return ['ok' => false, 'message' => 'Could not write setup/.installed lock file', 'removed' => $removed];
+            return ['ok' => false, 'message' => 'Could not write setup/.installed lock file', 'removed' => []];
         }
 
         return [
             'ok' => true,
-            'message' => count($removed) > 0 ? 'Setup entry point removed' : 'Lock written (entry files already absent)',
-            'removed' => $removed,
+            'message' => 'Setup locked (delete setup/.installed on the server to run the installer again)',
+            'removed' => [],
         ];
     }
 }
