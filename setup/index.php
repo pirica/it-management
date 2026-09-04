@@ -482,9 +482,9 @@ if (isset($state['sample_company_ids']) && is_array($state['sample_company_ids']
 }
 if ($currentStep === 7) {
     $connSampleList = itm_setup_wizard_reload_connection();
-    if ($connSampleList instanceof mysqli) {
-        $sampleCompanyOptions = itm_setup_wizard_list_seed_companies($connSampleList);
-    }
+    $sampleCompanyOptions = itm_setup_wizard_resolve_sample_company_options(
+        $connSampleList instanceof mysqli ? $connSampleList : null
+    );
 }
 $csrfToken = itm_get_csrf_token();
 
@@ -844,25 +844,17 @@ header('Content-Type: text/html; charset=utf-8');
                     <input type="hidden" name="step" value="7">
                     <label>Companies</label>
                     <div class="setup-sample-company-toolbar">
-                        <button type="button" class="btn btn-sm" id="setup-sample-select-all">Select All</button>
-                        <button type="button" class="btn btn-sm" id="setup-sample-unselect-all" style="display:none;">Unselect All</button>
+                        <button type="button" class="btn btn-sm" id="setup-sample-select-all" title="Select all companies">Select All</button>
+                        <button type="button" class="btn btn-sm" id="setup-sample-unselect-all" title="Clear company selection">Unselect All</button>
                     </div>
                     <div class="setup-sample-companies" id="setup-sample-companies">
-                        <?php if ($sampleCompanyOptions === []): ?>
-                            <p class="sub">No active companies found — complete database import on step 3 first.</p>
+                        <?php foreach ($sampleCompanyOptions as $companyRow): ?>
+                            <?php $companyOptionId = (int)($companyRow['id'] ?? 0); ?>
                             <label class="itm-checkbox-control">
-                                <input type="checkbox" name="sample_company_ids[]" value="1" <?php echo in_array(1, $sampleCompanyDefaultIds, true) ? 'checked' : ''; ?>>
-                                <span>1 — TechCorp Global (fallback)</span>
+                                <input type="checkbox" name="sample_company_ids[]" value="<?php echo $companyOptionId; ?>" <?php echo in_array($companyOptionId, $sampleCompanyDefaultIds, true) ? 'checked' : ''; ?>>
+                                <span><?php echo (int)$companyOptionId; ?> — <?php echo itm_setup_wizard_h((string)($companyRow['name'] ?? '')); ?></span>
                             </label>
-                        <?php else: ?>
-                            <?php foreach ($sampleCompanyOptions as $companyRow): ?>
-                                <?php $companyOptionId = (int)($companyRow['id'] ?? 0); ?>
-                                <label class="itm-checkbox-control">
-                                    <input type="checkbox" name="sample_company_ids[]" value="<?php echo $companyOptionId; ?>" <?php echo in_array($companyOptionId, $sampleCompanyDefaultIds, true) ? 'checked' : ''; ?>>
-                                    <span><?php echo (int)$companyOptionId; ?> — <?php echo itm_setup_wizard_h((string)($companyRow['name'] ?? '')); ?></span>
-                                </label>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                        <?php endforeach; ?>
                     </div>
                     <div class="actions">
                         <a class="btn" href="?step=6" title="Back">◀️</a>
@@ -1075,8 +1067,8 @@ header('Content-Type: text/html; charset=utf-8');
             }
         });
         var allChecked = boxes.length > 0 && checkedCount === boxes.length;
-        selectAllBtn.style.display = allChecked ? 'none' : '';
-        unselectAllBtn.style.display = allChecked ? '' : 'none';
+        selectAllBtn.disabled = allChecked;
+        unselectAllBtn.disabled = checkedCount === 0;
     }
 
     selectAllBtn.addEventListener('click', function () {

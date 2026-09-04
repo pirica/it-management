@@ -71,14 +71,28 @@ $listConn = @mysqli_connect($host, $user, $pass, $dbName, $port);
 if (!$listConn) {
     fwrite(STDOUT, '[SKIP] Sample company list test skipped — MySQL unavailable.' . PHP_EOL);
 } else {
-    $emptyBatch = itm_setup_wizard_install_sample_data_for_companies($listConn, []);
-    if ($emptyBatch['ok']) {
-        setup_db_fail('install_sample_data_for_companies must reject empty company selection');
-    } else {
-        setup_db_pass('install_sample_data_for_companies rejects empty selection');
-    }
+$emptyBatch = itm_setup_wizard_install_sample_data_for_companies($listConn, []);
+if ($emptyBatch['ok']) {
+    setup_db_fail('install_sample_data_for_companies must reject empty company selection');
+} else {
+    setup_db_pass('install_sample_data_for_companies rejects empty selection');
+}
 
-    $companyRows = itm_setup_wizard_list_seed_companies($listConn);
+$catalog = itm_setup_wizard_seed_company_catalog();
+if (count($catalog) !== 5 || (int)($catalog[0]['id'] ?? 0) !== 1) {
+    setup_db_fail('seed_company_catalog must list five canonical seed companies');
+} else {
+    setup_db_pass('seed_company_catalog lists five seed companies');
+}
+
+$resolvedWithoutDb = itm_setup_wizard_resolve_sample_company_options(null);
+if (count($resolvedWithoutDb) !== 5) {
+    setup_db_fail('resolve_sample_company_options must fall back to seed catalog without DB');
+} else {
+    setup_db_pass('resolve_sample_company_options falls back to seed catalog');
+}
+
+$companyRows = itm_setup_wizard_list_seed_companies($listConn);
     if ($companyRows === []) {
         setup_db_fail('list_seed_companies must return active companies after schema import');
     } else {

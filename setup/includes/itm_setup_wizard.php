@@ -2367,6 +2367,41 @@ if (!function_exists('itm_setup_wizard_list_seed_companies')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_seed_company_catalog')) {
+    /**
+     * Canonical five seed tenants from db/02_data.sql — used when step 7 cannot query live companies yet.
+     *
+     * @return array<int, array{id:int,name:string}>
+     */
+    function itm_setup_wizard_seed_company_catalog(): array
+    {
+        return [
+            ['id' => 1, 'name' => 'TechCorp Global'],
+            ['id' => 2, 'name' => 'DataCenter Plus'],
+            ['id' => 3, 'name' => 'Network Solutions'],
+            ['id' => 4, 'name' => 'CloudTech Services'],
+            ['id' => 5, 'name' => 'Enterprise IT'],
+        ];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_resolve_sample_company_options')) {
+    /**
+     * @return array<int, array{id:int,name:string}>
+     */
+    function itm_setup_wizard_resolve_sample_company_options(?mysqli $conn): array
+    {
+        if ($conn instanceof mysqli) {
+            $liveRows = itm_setup_wizard_list_seed_companies($conn);
+            if ($liveRows !== []) {
+                return $liveRows;
+            }
+        }
+
+        return itm_setup_wizard_seed_company_catalog();
+    }
+}
+
 if (!function_exists('itm_setup_wizard_install_sample_data')) {
     /**
      * @return array{ok:bool,message:string,detail:string}
