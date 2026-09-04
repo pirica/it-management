@@ -236,6 +236,12 @@ if ($itm_documentRoot && $itm_projectRoot && strpos($itm_projectRoot, $itm_docum
             && substr($itm_basePath, -strlen($itm_bookingSuffix)) === $itm_bookingSuffix) {
             $itm_basePath = substr($itm_basePath, 0, -strlen($itm_bookingSuffix));
         }
+        // Why: setup/* must not set BASE_URL to .../setup/ — wizard lives under app root.
+        $itm_setupSuffix = '/setup';
+        if ($itm_setupSuffix !== '' && strlen($itm_basePath) >= strlen($itm_setupSuffix)
+            && substr($itm_basePath, -strlen($itm_setupSuffix)) === $itm_setupSuffix) {
+            $itm_basePath = substr($itm_basePath, 0, -strlen($itm_setupSuffix));
+        }
     }
 }
 
@@ -418,9 +424,13 @@ if (!$itmSkipDbConn) {
     $conn = itm_mysqli_connect();
 
     if (!$conn) {
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        die(json_encode(['error' => 'Database connection failed: ' . mysqli_connect_error()]));
+        if (defined('ITM_SETUP_WIZARD') && ITM_SETUP_WIZARD) {
+            $conn = false;
+        } else {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+            die(json_encode(['error' => 'Database connection failed: ' . mysqli_connect_error()]));
+        }
     }
 }
 
@@ -520,6 +530,11 @@ if (defined('ITM_HOTEL_BOOKING_DISTRIBUTION_API') && ITM_HOTEL_BOOKING_DISTRIBUT
 
 // Why: modules/api_v2/router.php authenticates paid-tier integration keys (X-API-Key) without employee login.
 if (defined('ITM_API_V2') && ITM_API_V2) {
+    $itmSkipWebAuth = true;
+}
+
+// Why: First-run setup wizard must run without an employee session until installation completes.
+if (defined('ITM_SETUP_WIZARD') && ITM_SETUP_WIZARD) {
     $itmSkipWebAuth = true;
 }
 
