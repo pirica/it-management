@@ -1074,6 +1074,18 @@ if (!function_exists('itm_setup_wizard_h')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_h_wrappable_path_text')) {
+    /**
+     * Escape path-bearing text and insert <wbr> after directory separators so long paths wrap cleanly.
+     */
+    function itm_setup_wizard_h_wrappable_path_text(string $value): string
+    {
+        $escaped = itm_setup_wizard_h($value);
+
+        return str_replace(['\\', '/'], ['\\<wbr>', '/<wbr>'], $escaped);
+    }
+}
+
 if (!function_exists('itm_setup_wizard_format_path_display')) {
     function itm_setup_wizard_format_path_display(string $path): string
     {
@@ -1245,15 +1257,6 @@ if (!function_exists('itm_setup_wizard_verify_files')) {
     function itm_setup_wizard_verify_files(): array
     {
         $results = [];
-
-        if (!itm_setup_wizard_project_root_matches_runtime()) {
-            $results[] = [
-                'level' => 'warn',
-                'message' => 'Confirmed project root differs from this PHP request path ('
-                    . itm_setup_wizard_format_path_display(itm_setup_wizard_detected_project_root())
-                    . ') — verification uses the step 1 folder below.',
-            ];
-        }
 
         $projectRootDisplay = itm_setup_wizard_format_path_display(itm_setup_wizard_project_root());
         $results[] = ['level' => 'pass', 'message' => 'Project root: ' . $projectRootDisplay];

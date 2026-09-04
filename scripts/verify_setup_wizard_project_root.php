@@ -114,4 +114,25 @@ if (strpos($sanitizeLike, 'C:Users') !== false && strpos($sanitizeLike, 'C:\\Use
     setup_root_fail('Expected stripslashes contrast to collapse Windows path segments');
 }
 
+$wrappable = itm_setup_wizard_h_wrappable_path_text('Writable: ' . $windowsPath . '\\images');
+if (strpos($wrappable, '\\<wbr>') === false) {
+    setup_root_fail('Wrappable path text must insert wbr after backslashes, got: ' . $wrappable);
+} else {
+    setup_root_pass('Wrappable path text inserts segment break hints after backslashes');
+}
+
+$fileChecks = itm_setup_wizard_verify_files();
+$hasRuntimeWarn = false;
+foreach ($fileChecks as $row) {
+    if (stripos($row['message'], 'differs from this PHP request path') !== false) {
+        $hasRuntimeWarn = true;
+        break;
+    }
+}
+if ($hasRuntimeWarn) {
+    setup_root_fail('Step 2 verify must not warn when project root differs from runtime path');
+} else {
+    setup_root_pass('Step 2 verify omits runtime-path mismatch warning');
+}
+
 exit($fail > 0 ? 1 : 0);
