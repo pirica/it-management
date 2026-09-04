@@ -75,7 +75,7 @@ The central module for managing employee records, including contact info, hierar
 - **includes/profile_termination_date_field.php** — termination date field after employee type.
 - **includes/profile_birthday_fields.php** — birthday and hide_year fields.
 - **includes/profile_role_access_fields.php** — role and access level FK selects.
-- **includes/employee_profile_photo.php** (repo `includes/`) — path, upload, URL, and birthday display helpers.
+- **Profile create/edit save:** `includes/itm_employees_profile_save.php` — `itm_employees_profile_normalize_post_row()`, `itm_employees_profile_insert_prepared()`, `itm_employees_profile_update_prepared()`; used by `create.php` and `edit.php` POST handlers (mysqli_prepare + bind_param, nullable FK/date normalization).
 - **includes/itm_employees_hidden_accounts.php** (repo `includes/`) — DB-only `is_hidden` column ensure + UI exclusion predicate.
 
 ## 8. Multi-Tenant Rules
