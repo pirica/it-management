@@ -259,13 +259,14 @@ The file `db/03_triggers.sql` defines structured `AFTER INSERT`, `AFTER UPDATE`,
 
 #### 5.1.1 Generic LAMP / WAMP Setup (Agnostic Apache/MySQL)
 1.  **Code Deployment:** Clone the repository or extract the project bundle directly into your server's web root (e.g. `/var/www/html/it-management` or `C:\wamp\www\it-management`).
-2.  **Write Permissions:** Ensure the server daemon (e.g., `www-data` or `apache`) has read/write permissions for the following directories:
+2.  **Browser setup wizard (recommended):** Open [setup/index.php](http://localhost/it-management/setup/index.php) in a new browser tab (no login). The eight-step installer confirms the install folder, verifies files, tests the database connection, imports the `db/` bundle, scans PHP extensions, writes `.env` settings, rotates the seed Admin password, optionally installs sample data, then deletes `setup/index.php` and writes `setup/.installed`. Manual `.env` + SQL import below remains valid when the wizard is unavailable.
+3.  **Write Permissions:** Ensure the server daemon (e.g., `www-data` or `apache`) has read/write permissions for the following directories:
     *   `images/` (Equipment photo uploads)
     *   `tickets_photos/` (Ticketing and update attachments)
     *   `backups/` (SQL backup storage)
     *   `floor_plans/` (Drawing blueprints)
     *   `files/` (Secure multi-tenant file system storage)
-3.  **Local Environment Variables:** Copy the `.env.example` file to `.env` in the repository root and customize credentials (full reference: `docs/ENV.md`):
+4.  **Local Environment Variables:** Copy the `.env.example` file to `.env` in the repository root and customize credentials (full reference: `docs/ENV.md`):
     ```env
     DB_HOST=127.0.0.1
     DB_PORT=3306
@@ -278,7 +279,7 @@ The file `db/03_triggers.sql` defines structured `AFTER INSERT`, `AFTER UPDATE`,
     APP_ENV=development
     ```
     `ITM_DEV` / `APP_ENV` do not enable on-screen PHP errors; use Settings → **enable all error reporting** per employee when debugging (default off).
-4.  **Database Sizing:**
+5.  **Database Sizing:**
     *   Create a clean database named `itmanagement` with character set `utf8mb4` and collation `utf8mb4_unicode_ci`.
     *   Pipe the schema, seed data, and trigger definitions in order:
         ```bash
@@ -286,7 +287,7 @@ The file `db/03_triggers.sql` defines structured `AFTER INSERT`, `AFTER UPDATE`,
         mysql -u root -p -h 127.0.0.1 -P 3306 --default-character-set=utf8mb4 itmanagement < db/02_data.sql
         mysql -u root -p -h 127.0.0.1 -P 3306 --default-character-set=utf8mb4 itmanagement < db/03_triggers.sql
         ```
-5.  **Virtual Host Configuration:** Set up your virtual host in Apache (`httpd.conf` or `sites-available/`) ensuring `AllowOverride All` is active so that directory-level `.htaccess` security policies take effect.
+6.  **Virtual Host Configuration:** Set up your virtual host in Apache (`httpd.conf` or `sites-available/`) ensuring `AllowOverride All` is active so that directory-level `.htaccess` security policies take effect.
 
 #### 5.1.2 Specialized Environment: Laragon Portable (Windows)
 For developers using Laragon Portable (such as the verified workstation setup):
