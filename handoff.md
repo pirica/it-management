@@ -259,7 +259,7 @@ The file `db/03_triggers.sql` defines structured `AFTER INSERT`, `AFTER UPDATE`,
 
 #### 5.1.1 Generic LAMP / WAMP Setup (Agnostic Apache/MySQL)
 1.  **Code Deployment:** Clone the repository or extract the project bundle directly into your server's web root (e.g. `/var/www/html/it-management` or `C:\wamp\www\it-management`).
-2.  **Browser setup wizard (recommended):** Open [setup/index.php](http://localhost/it-management/setup/index.php) in a new browser tab (no login). The eight-step installer confirms the install folder, verifies files, tests the database connection, imports the `db/` bundle, scans PHP extensions, writes `.env` settings, rotates the seed Admin password, optionally installs sample data, then deletes `setup/index.php` and writes `setup/.installed`. Manual `.env` + SQL import below remains valid when the wizard is unavailable.
+2.  **Browser setup wizard (recommended):** Open [setup/index.php](http://localhost/it-management/setup/index.php) in a new browser tab (no login). The eight-step installer confirms the install folder (creates a missing path and downloads `pirica/it-management` from GitHub; rejects other existing folders), verifies files, tests the database connection, imports the `db/` bundle, scans PHP extensions, writes `.env` settings, rotates the seed Admin password, optionally installs sample data, then deletes `setup/index.php` and writes `setup/.installed`. Manual `.env` + SQL import below remains valid when the wizard is unavailable.
 3.  **Write Permissions:** Ensure the server daemon (e.g., `www-data` or `apache`) has read/write permissions for the following directories:
     *   `images/` (Equipment photo uploads)
     *   `tickets_photos/` (Ticketing and update attachments)

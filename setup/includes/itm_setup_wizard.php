@@ -157,6 +157,489 @@ if (!function_exists('itm_setup_wizard_format_path_for_input')) {
     }
 }
 
+if (!function_exists('itm_setup_wizard_github_repo_slug')) {
+    function itm_setup_wizard_github_repo_slug(): string
+    {
+        $slug = getenv('ITM_SETUP_GITHUB_REPO');
+        if (is_string($slug) && trim($slug) !== '') {
+            return trim($slug);
+        }
+
+        return 'pirica/it-management';
+    }
+}
+
+if (!function_exists('itm_setup_wizard_github_default_branch')) {
+    function itm_setup_wizard_github_default_branch(): string
+    {
+        $branch = getenv('ITM_SETUP_GITHUB_BRANCH');
+        if (is_string($branch) && trim($branch) !== '') {
+            return trim($branch);
+        }
+
+        return 'master';
+    }
+}
+
+if (!function_exists('itm_setup_wizard_github_clone_url')) {
+    function itm_setup_wizard_github_clone_url(): string
+    {
+        return 'https://github.com/' . itm_setup_wizard_github_repo_slug() . '.git';
+    }
+}
+
+if (!function_exists('itm_setup_wizard_github_zip_url')) {
+    function itm_setup_wizard_github_zip_url(): string
+    {
+        $slug = itm_setup_wizard_github_repo_slug();
+        $branch = itm_setup_wizard_github_default_branch();
+
+        return 'https://github.com/' . $slug . '/archive/refs/heads/' . rawurlencode($branch) . '.zip';
+    }
+}
+
+if (!function_exists('itm_setup_wizard_paths_equal')) {
+    function itm_setup_wizard_paths_equal(string $a, string $b): bool
+    {
+        $a = strtolower(str_replace('\\', '/', rtrim($a, '/\\')));
+        $b = strtolower(str_replace('\\', '/', rtrim($b, '/\\')));
+
+        return $a === $b;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_is_safe_project_root_path')) {
+    function itm_setup_wizard_is_safe_project_root_path(string $normalized): bool
+    {
+        if ($normalized === '' || strpos($normalized, '..') !== false) {
+            return false;
+        }
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            return (bool)preg_match('/^[A-Za-z]:[\\\\\\/]/', $normalized) || $normalized[0] === '\\';
+        }
+
+        return $normalized[0] === '/';
+    }
+}
+
+if (!function_exists('itm_setup_wizard_project_root_has_schema')) {
+    function itm_setup_wizard_project_root_has_schema(string $dir): bool
+    {
+        $schema = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '01_schema.sql';
+
+        return is_readable($schema);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_shell_exec_available')) {
+    function itm_setup_wizard_shell_exec_available(): bool
+    {
+        if (!function_exists('shell_exec')) {
+            return false;
+        }
+
+        $disabled = array_map('trim', explode(',', (string)ini_get('disable_functions')));
+
+        return !in_array('shell_exec', $disabled, true);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_which_git')) {
+    function itm_setup_wizard_which_git(): ?string
+    {
+        if (!itm_setup_wizard_shell_exec_available()) {
+            return null;
+        }
+
+        $isWin = PHP_SAPI === 'win32' || strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $cmd = $isWin ? 'where git 2>NUL' : 'command -v git 2>/dev/null';
+        $out = trim((string)shell_exec($cmd));
+        if ($out === '') {
+            return null;
+        }
+
+        $line = strtok($out, "\r\n");
+
+        return $line !== false && $line !== '' ? $line : null;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_run_shell_command')) {
+    /**
+     * @return array{exit:int,output:string}
+     */
+    function itm_setup_wizard_run_shell_command(string $command): array
+    {
+        $output = [];
+        $exit = 1;
+        if (function_exists('exec')) {
+            exec($command . ' 2>&1', $output, $exit);
+        }
+
+        return ['exit' => $exit, 'output' => implode("\n", $output)];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_remove_directory_tree')) {
+    function itm_setup_wizard_remove_directory_tree(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $items = scandir($dir);
+        if ($items === false) {
+            return;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                itm_setup_wizard_remove_directory_tree($path);
+            } else {
+                @unlink($path);
+            }
+        }
+
+        @rmdir($dir);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_copy_path')) {
+    function itm_setup_wizard_copy_path(string $source, string $destination): bool
+    {
+        if (is_dir($source)) {
+            if (!is_dir($destination) && !@mkdir($destination, 0755, true)) {
+                return false;
+            }
+            $items = scandir($source);
+            if ($items === false) {
+                return false;
+            }
+            foreach ($items as $item) {
+                if ($item === '.' || $item === '..') {
+                    continue;
+                }
+                if (!itm_setup_wizard_copy_path(
+                    $source . DIRECTORY_SEPARATOR . $item,
+                    $destination . DIRECTORY_SEPARATOR . $item
+                )) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        $parent = dirname($destination);
+        if (!is_dir($parent) && !@mkdir($parent, 0755, true)) {
+            return false;
+        }
+
+        return @copy($source, $destination);
+    }
+}
+
+if (!function_exists('itm_setup_wizard_move_directory_contents')) {
+    function itm_setup_wizard_move_directory_contents(string $from, string $to): bool
+    {
+        $items = scandir($from);
+        if ($items === false) {
+            return false;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $src = $from . DIRECTORY_SEPARATOR . $item;
+            $dst = $to . DIRECTORY_SEPARATOR . $item;
+            if (!@rename($src, $dst)) {
+                if (!itm_setup_wizard_copy_path($src, $dst)) {
+                    return false;
+                }
+                if (is_dir($src)) {
+                    itm_setup_wizard_remove_directory_tree($src);
+                } else {
+                    @unlink($src);
+                }
+            }
+        }
+
+        return true;
+    }
+}
+
+if (!function_exists('itm_setup_wizard_http_download_to_file')) {
+    /**
+     * @return array{ok:bool,message:string}
+     */
+    function itm_setup_wizard_http_download_to_file(string $url, string $destination): array
+    {
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            if ($ch === false) {
+                return ['ok' => false, 'message' => 'curl_init failed'];
+            }
+            $fp = fopen($destination, 'wb');
+            if ($fp === false) {
+                curl_close($ch);
+
+                return ['ok' => false, 'message' => 'Could not open temp file for download'];
+            }
+            curl_setopt_array($ch, [
+                CURLOPT_FILE => $fp,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_FAILONERROR => true,
+                CURLOPT_TIMEOUT => 600,
+                CURLOPT_USERAGENT => 'ITM-Setup-Wizard/1.0',
+            ]);
+            $ok = curl_exec($ch);
+            $error = curl_error($ch);
+            curl_close($ch);
+            fclose($fp);
+            if ($ok === false) {
+                @unlink($destination);
+
+                return ['ok' => false, 'message' => 'Download failed: ' . $error];
+            }
+
+            return ['ok' => true, 'message' => ''];
+        }
+
+        if (!ini_get('allow_url_fopen')) {
+            return ['ok' => false, 'message' => 'curl extension and allow_url_fopen are both unavailable'];
+        }
+
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 600,
+                'header' => "User-Agent: ITM-Setup-Wizard/1.0\r\n",
+            ],
+        ]);
+        $data = @file_get_contents($url, false, $context);
+        if ($data === false) {
+            return ['ok' => false, 'message' => 'Could not download GitHub archive'];
+        }
+        if (file_put_contents($destination, $data) === false) {
+            return ['ok' => false, 'message' => 'Could not write GitHub archive to disk'];
+        }
+
+        return ['ok' => true, 'message' => ''];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_clone_from_github')) {
+    /**
+     * @return array{ok:bool,message:string}
+     */
+    function itm_setup_wizard_clone_from_github(string $targetDir): array
+    {
+        $git = itm_setup_wizard_which_git();
+        if ($git === null) {
+            return ['ok' => false, 'message' => 'git not found on PATH'];
+        }
+
+        $cmd = sprintf(
+            '%s clone --depth 1 --branch %s %s %s',
+            escapeshellarg($git),
+            escapeshellarg(itm_setup_wizard_github_default_branch()),
+            escapeshellarg(itm_setup_wizard_github_clone_url()),
+            escapeshellarg($targetDir)
+        );
+        if (PHP_SAPI === 'win32' || strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $cmd = 'cmd /c ' . $cmd;
+        }
+
+        $run = itm_setup_wizard_run_shell_command($cmd);
+        if ($run['exit'] !== 0) {
+            return ['ok' => false, 'message' => 'git clone failed: ' . $run['output']];
+        }
+
+        if (!itm_setup_wizard_project_root_has_schema($targetDir)) {
+            return ['ok' => false, 'message' => 'git clone finished but db/01_schema.sql is missing'];
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Cloned ' . itm_setup_wizard_github_repo_slug() . ' (' . itm_setup_wizard_github_default_branch() . ') from GitHub.',
+        ];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_download_github_zip')) {
+    /**
+     * @return array{ok:bool,message:string}
+     */
+    function itm_setup_wizard_download_github_zip(string $targetDir): array
+    {
+        if (!class_exists('ZipArchive')) {
+            return ['ok' => false, 'message' => 'ZipArchive PHP extension is required when git is unavailable'];
+        }
+
+        $tmpZip = tempnam(sys_get_temp_dir(), 'itm_setup_zip_');
+        if ($tmpZip === false) {
+            return ['ok' => false, 'message' => 'Could not create temp file for GitHub download'];
+        }
+
+        $download = itm_setup_wizard_http_download_to_file(itm_setup_wizard_github_zip_url(), $tmpZip);
+        if (!$download['ok']) {
+            @unlink($tmpZip);
+
+            return $download;
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($tmpZip) !== true) {
+            @unlink($tmpZip);
+
+            return ['ok' => false, 'message' => 'Could not open downloaded GitHub archive'];
+        }
+
+        $extractRoot = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'itm_setup_extract_' . bin2hex(random_bytes(4));
+        if (!@mkdir($extractRoot, 0755, true)) {
+            $zip->close();
+            @unlink($tmpZip);
+
+            return ['ok' => false, 'message' => 'Could not create temp extract folder'];
+        }
+
+        if (!$zip->extractTo($extractRoot)) {
+            $zip->close();
+            @unlink($tmpZip);
+            itm_setup_wizard_remove_directory_tree($extractRoot);
+
+            return ['ok' => false, 'message' => 'Could not extract GitHub archive'];
+        }
+        $zip->close();
+        @unlink($tmpZip);
+
+        $entries = array_values(array_diff(scandir($extractRoot) ?: [], ['.', '..']));
+        if (count($entries) !== 1) {
+            itm_setup_wizard_remove_directory_tree($extractRoot);
+
+            return ['ok' => false, 'message' => 'Unexpected GitHub archive layout'];
+        }
+
+        $sourceDir = $extractRoot . DIRECTORY_SEPARATOR . $entries[0];
+        if (!is_dir($sourceDir) || !itm_setup_wizard_move_directory_contents($sourceDir, $targetDir)) {
+            itm_setup_wizard_remove_directory_tree($extractRoot);
+
+            return ['ok' => false, 'message' => 'Could not move extracted project files into project root'];
+        }
+
+        itm_setup_wizard_remove_directory_tree($extractRoot);
+
+        if (!itm_setup_wizard_project_root_has_schema($targetDir)) {
+            return ['ok' => false, 'message' => 'Archive extracted but db/01_schema.sql is missing'];
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Downloaded ' . itm_setup_wizard_github_repo_slug() . ' archive from GitHub.',
+        ];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_download_project_from_github')) {
+    /**
+     * @return array{ok:bool,message:string}
+     */
+    function itm_setup_wizard_download_project_from_github(string $targetDir): array
+    {
+        $clone = itm_setup_wizard_clone_from_github($targetDir);
+        if ($clone['ok']) {
+            return $clone;
+        }
+
+        $zip = itm_setup_wizard_download_github_zip($targetDir);
+        if ($zip['ok']) {
+            return $zip;
+        }
+
+        return [
+            'ok' => false,
+            'message' => trim($clone['message'] . ' ' . $zip['message']),
+        ];
+    }
+}
+
+if (!function_exists('itm_setup_wizard_provision_project_root')) {
+    /**
+     * Create a new project root when missing (download from GitHub) or accept the current runtime install.
+     *
+     * @return array{ok:bool,path:string,message:string}
+     */
+    function itm_setup_wizard_provision_project_root(string $input): array
+    {
+        $normalized = itm_setup_wizard_normalize_path_input($input);
+        if ($normalized === '') {
+            return ['ok' => false, 'path' => '', 'message' => 'Project root is required.'];
+        }
+
+        if (!itm_setup_wizard_is_safe_project_root_path($normalized)) {
+            return ['ok' => false, 'path' => $normalized, 'message' => 'Enter an absolute path without .. segments.'];
+        }
+
+        $runtimeRoot = itm_setup_wizard_detected_project_root();
+        $resolved = realpath($normalized);
+
+        if ($resolved !== false && is_dir($resolved)) {
+            if (itm_setup_wizard_paths_equal($resolved, $runtimeRoot) && itm_setup_wizard_project_root_has_schema($resolved)) {
+                return ['ok' => true, 'path' => $resolved, 'message' => 'Using current install folder.'];
+            }
+
+            return [
+                'ok' => false,
+                'path' => $resolved,
+                'message' => 'Project root folder already exists. Choose a path that does not exist yet, or keep the auto-detected current install path.',
+            ];
+        }
+
+        $parent = dirname($normalized);
+        if (!is_dir($parent)) {
+            return [
+                'ok' => false,
+                'path' => $normalized,
+                'message' => 'Parent folder does not exist: ' . itm_setup_wizard_format_path_for_input($parent),
+            ];
+        }
+        if (!is_writable($parent)) {
+            return [
+                'ok' => false,
+                'path' => $normalized,
+                'message' => 'Parent folder is not writable: ' . itm_setup_wizard_format_path_for_input($parent),
+            ];
+        }
+
+        if (!@mkdir($normalized, 0755, false)) {
+            return ['ok' => false, 'path' => $normalized, 'message' => 'Could not create project root folder.'];
+        }
+
+        $download = itm_setup_wizard_download_project_from_github($normalized);
+        if (!$download['ok']) {
+            itm_setup_wizard_remove_directory_tree($normalized);
+            @rmdir($normalized);
+
+            return ['ok' => false, 'path' => $normalized, 'message' => $download['message']];
+        }
+
+        $resolved = realpath($normalized);
+        if ($resolved === false || !itm_setup_wizard_project_root_has_schema($resolved)) {
+            itm_setup_wizard_remove_directory_tree($normalized);
+            @rmdir($normalized);
+
+            return ['ok' => false, 'path' => $normalized, 'message' => 'Download finished but db/01_schema.sql was not found.'];
+        }
+
+        return ['ok' => true, 'path' => $resolved, 'message' => $download['message']];
+    }
+}
+
 if (!function_exists('itm_setup_wizard_validate_project_root_path')) {
     /**
      * @return array{ok:bool,path:string,message:string}
@@ -169,17 +652,8 @@ if (!function_exists('itm_setup_wizard_validate_project_root_path')) {
         }
 
         $resolved = realpath($normalized);
-        if ($resolved === false || !is_dir($resolved)) {
-            return ['ok' => false, 'path' => $normalized, 'message' => 'Project root folder does not exist or is not readable.'];
-        }
-
-        $schemaPath = $resolved . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '01_schema.sql';
-        if (!is_readable($schemaPath)) {
-            return [
-                'ok' => false,
-                'path' => $resolved,
-                'message' => 'Folder must contain db/01_schema.sql (IT Management project root).',
-            ];
+        if ($resolved === false || !is_dir($resolved) || !itm_setup_wizard_project_root_has_schema($resolved)) {
+            return ['ok' => false, 'path' => $normalized, 'message' => 'Project root must contain db/01_schema.sql.'];
         }
 
         return ['ok' => true, 'path' => $resolved, 'message' => ''];
