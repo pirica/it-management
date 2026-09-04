@@ -96,7 +96,7 @@ ITM_DEV=1
 APP_ENV=development
 ```
 
-Full copy-paste template: `env.development.sample` (repo root). Canonical reference: `docs/ENV.md`.
+Full copy-paste template: `.env.development.sample` (repo root). Canonical reference: `docs/ENV.md`.
 
 **Verify:** `php -r 'require "config/config.php"; echo APP_ENV, "\n";'` → `development`.
 
