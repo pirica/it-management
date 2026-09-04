@@ -341,7 +341,7 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 
 <h2 align="center">Installation</h2>
 
-<p align="center"><strong>Recommended:</strong> use the browser setup wizard at <a href="http://localhost/it-management/setup/index.php">setup/index.php</a> (no login). Step 1 lets you confirm or edit the <strong>project root</strong> path (on Windows use backslashes, e.g. <code>C:\laragon\www\it-management</code>), set the public URL, then the wizard verifies files, imports the <code>db/</code> bundle, scans PHP extensions, writes <code>.env</code>, rotates the seed Admin password, optionally installs sample data, and removes <code>setup/index.php</code> when finished. See <code>handoff.md</code> §5.1.1 for details.</p>
+<p align="center"><strong>Recommended:</strong> use the browser setup wizard at <a href="http://localhost/it-management/setup/index.php">setup/index.php</a> (no login). Step 1 lets you set the <strong>project root</strong> path: if the folder does not exist, the wizard creates it and downloads the project from GitHub; if it already exists, use the auto-detected current install path for an in-place setup (on Windows use backslashes, e.g. <code>C:\laragon\www\it-management</code>). Then set the public URL, verify files, import the <code>db/</code> bundle, scan PHP extensions, write <code>.env</code>, rotate the seed Admin password, optionally install sample data, and remove <code>setup/index.php</code> when finished. See <code>handoff.md</code> §5.1.1 for details.</p>
 
 <p align="center"><strong>Manual install</strong> (when the wizard is unavailable):</p>
 

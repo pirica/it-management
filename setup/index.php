@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'step1_save') {
         $projectRootRaw = (string)($_POST['project_root'] ?? '');
-        $rootCheck = itm_setup_wizard_validate_project_root_path($projectRootRaw);
+        $rootCheck = itm_setup_wizard_provision_project_root($projectRootRaw);
         if (!$rootCheck['ok']) {
             itm_setup_wizard_state_set([
                 'project_root' => itm_setup_wizard_format_path_for_input($projectRootRaw),
@@ -57,11 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($appUrl === '/') {
             $appUrl = itm_setup_wizard_detect_paths()['base_url'];
         }
+        $successMessage = $rootCheck['message'] !== ''
+            ? $rootCheck['message']
+            : 'Install folder confirmed.';
         itm_setup_wizard_state_set([
             'project_root' => $rootCheck['path'],
             'itm_app_url' => $appUrl,
             'install_notes' => trim((string)($_POST['install_notes'] ?? '')),
-            'flash' => ['type' => 'success', 'message' => 'Install folder confirmed.'],
+            'flash' => ['type' => 'success', 'message' => $successMessage],
         ]);
         itm_setup_wizard_mark_step_done(1);
         itm_setup_wizard_set_step(2);
@@ -373,7 +376,7 @@ header('Content-Type: text/html; charset=utf-8');
                     <input type="hidden" name="step" value="1">
                     <label for="project_root">Project root</label>
                     <input type="text" id="project_root" name="project_root" value="<?php echo sanitize($projectRootInput); ?>" required>
-                    <p class="sub" style="margin-top:0;">Absolute path to the IT Management folder (must contain <code>db/01_schema.sql</code>). On Windows use backslashes, e.g. <code>C:\laragon\www\it-management</code>.</p>
+                    <p class="sub" style="margin-top:0;">Absolute path for a <strong>new</strong> install folder. If the path does not exist, the wizard creates it (mode <code>0755</code>) and downloads <code>pirica/it-management</code> from GitHub (<code>git clone</code>, or ZIP when git is unavailable). If the folder already exists, step 1 fails — use the auto-detected current install path to continue an in-place setup. On Windows use backslashes, e.g. <code>C:\laragon\www\it-management</code>.</p>
                     <table>
                         <tr><th>Auto-detected root</th><td><code><?php echo sanitize(itm_setup_wizard_format_path_for_input($paths['detected_project_root'])); ?></code></td></tr>
                         <tr><th>Document root</th><td><code><?php echo sanitize($paths['document_root'] !== '' ? itm_setup_wizard_format_path_for_input($paths['document_root']) : '(not detected)'); ?></code></td></tr>
