@@ -339,6 +339,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'step6_skip') {
+        itm_setup_wizard_require_import_bundle_or_redirect();
+        itm_setup_wizard_state_set([
+            'admin_username' => 'Admin',
+            'flash' => [
+                'type' => 'info',
+                'message' => 'Skipped administrator account update (using default Admin credentials).',
+            ],
+        ]);
+        itm_setup_wizard_mark_step_done(6);
+        itm_setup_wizard_set_step(7);
+        header('Location: ' . BASE_URL . 'setup/index.php?step=7');
+        exit;
+    }
+
     if ($action === 'step7_skip') {
         itm_setup_wizard_require_import_bundle_or_redirect();
         $connSkip = itm_setup_wizard_reload_connection();
@@ -889,6 +904,12 @@ header('Content-Type: text/html; charset=utf-8');
                         <a class="btn" href="?step=5" title="Back">◀️</a>
                         <button class="btn btn-primary" type="submit" title="Save administrator">Save administrator</button>
                     </div>
+                </form>
+                <form method="post" style="margin-top:8px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <input type="hidden" name="wizard_action" value="step6_skip">
+                    <input type="hidden" name="step" value="6">
+                    <button class="btn" type="submit" title="Skip administrator password change">Skip</button>
                 </form>
 
             <?php elseif ($currentStep === 7): ?>
