@@ -21,8 +21,8 @@ Touches the full schema when **Import database bundle** runs (`db/01_schema.sql`
 ## 4. Business Rules (Critical for Agents)
 
 - Entry defines `ITM_SETUP_WIZARD` before `config/config.php` (no employee session; soft DB connection failure).
-- Completion writes `setup/.installed` under **`itm_setup_wizard_project_root()`** (step 8). **`setup/index.php`** and **`setup/includes/itm_setup_wizard.php`** stay on disk so reinstall does not require restoring deleted files. Finish redirects to **`ITM_APP_URL` login** from wizard session when set (cross-folder installs).
-- While `setup/.installed` exists, visiting the wizard redirects to `login.php?setup=complete` unless `?force=1`. **Reinstall:** delete `setup/.installed` on the confirmed project root, then open [setup/index.php](http://localhost/it-management/setup/index.php) again (or use `?force=1` without deleting the lock).
+- Completion deletes **`setup/index.php`** under **`itm_setup_wizard_project_root()`** (step 8). **`setup/includes/itm_setup_wizard.php`** stays on disk. Finish redirects to **`ITM_APP_URL` login** from wizard session when set (cross-folder installs).
+- **Reinstall:** restore **`setup/index.php`** from the repository onto the target project root, then open [setup/index.php](http://localhost/it-management/setup/index.php) again.
 - `config/config.php` strips `/setup` from `BASE_URL` detection (same pattern as `/scripts`).
 - Production profile in step 5 forces `ITM_DEV=0`, `ITM_SKIP_FORCE_PASSWORD_CHANGE=0`, and disables browser error reporting on `ui_configuration`.
 - **`.env` is written on step 7** (sample data install or skip) and re-checked on step 8 finish — not on step 3 or 5. The writer uses **`itm_setup_wizard_env_file_path()`** → `{confirmed project root}/.env` (same path step 2 verifies), **not** the PHP runtime `ROOT_PATH` when the wizard runs from a different folder than the install target (e.g. wizard at `it-management/setup/` installing into `it-management4/`). Steps 3–6 keep database and environment settings in wizard session; `itm_setup_wizard_connect_database()` prefers session creds over on-disk `.env` so a stale `.env` cannot break later steps or force a jump back to step 3.
@@ -52,9 +52,8 @@ None — form POST actions only (`wizard_action`).
 
 | File | Role |
 |------|------|
-| `setup/index.php` | Wizard UI + POST handlers (removed on finish) |
+| `setup/index.php` | Wizard UI + POST handlers (deleted on finish) |
 | `setup/includes/itm_setup_wizard.php` | Probes, `.env` writer, import, admin/sample helpers |
-| `setup/.installed` | Lock file written on finish |
 | `setup/index.html` | Directory listing placeholder |
 
 ## 8. Multi-Tenancy Rules
@@ -68,9 +67,9 @@ Step 5 may set `enable_all_error_reporting` on all `ui_configuration` rows when 
 ## 10. Known Pitfalls
 
 - Large `db/` import may fail when `max_allowed_packet` is low — wizard falls back to `mysql` CLI when mysqli import fails. `03_triggers.sql` uses `DELIMITER $$` blocks; mysqli import must use `itm_database_migrations_execute_sql_text()` (not `mysqli_multi_query`). Some trigger clusters use semicolon-terminated `DROP TRIGGER` lines **inside** an active `$$` delimiter block — the parser must flush those as separate statements (same as the mysql CLI), not batch them with the following `CREATE TRIGGER`.
-- Cross-folder install: run the wizard from any copy with `setup/`, but confirm step 1 **project root** matches the Apache alias you will use (e.g. `it-management4`). `.env`, `setup/.installed`, and setup file removal all target that confirmed root — not necessarily the folder serving the wizard PHP.
+- Cross-folder install: run the wizard from any copy with `setup/`, but confirm step 1 **project root** matches the Apache alias you will use (e.g. `it-management4`). `.env` and setup file removal all target that confirmed root — not necessarily the folder serving the wizard PHP.
 - Re-running the wizard in the same browser session without completing step 1 again may retain stale `completed_steps` — step 1 **Download** resets progress; steps 4–8 also verify live schema counts and send you back to step 3 when import was skipped.
-- Do not leave the wizard reachable in production without the lock — step 8 writes `setup/.installed`; delete that file (or use `?force=1`) only when intentionally reinstalling. Step 8 links to [check_prod_hardening.php?run=1&enforce=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1&enforce=1) (Administrator; new tab) and [login.php](http://localhost/it-management/login.php) (new tab) before finish.
+- Step 8 deletes `setup/index.php` on finish. Restore `setup/index.php` from the repository only when intentionally reinstalling. Step 8 links to [check_prod_hardening.php?run=1&enforce=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1&enforce=1) (Administrator; new tab) and [login.php](http://localhost/it-management/login.php) (new tab) before finish.
 
 ## 11. Testing / Verification
 
