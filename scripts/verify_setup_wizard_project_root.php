@@ -259,4 +259,34 @@ if ($indexBackupContent !== null) {
     file_put_contents($setupIndexPath, $indexBackupContent);
 }
 
+// Test cross-folder install scenario: running wizard at x_folder installing into target z_folder
+$xFolderIndexPath = ROOT_PATH . 'setup' . DIRECTORY_SEPARATOR . 'index.php';
+$tmpZFolder = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'itm_test_z_folder_' . bin2hex(random_bytes(4));
+$zFolderSetupDir = $tmpZFolder . DIRECTORY_SEPARATOR . 'setup';
+@mkdir($zFolderSetupDir, 0755, true);
+$zFolderIndexPath = $zFolderSetupDir . DIRECTORY_SEPARATOR . 'index.php';
+file_put_contents($zFolderIndexPath, "<?php // z_folder setup index");
+
+$_SESSION[itm_setup_wizard_session_key()] = [
+    'project_root' => $tmpZFolder,
+    'completed_steps' => [1 => true],
+    'current_step' => 8,
+];
+
+$crossFinish = itm_setup_wizard_remove_entrypoint();
+
+if (!$crossFinish['ok']) {
+    setup_root_fail('Cross-folder remove_entrypoint failed: ' . ($crossFinish['message'] ?? ''));
+} elseif (is_file($zFolderIndexPath)) {
+    setup_root_fail('Cross-folder install must delete target z_folder/setup/index.php');
+} elseif (!is_file($xFolderIndexPath)) {
+    setup_root_fail('Cross-folder install must NOT delete running x_folder/setup/index.php');
+} elseif (itm_setup_wizard_is_complete()) {
+    setup_root_fail('x_folder/setup/index.php must not be blocked (is_complete must return false)');
+} else {
+    setup_root_pass('Cross-folder install deletes z_folder/setup/index.php and leaves x_folder/setup/index.php unblocked');
+}
+
+itm_setup_wizard_remove_directory_tree($tmpZFolder);
+
 exit($fail > 0 ? 1 : 0);

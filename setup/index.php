@@ -13,11 +13,6 @@ define('ITM_SETUP_WIZARD', true);
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/includes/itm_setup_wizard.php';
 
-if (itm_setup_wizard_is_complete()) {
-    header('Location: ' . BASE_URL . 'login.php?setup=complete');
-    exit;
-}
-
 $steps = itm_setup_wizard_steps();
 $state = itm_setup_wizard_state();
 $currentStep = itm_setup_wizard_current_step();
