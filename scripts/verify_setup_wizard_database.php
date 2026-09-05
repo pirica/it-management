@@ -422,6 +422,61 @@ if ($staleImport['ok']) {
     setup_db_pass('import_bundle_satisfied rejects stale step 3 completion without import counts');
 }
 
+// Verify destination DB target isolation (save_admin & apply_ui_error_reporting target only destination DB)
+$destServerConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+if ($destServerConn) {
+    $targetDb = 'itm_setup_wizard_dest_' . substr(sha1((string)getmypid() . 'dest'), 0, 8);
+    $destCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $targetDb);
+    if ($destCreate['ok']) {
+        $destImport = itm_setup_wizard_import_database($host, $port, $user, $pass, $targetDb);
+        if ($destImport['ok']) {
+            $destConn = itm_mysqli_connect($host, $user, $pass, $targetDb, $port);
+            if ($destConn) {
+                // Test step 6 save_admin updates destination DB
+                $saveAdmin = itm_setup_wizard_save_admin($destConn, 'Admin', 'NewSecurePass123!', 'NewAdmin', 'User', 'admin@dest.example.com');
+                if (!$saveAdmin['ok']) {
+                    setup_db_fail('save_admin on destination DB failed: ' . $saveAdmin['message']);
+                } else {
+                    $adminCheck = mysqli_query($destConn, "SELECT work_email FROM employees WHERE username = 'Admin' AND deleted_at IS NULL LIMIT 1");
+                    $adminRow = $adminCheck ? mysqli_fetch_assoc($adminCheck) : null;
+                    if ($adminCheck) {
+                        mysqli_free_result($adminCheck);
+                    }
+                    if (($adminRow['work_email'] ?? '') !== 'admin@dest.example.com') {
+                        setup_db_fail('save_admin must write updated admin profile to destination DB');
+                    } else {
+                        setup_db_pass('save_admin updates administrator profile directly in destination DB');
+                    }
+                }
+
+                // Test step 5 apply_ui_error_reporting updates destination DB
+                $uiReport = itm_setup_wizard_apply_ui_error_reporting($destConn, 0);
+                if (!$uiReport['ok']) {
+                    setup_db_fail('apply_ui_error_reporting on destination DB failed');
+                } else {
+                    setup_db_pass('apply_ui_error_reporting updates ui_configuration on destination DB');
+                }
+
+                // Verify destination DB has no setup/installer state tables created
+                $installerTableCheck = mysqli_query($destConn, "SHOW TABLES LIKE '%installed%'");
+                $hasInstallerTable = $installerTableCheck && mysqli_num_rows($installerTableCheck) > 0;
+                if ($installerTableCheck) {
+                    mysqli_free_result($installerTableCheck);
+                }
+                if ($hasInstallerTable) {
+                    setup_db_fail('Destination DB must not contain installer/installed state tables');
+                } else {
+                    setup_db_pass('Destination DB contains no installer/installed tracking tables');
+                }
+
+                mysqli_close($destConn);
+            }
+        }
+        mysqli_query($destServerConn, 'DROP DATABASE IF EXISTS `' . $targetDb . '`');
+    }
+    mysqli_close($destServerConn);
+}
+
 $_SESSION['itm_setup_wizard'] = $wizardSessionBackup;
 
 exit($fail > 0 ? 1 : 0);
