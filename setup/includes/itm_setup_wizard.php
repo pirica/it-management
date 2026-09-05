@@ -12,17 +12,12 @@ if (!function_exists('itm_setup_wizard_setup_directory')) {
     }
 }
 
-if (!function_exists('itm_setup_wizard_lock_path')) {
-    function itm_setup_wizard_lock_path(): string
-    {
-        return itm_setup_wizard_setup_directory() . '.installed';
-    }
-}
-
 if (!function_exists('itm_setup_wizard_is_complete')) {
     function itm_setup_wizard_is_complete(): bool
     {
-        return is_file(itm_setup_wizard_lock_path());
+        $indexPath = rtrim(itm_setup_wizard_project_root(), '/\\') . DIRECTORY_SEPARATOR . 'setup' . DIRECTORY_SEPARATOR . 'index.php';
+
+        return !is_file($indexPath);
     }
 }
 
@@ -40,7 +35,7 @@ if (!function_exists('itm_setup_wizard_steps')) {
             5 => ['slug' => 'settings', 'title' => 'Environment settings', 'subtitle' => 'Development vs production profile'],
             6 => ['slug' => 'admin', 'title' => 'Administrator', 'subtitle' => 'Create or secure the primary admin account'],
             7 => ['slug' => 'sample_data', 'title' => 'Sample data', 'subtitle' => 'Optional demo rows per company'],
-            8 => ['slug' => 'finish', 'title' => 'Finish', 'subtitle' => 'Lock installer and remove setup entry point'],
+            8 => ['slug' => 'finish', 'title' => 'Finish', 'subtitle' => 'Delete setup entry point'],
         ];
     }
 }
@@ -2833,41 +2828,27 @@ if (!function_exists('itm_setup_wizard_install_sample_data_for_companies')) {
     }
 }
 
-if (!function_exists('itm_setup_wizard_write_lock')) {
-    function itm_setup_wizard_write_lock(): bool
-    {
-        $appVersion = defined('APP_VERSION') ? (string)APP_VERSION : 'unknown';
-        $payload = "installed_at=" . date('c') . "\napp_version=" . $appVersion . "\n";
-        return file_put_contents(itm_setup_wizard_lock_path(), $payload) !== false;
-    }
-}
-
-if (!function_exists('itm_setup_wizard_clear_install_lock')) {
-    function itm_setup_wizard_clear_install_lock(): bool
-    {
-        $lockPath = itm_setup_wizard_lock_path();
-        if (!is_file($lockPath)) {
-            return true;
-        }
-
-        return @unlink($lockPath);
-    }
-}
-
 if (!function_exists('itm_setup_wizard_remove_entrypoint')) {
     /**
      * @return array{ok:bool,message:string,removed:string[]}
      */
     function itm_setup_wizard_remove_entrypoint(): array
     {
-        if (!itm_setup_wizard_write_lock()) {
-            return ['ok' => false, 'message' => 'Could not write setup/.installed lock file', 'removed' => []];
+        $indexPath = rtrim(itm_setup_wizard_project_root(), '/\\') . DIRECTORY_SEPARATOR . 'setup' . DIRECTORY_SEPARATOR . 'index.php';
+        if (is_file($indexPath)) {
+            if (!@unlink($indexPath)) {
+                return [
+                    'ok' => false,
+                    'message' => 'Could not delete setup/index.php: ' . itm_setup_wizard_format_path_display($indexPath),
+                    'removed' => [],
+                ];
+            }
         }
 
         return [
             'ok' => true,
-            'message' => 'Setup locked (delete setup/.installed on the server to run the installer again)',
-            'removed' => [],
+            'message' => 'Setup finished and setup/index.php removed (restore setup/index.php on the server to run the installer again)',
+            'removed' => [$indexPath],
         ];
     }
 }
