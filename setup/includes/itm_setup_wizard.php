@@ -15,9 +15,7 @@ if (!function_exists('itm_setup_wizard_setup_directory')) {
 if (!function_exists('itm_setup_wizard_is_complete')) {
     function itm_setup_wizard_is_complete(): bool
     {
-        $indexPath = rtrim(itm_setup_wizard_project_root(), '/\\') . DIRECTORY_SEPARATOR . 'setup' . DIRECTORY_SEPARATOR . 'index.php';
-
-        return !is_file($indexPath);
+        return false;
     }
 }
 
