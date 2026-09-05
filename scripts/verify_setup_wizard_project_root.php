@@ -14,7 +14,10 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 define('ROOT_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 define('ITM_SETUP_WIZARD_TEST_DETECTED_ROOT', 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\www\\it-management');
 
+require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
 require_once ROOT_PATH . 'setup/includes/itm_setup_wizard.php';
+
+itm_script_output_begin('Setup Wizard Project Root Verification');
 
 $fail = 0;
 
@@ -22,12 +25,12 @@ function setup_root_fail(string $message): void
 {
     global $fail;
     $fail++;
-    fwrite(STDERR, '[FAIL] ' . $message . PHP_EOL);
+    echo colorText('[FAIL] ' . $message, 'fail') . "\n";
 }
 
 function setup_root_pass(string $message): void
 {
-    fwrite(STDOUT, '[PASS] ' . $message . PHP_EOL);
+    echo colorText('[PASS] ' . $message, 'pass') . "\n";
 }
 
 $collapsed = 'C:UsersNelsonSalvadorDownloadslaragon-portablewwwit-management2';
