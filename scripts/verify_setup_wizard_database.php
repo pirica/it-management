@@ -10,7 +10,10 @@ declare(strict_types=1);
 define('ROOT_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
 require_once ROOT_PATH . 'setup/includes/itm_setup_wizard.php';
+
+itm_script_output_begin('Setup Wizard Database Verification');
 
 $fail = 0;
 
@@ -18,12 +21,12 @@ function setup_db_fail(string $message): void
 {
     global $fail;
     $fail++;
-    fwrite(STDERR, '[FAIL] ' . $message . PHP_EOL);
+    echo colorText('[FAIL] ' . $message, 'fail') . "\n";
 }
 
 function setup_db_pass(string $message): void
 {
-    fwrite(STDOUT, '[PASS] ' . $message . PHP_EOL);
+    echo colorText('[PASS] ' . $message, 'pass') . "\n";
 }
 
 if (!itm_setup_wizard_is_safe_database_name('itmanagement2')) {
@@ -69,7 +72,7 @@ $pass = getenv('DB_PASS') ?: 'itmanagement';
 $dbName = getenv('DB_NAME') ?: 'itmanagement';
 $listConn = @mysqli_connect($host, $user, $pass, $dbName, $port);
 if (!$listConn) {
-    fwrite(STDOUT, '[SKIP] Sample company list test skipped — MySQL unavailable.' . PHP_EOL);
+    echo colorText('[WARN] Sample company list test skipped — MySQL unavailable.', 'warn') . "\n";
 } else {
 $emptyBatch = itm_setup_wizard_install_sample_data_for_companies($listConn, []);
 if ($emptyBatch['ok']) {
@@ -134,9 +137,9 @@ if (!function_exists('itm_database_migrations_execute_sql_text')) {
 $parserDb = 'itm_setup_wizard_parser_' . substr(sha1((string)getmypid() . 'parser'), 0, 8);
 $parserCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $parserDb);
 if ($semicolonDropSample === '') {
-    fwrite(STDOUT, '[SKIP] Parser semicolon-DROP live test skipped — no SQL excerpt.' . PHP_EOL);
+    echo colorText('[WARN] Parser semicolon-DROP live test skipped — no SQL excerpt.', 'warn') . "\n";
 } elseif (!$parserCreate['ok']) {
-    fwrite(STDOUT, '[SKIP] Parser semicolon-DROP live test skipped — could not create schema.' . PHP_EOL);
+    echo colorText('[WARN] Parser semicolon-DROP live test skipped — could not create schema.', 'warn') . "\n";
 } else {
     $schemaConn = itm_mysqli_connect($host, $user, $pass, $parserDb, $port);
     if (!$schemaConn) {
@@ -172,7 +175,7 @@ $testDb = 'itm_setup_wizard_probe_' . substr(sha1((string)getmypid()), 0, 8);
 
 $serverConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
 if (!$serverConn) {
-    fwrite(STDOUT, '[SKIP] MySQL server not reachable at ' . $host . ':' . $port . ' — live probe tests skipped.' . PHP_EOL);
+    echo colorText('[WARN] MySQL server not reachable at ' . $host . ':' . $port . ' — live probe tests skipped.', 'warn') . "\n";
     exit($fail > 0 ? 1 : 0);
 }
 mysqli_close($serverConn);
@@ -191,7 +194,7 @@ if (empty($probeMissing['server_ok'])) {
 $create = itm_setup_wizard_create_database($host, $port, $user, $pass, $testDb);
 if (!$create['ok']) {
     if (stripos($create['message'], 'schema directory') !== false) {
-        fwrite(STDOUT, '[SKIP] CREATE DATABASE unavailable in this MySQL environment — create/reset live tests skipped.' . PHP_EOL);
+        echo colorText('[WARN] CREATE DATABASE unavailable in this MySQL environment — create/reset live tests skipped.', 'warn') . "\n";
         exit($fail > 0 ? 1 : 0);
     }
     setup_db_fail('Create database failed: ' . $create['message']);
@@ -252,7 +255,7 @@ $importDb = 'itm_setup_wizard_import_' . substr(sha1((string)getmypid() . 'impor
 $importCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $importDb);
 if (!$importCreate['ok']) {
     if (stripos($importCreate['message'], 'schema directory') !== false) {
-        fwrite(STDOUT, '[SKIP] Import live test skipped — CREATE DATABASE unavailable.' . PHP_EOL);
+        echo colorText('[WARN] Import live test skipped — CREATE DATABASE unavailable.', 'warn') . "\n";
     } else {
         setup_db_fail('Import test create database failed: ' . $importCreate['message']);
     }
@@ -298,7 +301,7 @@ $minimalDb = 'itm_setup_wizard_minimal_' . substr(sha1((string)getmypid() . 'min
 $minimalCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $minimalDb);
 if (!$minimalCreate['ok']) {
     if (stripos($minimalCreate['message'], 'schema directory') !== false) {
-        fwrite(STDOUT, '[SKIP] Minimal single-user test skipped — CREATE DATABASE unavailable.' . PHP_EOL);
+        echo colorText('[WARN] Minimal single-user test skipped — CREATE DATABASE unavailable.', 'warn') . "\n";
     } else {
         setup_db_fail('Minimal single-user test create database failed: ' . $minimalCreate['message']);
     }
@@ -420,6 +423,61 @@ if ($staleImport['ok']) {
     setup_db_fail('import_bundle_satisfied must fail when step 3 session counts are zero');
 } else {
     setup_db_pass('import_bundle_satisfied rejects stale step 3 completion without import counts');
+}
+
+// Verify destination DB target isolation (save_admin & apply_ui_error_reporting target only destination DB)
+$destServerConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+if ($destServerConn) {
+    $targetDb = 'itm_setup_wizard_dest_' . substr(sha1((string)getmypid() . 'dest'), 0, 8);
+    $destCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $targetDb);
+    if ($destCreate['ok']) {
+        $destImport = itm_setup_wizard_import_database($host, $port, $user, $pass, $targetDb);
+        if ($destImport['ok']) {
+            $destConn = itm_mysqli_connect($host, $user, $pass, $targetDb, $port);
+            if ($destConn) {
+                // Test step 6 save_admin updates destination DB
+                $saveAdmin = itm_setup_wizard_save_admin($destConn, 'Admin', 'NewSecurePass123!', 'NewAdmin', 'User', 'admin@dest.example.com');
+                if (!$saveAdmin['ok']) {
+                    setup_db_fail('save_admin on destination DB failed: ' . $saveAdmin['message']);
+                } else {
+                    $adminCheck = mysqli_query($destConn, "SELECT work_email FROM employees WHERE username = 'Admin' AND deleted_at IS NULL LIMIT 1");
+                    $adminRow = $adminCheck ? mysqli_fetch_assoc($adminCheck) : null;
+                    if ($adminCheck) {
+                        mysqli_free_result($adminCheck);
+                    }
+                    if (($adminRow['work_email'] ?? '') !== 'admin@dest.example.com') {
+                        setup_db_fail('save_admin must write updated admin profile to destination DB');
+                    } else {
+                        setup_db_pass('save_admin updates administrator profile directly in destination DB');
+                    }
+                }
+
+                // Test step 5 apply_ui_error_reporting updates destination DB
+                $uiReport = itm_setup_wizard_apply_ui_error_reporting($destConn, 0);
+                if (!$uiReport['ok']) {
+                    setup_db_fail('apply_ui_error_reporting on destination DB failed');
+                } else {
+                    setup_db_pass('apply_ui_error_reporting updates ui_configuration on destination DB');
+                }
+
+                // Verify destination DB has no setup/installer state tables created
+                $installerTableCheck = mysqli_query($destConn, "SHOW TABLES LIKE '%installed%'");
+                $hasInstallerTable = $installerTableCheck && mysqli_num_rows($installerTableCheck) > 0;
+                if ($installerTableCheck) {
+                    mysqli_free_result($installerTableCheck);
+                }
+                if ($hasInstallerTable) {
+                    setup_db_fail('Destination DB must not contain installer/installed state tables');
+                } else {
+                    setup_db_pass('Destination DB contains no installer/installed tracking tables');
+                }
+
+                mysqli_close($destConn);
+            }
+        }
+        mysqli_query($destServerConn, 'DROP DATABASE IF EXISTS `' . $targetDb . '`');
+    }
+    mysqli_close($destServerConn);
 }
 
 $_SESSION['itm_setup_wizard'] = $wizardSessionBackup;
