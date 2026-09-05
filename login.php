@@ -13,9 +13,9 @@ $error = '';
 $setupCompleteNotice = '';
 if (isset($_GET['setup']) && (string)$_GET['setup'] === 'complete') {
     $setupReinstallUrl = rtrim((string)BASE_URL, '/') . '/setup/index.php';
-    $setupCompleteNotice = 'Setup is already complete. To reinstall, delete setup/.installed on the server, then open '
+    $setupCompleteNotice = 'Setup is already complete. To reinstall, restore setup/index.php from the repository setup/ folder, then open '
         . $setupReinstallUrl
-        . ' (or append ?force=1 to bypass the lock). If setup/index.php returns 404, restore it from the repository setup/ folder (older installers deleted that file on finish).';
+        . '.';
 }
 $csrfToken = '';
 $ssoLinkCompanyId = 0;

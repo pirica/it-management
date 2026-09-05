@@ -3,7 +3,7 @@
  * First-run setup wizard (cPanel-style step installer).
  *
  * Open setup/index.php in the browser while installation is incomplete.
- * Step 8 writes setup/.installed (entry files stay in place for reinstall).
+ * Step 8 deletes setup/index.php on finish to complete setup.
  */
 
 declare(strict_types=1);
@@ -13,7 +13,7 @@ define('ITM_SETUP_WIZARD', true);
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/includes/itm_setup_wizard.php';
 
-if (itm_setup_wizard_is_complete() && empty($_GET['force'])) {
+if (itm_setup_wizard_is_complete()) {
     header('Location: ' . BASE_URL . 'login.php?setup=complete');
     exit;
 }
@@ -931,14 +931,14 @@ header('Content-Type: text/html; charset=utf-8');
                 </form>
 
             <?php elseif ($currentStep === 8): ?>
-                <h2>8. Finish — lock installer</h2>
-                <p>Writes <code>setup/.installed</code> under the confirmed project root. The setup wizard files stay on disk so you can reinstall later by deleting that lock file (or open <code>setup/index.php?force=1</code>).</p>
+                <h2>8. Finish setup</h2>
+                <p>Deletes <code>setup/index.php</code> under the confirmed project root. To reinstall later, restore <code>setup/index.php</code> from the repository into the setup folder.</p>
                 <p class="sub"><code>.env</code> target: <code class="setup-path"><?php echo itm_setup_wizard_h_path_display($envFileTargetPath); ?></code></p>
                 <ul>
                     <li>Before production go-live, run the <a href="<?php echo sanitize($setupProdHardeningUrl); ?>" target="_blank" rel="noopener noreferrer">production hardening check</a> (<code>check_prod_hardening.php?run=1&amp;enforce=1</code> — Administrator session; open in a new browser tab).</li>
                     <li>Sign in at <a href="<?php echo sanitize(itm_setup_wizard_finish_login_url()); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize(itm_setup_wizard_finish_login_url()); ?></a> (open in a new browser tab).</li>
                 </ul>
-                <form method="post" onsubmit="return confirm('Delete setup/index.php and lock the installer?');">
+                <form method="post" onsubmit="return confirm('Delete setup/index.php to finish setup?');">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="wizard_action" value="step8_finish">
                     <input type="hidden" name="step" value="8">

@@ -237,28 +237,26 @@ $_SESSION[itm_setup_wizard_session_key()] = [
     'completed_steps' => [1 => true],
     'current_step' => 8,
 ];
-if (!defined('APP_VERSION')) {
-    define('APP_VERSION', 'verify-test');
-}
-$lockPath = itm_setup_wizard_lock_path();
-$hadLock = is_file($lockPath);
-if ($hadLock) {
-    @unlink($lockPath);
-}
+
+$indexBackupContent = is_file($setupIndexPath) ? file_get_contents($setupIndexPath) : null;
+
 $finish = itm_setup_wizard_remove_entrypoint();
+$lockPath = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . 'setup' . DIRECTORY_SEPARATOR . '.installed';
+
 if (!$finish['ok']) {
-    setup_root_fail('remove_entrypoint must write setup/.installed lock file');
-} elseif (!is_file($setupIndexPath) || !is_file($setupHelperPath)) {
-    setup_root_fail('remove_entrypoint must keep setup/index.php and setup/includes/itm_setup_wizard.php on disk');
-} elseif (!is_file($lockPath)) {
-    setup_root_fail('remove_entrypoint must create setup/.installed');
+    setup_root_fail('remove_entrypoint failed: ' . ($finish['message'] ?? ''));
+} elseif (is_file($setupIndexPath)) {
+    setup_root_fail('remove_entrypoint must delete setup/index.php');
+} elseif (!is_file($setupHelperPath)) {
+    setup_root_fail('remove_entrypoint must keep setup/includes/itm_setup_wizard.php on disk');
+} elseif (is_file($lockPath)) {
+    setup_root_fail('remove_entrypoint must not create setup/.installed');
 } else {
-    setup_root_pass('remove_entrypoint locks installer without deleting setup entry files');
+    setup_root_pass('remove_entrypoint deletes setup/index.php on finish without creating .installed');
 }
-if (!$hadLock) {
-    itm_setup_wizard_clear_install_lock();
-} elseif (!itm_setup_wizard_write_lock()) {
-    setup_root_fail('Could not restore setup/.installed after lock regression test');
+
+if ($indexBackupContent !== null) {
+    file_put_contents($setupIndexPath, $indexBackupContent);
 }
 
 exit($fail > 0 ? 1 : 0);
