@@ -85,19 +85,34 @@ if (stripos(str_replace('\\', '/', $imagesPath), 'it-management2') === false) {
 
 unset($_SESSION[itm_setup_wizard_session_key()]);
 
-$suffixProbe = shell_exec(
-    'php -r '
-    . escapeshellarg(
-        'define("ROOT_PATH", ' . var_export(ROOT_PATH, true) . ');'
-        . 'define("ITM_SETUP_WIZARD_TEST_DETECTED_ROOT", "C:\\\\Users\\\\NelsonSalvador\\\\Downloads\\\\laragon-portable\\\\www\\\\it-management3");'
-        . 'require ROOT_PATH . "setup/includes/itm_setup_wizard.php";'
-        . '$r = itm_setup_wizard_repair_windows_path_input("C:UsersNelsonSalvadorDownloadslaragon-portablewwwit-management5");'
-        . 'echo (stripos(str_replace("\\\\", "/", $r), "it-management5") !== false) ? "ok" : $r;'
-    )
-);
-$suffixProbe = is_string($suffixProbe) ? trim($suffixProbe) : '';
-if ($suffixProbe !== 'ok') {
-    setup_root_fail('Collapsed path must repair to it-management5 when runtime is it-management3, got: ' . $suffixProbe);
+$suffixProbeCode = "<?php\n"
+    . 'define("ROOT_PATH", ' . var_export(ROOT_PATH, true) . ');' . "\n"
+    . 'define("ITM_SETUP_WIZARD_TEST_DETECTED_ROOT", "C:\\\\Users\\\\NelsonSalvador\\\\Downloads\\\\laragon-portable\\\\www\\\\it-management3");' . "\n"
+    . 'require ROOT_PATH . "setup/includes/itm_setup_wizard.php";' . "\n"
+    . '$r = itm_setup_wizard_repair_windows_path_input("C:UsersNelsonSalvadorDownloadslaragon-portablewwwit-management5");' . "\n"
+    . 'echo (stripos(str_replace("\\\\", "/", $r), "it-management5") !== false) ? "ok" : $r;' . "\n";
+
+$suffixProbe = '';
+$descriptors = [
+    0 => ['pipe', 'r'],
+    1 => ['pipe', 'w'],
+    2 => ['pipe', 'w'],
+];
+$process = @proc_open([PHP_BINARY, '-d', 'display_errors=1'], $descriptors, $pipes);
+if (is_resource($process)) {
+    fwrite($pipes[0], $suffixProbeCode);
+    fclose($pipes[0]);
+    $suffixProbe = (string)stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    proc_close($process);
+}
+$suffixProbeOutput = trim($suffixProbe);
+$lines = explode("\n", str_replace("\r\n", "\n", $suffixProbeOutput));
+$suffixProbeLastLine = trim((string)end($lines));
+
+if ($suffixProbeLastLine !== 'ok' && stripos($suffixProbeOutput, 'ok') === false) {
+    setup_root_fail('Collapsed path must repair to it-management5 when runtime is it-management3, got: ' . $suffixProbeOutput);
 } else {
     setup_root_pass('Collapsed path repairs sibling folder suffix (it-management3 runtime → it-management5 target)');
 }
