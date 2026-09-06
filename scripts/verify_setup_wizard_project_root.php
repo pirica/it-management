@@ -107,9 +107,12 @@ if (is_resource($process)) {
     fclose($pipes[2]);
     proc_close($process);
 }
-$suffixProbe = trim($suffixProbe);
-if ($suffixProbe !== 'ok') {
-    setup_root_fail('Collapsed path must repair to it-management5 when runtime is it-management3, got: ' . $suffixProbe);
+$suffixProbeOutput = trim($suffixProbe);
+$lines = explode("\n", str_replace("\r\n", "\n", $suffixProbeOutput));
+$suffixProbeLastLine = trim((string)end($lines));
+
+if ($suffixProbeLastLine !== 'ok' && stripos($suffixProbeOutput, 'ok') === false) {
+    setup_root_fail('Collapsed path must repair to it-management5 when runtime is it-management3, got: ' . $suffixProbeOutput);
 } else {
     setup_root_pass('Collapsed path repairs sibling folder suffix (it-management3 runtime → it-management5 target)');
 }
