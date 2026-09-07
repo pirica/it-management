@@ -2832,9 +2832,24 @@ if (!function_exists('itm_setup_wizard_remove_entrypoint')) {
      */
     function itm_setup_wizard_remove_entrypoint(): array
     {
-        $indexPath = rtrim(itm_setup_wizard_project_root(), '/\\') . DIRECTORY_SEPARATOR . 'setup' . DIRECTORY_SEPARATOR . 'index.php';
-        if (is_file($indexPath)) {
+        $projectRoot = itm_setup_wizard_project_root();
+        $indexPath = rtrim($projectRoot, '/\\') . DIRECTORY_SEPARATOR . 'setup' . DIRECTORY_SEPARATOR . 'index.php';
+
+        clearstatcache(true, $indexPath);
+
+        if (file_exists($indexPath) || is_file($indexPath)) {
+            @chmod($indexPath, 0666);
             if (!@unlink($indexPath)) {
+                clearstatcache(true, $indexPath);
+                if (file_exists($indexPath) || is_file($indexPath)) {
+                    // Try permission upgrade and retry unlink
+                    @chmod($indexPath, 0777);
+                    @unlink($indexPath);
+                    clearstatcache(true, $indexPath);
+                }
+            }
+
+            if (file_exists($indexPath) || is_file($indexPath)) {
                 return [
                     'ok' => false,
                     'message' => 'Could not delete setup/index.php: ' . itm_setup_wizard_format_path_display($indexPath),
