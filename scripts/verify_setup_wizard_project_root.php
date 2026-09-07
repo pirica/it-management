@@ -307,4 +307,53 @@ if (!$crossFinish['ok']) {
 
 itm_setup_wizard_remove_directory_tree($tmpZFolder);
 
+// Test setup/index.php?step=8 Finish button POST action (step8_finish) removing destination setup/index.php
+$tmpStep8ZFolder = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'itm_test_step8_finish_' . bin2hex(random_bytes(4));
+$step8ZSetupDir = $tmpStep8ZFolder . DIRECTORY_SEPARATOR . 'setup';
+@mkdir($step8ZSetupDir, 0755, true);
+$step8ZIndexPath = $step8ZSetupDir . DIRECTORY_SEPARATOR . 'index.php';
+file_put_contents($step8ZIndexPath, "<?php // destination setup entrypoint");
+
+$step8PostTestCode = "<?php\n"
+    . 'define("ROOT_PATH", ' . var_export(ROOT_PATH, true) . ');' . "\n"
+    . 'session_start();' . "\n"
+    . 'require ROOT_PATH . "setup/includes/itm_setup_wizard.php";' . "\n"
+    . '$_SESSION["itm_setup_wizard"] = [' . "\n"
+    . '    "project_root" => ' . var_export($tmpStep8ZFolder, true) . ",\n"
+    . '    "completed_steps" => [1 => true, 2 => true, 3 => true, 4 => true, 5 => true, 6 => true, 7 => true],' . "\n"
+    . '    "current_step" => 8,' . "\n"
+    . '    "table_count" => 999,' . "\n"
+    . '    "trigger_count" => 999,' . "\n"
+    . '    "db" => ["host" => "127.0.0.1", "port" => 3306, "user" => "root", "pass" => "", "name" => "itmanagement"],' . "\n"
+    . '];' . "\n"
+    . '$cleanup = itm_setup_wizard_remove_entrypoint();' . "\n"
+    . 'echo json_encode(["ok" => $cleanup["ok"], "target_exists" => file_exists(' . var_export($step8ZIndexPath, true) . ')]);' . "\n";
+
+$step8ProcOutput = '';
+$descriptors = [
+    0 => ['pipe', 'r'],
+    1 => ['pipe', 'w'],
+    2 => ['pipe', 'w'],
+];
+$process = @proc_open([PHP_BINARY, '-d', 'display_errors=1'], $descriptors, $pipes);
+if (is_resource($process)) {
+    fwrite($pipes[0], $step8PostTestCode);
+    fclose($pipes[0]);
+    $step8ProcOutput = (string)stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    proc_close($process);
+}
+
+$step8Decoded = json_decode(trim($step8ProcOutput), true);
+if (!is_array($step8Decoded) || empty($step8Decoded['ok']) || !isset($step8Decoded['target_exists'])) {
+    setup_root_fail('Step 8 finish button POST action verification script failed to execute: ' . $step8ProcOutput);
+} elseif ($step8Decoded['target_exists'] === true) {
+    setup_root_fail('Step 8 finish button action (step8_finish) failed to delete destination setup/index.php');
+} else {
+    setup_root_pass('Step 8 finish button action (step8_finish) deletes destination setup/index.php');
+}
+
+itm_setup_wizard_remove_directory_tree($tmpStep8ZFolder);
+
 exit($fail > 0 ? 1 : 0);
