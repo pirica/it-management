@@ -14,6 +14,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 define('ROOT_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 define('ITM_SETUP_WIZARD_TEST_DETECTED_ROOT', 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\www\\it-management');
 
+require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
 require_once ROOT_PATH . 'setup/includes/itm_setup_wizard.php';
 
@@ -284,6 +285,7 @@ $zFolderSetupDir = $tmpZFolder . DIRECTORY_SEPARATOR . 'setup';
 @mkdir($zFolderSetupDir, 0755, true);
 $zFolderIndexPath = $zFolderSetupDir . DIRECTORY_SEPARATOR . 'index.php';
 file_put_contents($zFolderIndexPath, "<?php // z_folder setup index");
+itm_setup_wizard_copy_path(ROOT_PATH . 'db', $tmpZFolder . DIRECTORY_SEPARATOR . 'db');
 
 $_SESSION[itm_setup_wizard_session_key()] = [
     'project_root' => $tmpZFolder,
@@ -306,5 +308,93 @@ if (!$crossFinish['ok']) {
 }
 
 itm_setup_wizard_remove_directory_tree($tmpZFolder);
+unset($_SESSION[itm_setup_wizard_session_key()]);
+
+// Test setup/index.php?step=8 Finish button POST action (step8_finish) removing destination setup/index.php
+$tmpStep8ZFolder = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'itm_test_step8_finish_' . bin2hex(random_bytes(4));
+$step8ZSetupDir = $tmpStep8ZFolder . DIRECTORY_SEPARATOR . 'setup';
+@mkdir($step8ZSetupDir, 0755, true);
+$step8ZIndexPath = $step8ZSetupDir . DIRECTORY_SEPARATOR . 'index.php';
+file_put_contents($step8ZIndexPath, "<?php // destination setup entrypoint");
+itm_setup_wizard_copy_path(ROOT_PATH . 'db', $tmpStep8ZFolder . DIRECTORY_SEPARATOR . 'db');
+
+$host = getenv('DB_HOST') ?: '127.0.0.1';
+$port = (int)(getenv('DB_PORT') ?: '3306');
+$user = getenv('DB_USER') ?: 'root';
+$pass = getenv('DB_PASS') ?: 'itmanagement';
+$dbName = 'itm_setup_wizard_finish_' . substr(sha1((string)getmypid() . 'finish'), 0, 8);
+
+$_SESSION[itm_setup_wizard_session_key()] = ['project_root' => rtrim(ROOT_PATH, '/\\')];
+$step8DbCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $dbName);
+if ($step8DbCreate['ok']) {
+    itm_setup_wizard_import_database($host, $port, $user, $pass, $dbName);
+}
+unset($_SESSION[itm_setup_wizard_session_key()]);
+
+$expectedTables = itm_setup_wizard_expected_table_count();
+$expectedTriggers = itm_setup_wizard_expected_trigger_count();
+
+$step8PostTestCode = "<?php\n"
+    . 'define("ROOT_PATH", ' . var_export(ROOT_PATH, true) . ');' . "\n"
+    . 'register_shutdown_function(function() {' . "\n"
+    . '    echo json_encode(["ok" => true, "target_exists" => file_exists(' . var_export($step8ZIndexPath, true) . '), "session" => $_SESSION["itm_setup_wizard"] ?? null]);' . "\n"
+    . '});' . "\n"
+    . 'ob_start();' . "\n"
+    . '@session_start();' . "\n"
+    . '$_SESSION["csrf_token"] = "test_csrf_token_123";' . "\n"
+    . '$_SESSION["itm_setup_wizard"] = [' . "\n"
+    . '    "project_root" => ' . var_export($tmpStep8ZFolder, true) . ",\n"
+    . '    "completed_steps" => [1 => true, 2 => true, 3 => true, 4 => true, 5 => true, 6 => true, 7 => true],' . "\n"
+    . '    "current_step" => 8,' . "\n"
+    . '    "table_count" => ' . (int)$expectedTables . ",\n"
+    . '    "trigger_count" => ' . (int)$expectedTriggers . ",\n"
+    . '    "db" => ["host" => ' . var_export($host, true) . ', "port" => ' . (int)$port . ', "user" => ' . var_export($user, true) . ', "pass" => ' . var_export($pass, true) . ', "name" => ' . var_export($dbName, true) . '],' . "\n"
+    . '];' . "\n"
+    . '$_SERVER["REQUEST_METHOD"] = "POST";' . "\n"
+    . '$_POST["csrf_token"] = "test_csrf_token_123";' . "\n"
+    . '$_POST["wizard_action"] = "step8_finish";' . "\n"
+    . '$_POST["step"] = "8";' . "\n"
+    . 'require ROOT_PATH . "setup/index.php";' . "\n";
+
+$step8ProcOutput = '';
+$descriptors = [
+    0 => ['pipe', 'r'],
+    1 => ['pipe', 'w'],
+    2 => ['pipe', 'w'],
+];
+$process = @proc_open([PHP_BINARY, '-d', 'display_errors=1'], $descriptors, $pipes);
+if (is_resource($process)) {
+    fwrite($pipes[0], $step8PostTestCode);
+    fclose($pipes[0]);
+    $step8ProcOutput = (string)stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    proc_close($process);
+}
+
+$step8Json = '';
+$start = strpos($step8ProcOutput, '{');
+$end = strrpos($step8ProcOutput, '}');
+if ($start !== false && $end !== false && $end > $start) {
+    $step8Json = substr($step8ProcOutput, $start, $end - $start + 1);
+} else {
+    $step8Json = trim($step8ProcOutput);
+}
+$step8Decoded = json_decode($step8Json, true);
+if (!is_array($step8Decoded) || empty($step8Decoded['ok']) || !isset($step8Decoded['target_exists'])) {
+    setup_root_fail('Step 8 finish button POST action verification script failed to execute: ' . $step8ProcOutput);
+} elseif ($step8Decoded['target_exists'] === true) {
+    setup_root_fail('Step 8 finish button action (step8_finish) failed to delete destination setup/index.php. Output: ' . json_encode($step8Decoded));
+} else {
+    setup_root_pass('Step 8 finish button action (step8_finish) deletes destination setup/index.php');
+}
+
+itm_setup_wizard_remove_directory_tree($tmpStep8ZFolder);
+
+$step8CleanupConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+if ($step8CleanupConn) {
+    mysqli_query($step8CleanupConn, 'DROP DATABASE IF EXISTS `' . $dbName . '`');
+    mysqli_close($step8CleanupConn);
+}
 
 exit($fail > 0 ? 1 : 0);
