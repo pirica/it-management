@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+define('ITM_CLI_SCRIPT', true);
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
