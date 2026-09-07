@@ -446,6 +446,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ' . BASE_URL . 'setup/index.php?step=7');
             exit;
         }
+        // Delete destination setup/index.php entry point to complete installation for the confirmed project_root.
         $cleanup = itm_setup_wizard_remove_entrypoint();
         if ($cleanup['ok']) {
             header('Location: ' . itm_setup_wizard_finish_login_url());
