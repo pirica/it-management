@@ -323,7 +323,7 @@ itm_setup_wizard_copy_path(ROOT_PATH . 'db', $tmpStep8ZFolder . DIRECTORY_SEPARA
 $host = 'localhost';
 $port = (int)(getenv('DB_PORT') ?: '3307');
 $user = getenv('DB_USER') ?: 'root';
-$pass = getenv('DB_PASS') ?: 'itmanagement';
+$pass = getenv('DB_PASS') ?: 'secret';
 $dbName = 'itm_setup_wizard_finish_' . substr(sha1((string)getmypid() . 'finish'), 0, 8);
 
 $_SESSION[itm_setup_wizard_session_key()] = ['project_root' => rtrim(ROOT_PATH, '/\\')];
@@ -416,7 +416,7 @@ $step8PostTestCode = "<?php\n"
     . '    "current_step" => 8,' . "\n"
     . '    "table_count" => 999,' . "\n"
     . '    "trigger_count" => 999,' . "\n"
-    . '    "db" => ["host" => "localhost", "port" => 3306, "user" => "root", "pass" => "", "name" => "itmanagement"],' . "\n"
+    . '    "db" => ["host" => "localhost", "port" => 3307, "user" => "root", "pass" => "secret", "name" => "itmanagement"],' . "\n"
     . '];' . "\n"
     . '$cleanup = itm_setup_wizard_remove_entrypoint();' . "\n"
     . 'echo json_encode(["ok" => $cleanup["ok"], "target_exists" => file_exists(' . var_export($step8ZIndexPath, true) . ')]);' . "\n";
