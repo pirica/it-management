@@ -318,8 +318,8 @@ $step8ZIndexPath = $step8ZSetupDir . DIRECTORY_SEPARATOR . 'index.php';
 file_put_contents($step8ZIndexPath, "<?php // destination setup entrypoint");
 itm_setup_wizard_copy_path(ROOT_PATH . 'db', $tmpStep8ZFolder . DIRECTORY_SEPARATOR . 'db');
 
-$host = getenv('DB_HOST') ?: '127.0.0.1';
-$port = (int)(getenv('DB_PORT') ?: '3306');
+$host = getenv('DB_HOST') ?: 'localhost';
+$port = (int)(getenv('DB_PORT') ?: '3307');
 $user = getenv('DB_USER') ?: 'root';
 $pass = getenv('DB_PASS') ?: 'itmanagement';
 $dbName = 'itm_setup_wizard_finish_' . substr(sha1((string)getmypid() . 'finish'), 0, 8);
