@@ -809,7 +809,7 @@ The `roles_permissions` module (`modules/roles_permissions/`) provides a unified
 
 #### CRUD mutation RBAC chokepoint (mandatory)
 
-Flattened CRUD modules must enforce create / edit / delete through one POST chokepoint — not duplicated per-handler `itm_require_crud_role_module_permission()` calls.
+Flattened CRUD modules must enforce create / edit / delete through one POST chokepoint — not duplicated per-handler `itm_require_crud_role_module_permission()` calls inside individual create/edit/delete branches. Onboarding developers must invoke the canonical mutation guard `itm_crud_mutation_guard_entry($conn, $crudAction, $moduleSlug)` (or `itm_crud_enforce_mutation_access()`, which delegates to `itm_require_crud_role_module_permission()`) once at the top of the entry script immediately after `config.php` bootstrap. Do not place scattered RBAC gate calls inside delete or create/edit action branches. All mutation paths and standalone entry files are verified by `php scripts/check_crud_rbac_coverage.php`.
 
 1. **Canonical API:** `itm_crud_enforce_mutation_access($conn, $action, $moduleSlug)` in `includes/itm_role_module_permissions.php` (wraps `itm_require_crud_role_module_permission()`).
 2. **Bootstrap:** `itm_crud_mutation_guard_entry($conn, $crudAction, $moduleSlug)` in `includes/itm_crud_mutation_bootstrap.php` (loaded from `config/config.php`). POST-only; infers `create` vs `edit` from `id` when `$crudAction` is empty; infers `$moduleSlug` from the entry folder when empty.
@@ -939,6 +939,7 @@ Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk alias rep
 
 ### 6. Module Consistency Guardrail (Mandatory)
 When a module uses duplicated procedural entry files (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`):
+* **CRUD mutation RBAC chokepoint guardrail (mandatory):** Enforce create, edit, and delete mutations at the top of entry scripts using the single canonical mutation guard `itm_crud_mutation_guard_entry()` (which delegates to `itm_require_crud_role_module_permission()`) right after `config.php` bootstrap. Do not place scattered RBAC gate calls inside individual delete or create/edit action branches. Verify coverage across all modules with `php scripts/check_crud_rbac_coverage.php`.
 * **Apply critical behavior fixes consistently** across all module entry files when they share the same helper blocks (rendering, CSRF validation, FK option loading).
 * **Incomplete implementation is not acceptable:** if a fix is made in one duplicated entry file, you must recheck and apply it to all matching duplicated files before finishing.
 * **Mandatory recheck checklist:** verify behavior consistency in `index.php`, `view.php`, `edit.php`, `create.php`, and `list_all.php` (plus `delete.php` when applicable) for the changed module before commit.
