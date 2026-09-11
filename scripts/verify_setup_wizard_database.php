@@ -7,9 +7,13 @@
 
 declare(strict_types=1);
 
+define('ITM_SETUP_WIZARD', true);
 define('ROOT_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 
+require_once ROOT_PATH . 'config/config.php';
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+require_once ROOT_PATH . 'includes/itm_database_sql_source.php';
+require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
 require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
 require_once ROOT_PATH . 'setup/includes/itm_setup_wizard.php';
 
@@ -285,7 +289,6 @@ if (!$importCreate['ok']) {
         $triggers = itm_setup_wizard_count_triggers($importConn, $importDb);
         $expectedTables = itm_setup_wizard_expected_table_count();
         $expectedTriggers = itm_setup_wizard_expected_trigger_count();
-        mysqli_close($importConn);
 
         if ($tables < $expectedTables) {
             setup_db_fail('Import table count ' . $tables . ' < expected ' . $expectedTables);
@@ -298,12 +301,87 @@ if (!$importCreate['ok']) {
         } else {
             setup_db_pass('Import trigger count matches 03_triggers.sql (' . $triggers . ')');
         }
+
+        // Test sample data seeding for single company (Company 1)
+        $singleSeed = itm_setup_wizard_install_sample_data_for_companies($importConn, [1]);
+        if (!$singleSeed['ok'] || strpos($singleSeed['message'], 'installed for company 1') === false) {
+            setup_db_fail('install_sample_data_for_companies failed for single company selection [1]: ' . ($singleSeed['message'] ?? ''));
+        } else {
+            $co1NotesRes = mysqli_query($importConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 1');
+            $co1NotesRow = $co1NotesRes ? mysqli_fetch_assoc($co1NotesRes) : null;
+            $co1NotesCount = (int)($co1NotesRow['c'] ?? 0);
+
+            $co3NotesRes = mysqli_query($importConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 3');
+            $co3NotesRow = $co3NotesRes ? mysqli_fetch_assoc($co3NotesRes) : null;
+            $co3NotesCount = (int)($co3NotesRow['c'] ?? 0);
+
+            if ($co1NotesCount < 1) {
+                setup_db_fail('install_sample_data_for_companies must seed sample rows for selected company 1');
+            } elseif ($co3NotesCount > 0) {
+                setup_db_fail('install_sample_data_for_companies must NOT seed unselected company 3 when only company 1 is chosen');
+            } else {
+                setup_db_pass('install_sample_data_for_companies seeds requested single company 1 only');
+            }
+        }
+
+        // Test mandatory seeding for company 3
+        $co3Seed = itm_setup_wizard_install_sample_data_for_companies($importConn, [3]);
+        if (!$co3Seed['ok'] || strpos($co3Seed['message'], 'installed for company 3') === false) {
+            setup_db_fail('install_sample_data_for_companies failed for company 3: ' . ($co3Seed['message'] ?? ''));
+        } else {
+            $co3NotesRes = mysqli_query($importConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 3');
+            $co3NotesRow = $co3NotesRes ? mysqli_fetch_assoc($co3NotesRes) : null;
+            $co3NotesCount = (int)($co3NotesRow['c'] ?? 0);
+
+            if ($co3NotesCount < 1) {
+                setup_db_fail('install_sample_data_for_companies must seed sample rows for company 3');
+            } else {
+                setup_db_pass('install_sample_data_for_companies seeds sample rows for company 3');
+            }
+        }
+
+        mysqli_close($importConn);
     }
 
     $importCleanup = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
     if ($importCleanup) {
         mysqli_query($importCleanup, 'DROP DATABASE IF EXISTS `' . $importDb . '`');
         mysqli_close($importCleanup);
+    }
+}
+
+$sampleMultiDb = 'itm_setup_wizard_sample_multi_' . substr(sha1((string)getmypid() . 'multi'), 0, 8);
+$sampleMultiCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $sampleMultiDb);
+if ($sampleMultiCreate['ok']) {
+    $sampleMultiImport = itm_setup_wizard_import_database($host, $port, $user, $pass, $sampleMultiDb);
+    if ($sampleMultiImport['ok']) {
+        $sampleMultiConn = itm_mysqli_connect($host, $user, $pass, $sampleMultiDb, $port);
+        if ($sampleMultiConn) {
+            $multiSeed = itm_setup_wizard_install_sample_data_for_companies($sampleMultiConn, [1, 3]);
+            if (!$multiSeed['ok'] || strpos($multiSeed['message'], 'installed for companies 1, 3') === false) {
+                setup_db_fail('install_sample_data_for_companies failed for multi-company selection [1, 3]: ' . ($multiSeed['message'] ?? ''));
+            } else {
+                $m1NotesRes = mysqli_query($sampleMultiConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 1');
+                $m1NotesRow = $m1NotesRes ? mysqli_fetch_assoc($m1NotesRes) : null;
+                $m1NotesCount = (int)($m1NotesRow['c'] ?? 0);
+
+                $m3NotesRes = mysqli_query($sampleMultiConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 3');
+                $m3NotesRow = $m3NotesRes ? mysqli_fetch_assoc($m3NotesRes) : null;
+                $m3NotesCount = (int)($m3NotesRow['c'] ?? 0);
+
+                if ($m1NotesCount < 1 || $m3NotesCount < 1) {
+                    setup_db_fail('install_sample_data_for_companies [1, 3] must seed sample rows for both company 1 and company 3');
+                } else {
+                    setup_db_pass('install_sample_data_for_companies seeds multiple selected companies (1, 3) in single batch');
+                }
+            }
+            mysqli_close($sampleMultiConn);
+        }
+    }
+    $sampleCleanup = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+    if ($sampleCleanup) {
+        mysqli_query($sampleCleanup, 'DROP DATABASE IF EXISTS `' . $sampleMultiDb . '`');
+        mysqli_close($sampleCleanup);
     }
 }
 
