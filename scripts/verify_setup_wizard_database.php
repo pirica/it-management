@@ -7,9 +7,11 @@
 
 declare(strict_types=1);
 
+define('ITM_CLI_SCRIPT', true);
 define('ITM_SETUP_WIZARD', true);
 define('ROOT_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 
+// Why: Sample seed needs itm_parse_database_sql_inserts() from config.php; ITM_CLI_SCRIPT + ITM_SETUP_WIZARD skip web auth and soften DB connect.
 require_once ROOT_PATH . 'config/config.php';
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/itm_database_sql_source.php';
@@ -305,7 +307,7 @@ if (!$importCreate['ok']) {
         // Test sample data seeding for single company (Company 1)
         $singleSeed = itm_setup_wizard_install_sample_data_for_companies($importConn, [1]);
         if (!$singleSeed['ok'] || strpos($singleSeed['message'], 'installed for company 1') === false) {
-            setup_db_fail('install_sample_data_for_companies failed for single company selection [1]: ' . ($singleSeed['message'] ?? ''));
+            setup_db_fail('install_sample_data_for_companies failed for single company selection (company 1): ' . ($singleSeed['message'] ?? ''));
         } else {
             $co1NotesRes = mysqli_query($importConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 1');
             $co1NotesRow = $co1NotesRes ? mysqli_fetch_assoc($co1NotesRes) : null;
@@ -352,14 +354,24 @@ if (!$importCreate['ok']) {
 
 $sampleMultiDb = 'itm_setup_wizard_sample_multi_' . substr(sha1((string)getmypid() . 'multi'), 0, 8);
 $sampleMultiCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $sampleMultiDb);
-if ($sampleMultiCreate['ok']) {
+if (!$sampleMultiCreate['ok']) {
+    if (stripos($sampleMultiCreate['message'], 'schema directory') !== false) {
+        echo colorText('[WARN] Multi-company sample seed test skipped — CREATE DATABASE unavailable.', 'warn') . "\n";
+    } else {
+        setup_db_fail('Multi-company sample seed test create database failed: ' . $sampleMultiCreate['message']);
+    }
+} else {
     $sampleMultiImport = itm_setup_wizard_import_database($host, $port, $user, $pass, $sampleMultiDb);
-    if ($sampleMultiImport['ok']) {
+    if (!$sampleMultiImport['ok']) {
+        setup_db_fail('Multi-company sample seed import failed: ' . $sampleMultiImport['message']);
+    } else {
         $sampleMultiConn = itm_mysqli_connect($host, $user, $pass, $sampleMultiDb, $port);
-        if ($sampleMultiConn) {
+        if (!$sampleMultiConn) {
+            setup_db_fail('Multi-company sample seed test could not connect after import');
+        } else {
             $multiSeed = itm_setup_wizard_install_sample_data_for_companies($sampleMultiConn, [1, 3]);
             if (!$multiSeed['ok'] || strpos($multiSeed['message'], 'installed for companies 1, 3') === false) {
-                setup_db_fail('install_sample_data_for_companies failed for multi-company selection [1, 3]: ' . ($multiSeed['message'] ?? ''));
+                setup_db_fail('install_sample_data_for_companies failed for multi-company selection (companies 1 and 3): ' . ($multiSeed['message'] ?? ''));
             } else {
                 $m1NotesRes = mysqli_query($sampleMultiConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 1');
                 $m1NotesRow = $m1NotesRes ? mysqli_fetch_assoc($m1NotesRes) : null;
@@ -370,9 +382,9 @@ if ($sampleMultiCreate['ok']) {
                 $m3NotesCount = (int)($m3NotesRow['c'] ?? 0);
 
                 if ($m1NotesCount < 1 || $m3NotesCount < 1) {
-                    setup_db_fail('install_sample_data_for_companies [1, 3] must seed sample rows for both company 1 and company 3');
+                    setup_db_fail('install_sample_data_for_companies (companies 1 and 3) must seed sample rows for both company 1 and company 3');
                 } else {
-                    setup_db_pass('install_sample_data_for_companies seeds multiple selected companies (1, 3) in single batch');
+                    setup_db_pass('install_sample_data_for_companies seeds multiple selected companies (1 and 3) in single batch');
                 }
             }
             mysqli_close($sampleMultiConn);
