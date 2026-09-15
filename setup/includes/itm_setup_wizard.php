@@ -2836,23 +2836,32 @@ if (!function_exists('itm_setup_wizard_remove_entrypoint')) {
         $indexPath = rtrim($projectRoot, '/\\') . DIRECTORY_SEPARATOR . 'setup' . DIRECTORY_SEPARATOR . 'index.php';
 
         clearstatcache(true, $indexPath);
+        $unlinkError = null;
 
-        if (file_exists($indexPath) || is_file($indexPath)) {
-            @chmod($indexPath, 0666);
-            if (!@unlink($indexPath)) {
+        if (is_file($indexPath)) {
+            if (!is_writable($indexPath)) {
+                chmod($indexPath, 0666);
+            }
+            if (!unlink($indexPath)) {
+                $unlinkError = error_get_last();
                 clearstatcache(true, $indexPath);
-                if (file_exists($indexPath) || is_file($indexPath)) {
-                    // Try permission upgrade and retry unlink
-                    @chmod($indexPath, 0777);
-                    @unlink($indexPath);
-                    clearstatcache(true, $indexPath);
+                if (is_file($indexPath)) {
+                    chmod($indexPath, 0666);
+                    if (!unlink($indexPath)) {
+                        $unlinkError = error_get_last();
+                    }
                 }
             }
 
-            if (file_exists($indexPath) || is_file($indexPath)) {
+            clearstatcache(true, $indexPath);
+            if (is_file($indexPath)) {
+                $detail = (is_array($unlinkError) && isset($unlinkError['message']))
+                    ? (string)$unlinkError['message']
+                    : 'unlink failed';
+
                 return [
                     'ok' => false,
-                    'message' => 'Could not delete setup/index.php: ' . itm_setup_wizard_format_path_display($indexPath),
+                    'message' => 'Could not delete setup/index.php: ' . itm_setup_wizard_format_path_display($indexPath) . ' (' . $detail . ')',
                     'removed' => [],
                 ];
             }

@@ -21,7 +21,7 @@ Touches the full schema when **Import database bundle** runs (`db/01_schema.sql`
 ## 4. Business Rules (Critical for Agents)
 
 - Entry defines `ITM_SETUP_WIZARD` before `config/config.php` (no employee session; soft DB connection failure).
-- Completion deletes **`setup/index.php`** under **`itm_setup_wizard_project_root()`** (step 8). **`setup/includes/itm_setup_wizard.php`** stays on disk. Finish redirects to **`ITM_APP_URL` login** from wizard session when set (cross-folder installs).
+- Completion deletes **`setup/index.php`** under **`itm_setup_wizard_project_root()`** (step 8 via `itm_setup_wizard_remove_entrypoint()`). The helper clears the path stat cache, `chmod`s **0666** when the file is not writable, then `unlink`s (retry once after another 0666). Unlink failures include `error_get_last()` in the returned message — no `@` suppression and no **0777** on the PHP entry file. **`setup/includes/itm_setup_wizard.php`** stays on disk. Finish redirects to **`ITM_APP_URL` login** from wizard session when set (cross-folder installs).
 - **Reinstall:** restore **`setup/index.php`** from the repository onto the target project root, then open [setup/index.php](http://localhost/it-management/setup/index.php) again.
 - `config/config.php` strips `/setup` from `BASE_URL` detection (same pattern as `/scripts`).
 - Production profile in step 5 forces `ITM_DEV=0`, `ITM_SKIP_FORCE_PASSWORD_CHANGE=0`, and disables browser error reporting on `ui_configuration`.
@@ -54,6 +54,7 @@ None — form POST actions only (`wizard_action`).
 |------|------|
 | `setup/index.php` | Wizard UI + POST handlers (deleted on finish) |
 | `setup/includes/itm_setup_wizard.php` | Probes, `.env` writer, import, admin/sample helpers |
+| `setup/includes/AGENT_NOTES.md` | Helper-library notes (Step 8 unlink, sample-data isolation) |
 | `setup/index.html` | Directory listing placeholder |
 
 ## 8. Multi-Tenancy Rules
@@ -69,15 +70,15 @@ Step 5 may set `enable_all_error_reporting` on all `ui_configuration` rows when 
 - Large `db/` import may fail when `max_allowed_packet` is low — wizard falls back to `mysql` CLI when mysqli import fails. `03_triggers.sql` uses `DELIMITER $$` blocks; mysqli import must use `itm_database_migrations_execute_sql_text()` (not `mysqli_multi_query`). Some trigger clusters use semicolon-terminated `DROP TRIGGER` lines **inside** an active `$$` delimiter block — the parser must flush those as separate statements (same as the mysql CLI), not batch them with the following `CREATE TRIGGER`.
 - Cross-folder install: run the wizard from any copy with `setup/`, but confirm step 1 **project root** matches the Apache alias you will use (e.g. `it-management4`). `.env` and setup file removal all target that confirmed root — not necessarily the folder serving the wizard PHP.
 - Re-running the wizard in the same browser session without completing step 1 again may retain stale `completed_steps` — step 1 **Download** resets progress; steps 4–8 also verify live schema counts and send you back to step 3 when import was skipped.
-- Step 8 deletes `setup/index.php` on finish. Restore `setup/index.php` from the repository only when intentionally reinstalling. Step 8 links to [check_prod_hardening.php?run=1&enforce=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1&enforce=1) (Administrator; new tab) and [login.php](http://localhost/it-management/login.php) (new tab) before finish.
+- Step 8 deletes `setup/index.php` on finish (`itm_setup_wizard_remove_entrypoint()`: 0666 then unlink, retry once; report `error_get_last()` on failure). Restore `setup/index.php` from the repository only when intentionally reinstalling. Step 8 links to [check_prod_hardening.php?run=1&enforce=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1&enforce=1) (Administrator; new tab) and [login.php](http://localhost/it-management/login.php) (new tab) before finish.
 
 ## 11. Testing / Verification
 
 Manual: [setup/index.php](http://localhost/it-management/setup/index.php) (no login until finish).
 
-Regression: `php scripts/verify_setup_wizard_project_root.php` — collapsed Windows path repair, step 1 session root vs runtime fallback, step 2 upload subdirectories, `.env` path under confirmed project root, `itm_setup_wizard_h()` vs `sanitize()` path escaping, localhost port status labels.
+Regression: [verify_setup_wizard_project_root.php?run=1](http://localhost/it-management/scripts/verify_setup_wizard_project_root.php?run=1) (CLI; no login) — collapsed Windows path repair, step 1 session root vs runtime fallback, step 2 upload subdirectories, `.env` path under confirmed project root, `itm_setup_wizard_h()` vs `sanitize()` path escaping, localhost port status labels, Step 8 destination `setup/index.php` deletion (`DB_HOST` fallback `localhost`; last complete JSON object from subprocess stdout).
 
-Regression: `php scripts/verify_setup_wizard_database.php` — step 3 `itm_setup_wizard_probe_database()`, SQL bundle rewrite for custom `DB_NAME`, create/reset helpers, `needs_create` / `needs_replace_confirm` flags, mysqli import + trigger count on empty schema, step 7 skip minimal single-user cleanup (`itm_setup_wizard_apply_minimal_single_user_install`) after full bundle import (requires MySQL; skips live create tests when server unreachable).
+Regression: [verify_setup_wizard_database.php?run=1](http://localhost/it-management/scripts/verify_setup_wizard_database.php?run=1) (CLI; no login) — step 3 `itm_setup_wizard_probe_database()`, SQL bundle rewrite for custom `DB_NAME`, create/reset helpers, `needs_create` / `needs_replace_confirm` flags, mysqli import + trigger count on empty schema, step 7 skip minimal single-user cleanup (`itm_setup_wizard_apply_minimal_single_user_install`) after full bundle import, plus `itm_setup_wizard_install_sample_data_for_companies()` (company 1 isolation vs company 3, then batch 1 and 3 — fail closed if the extra schema cannot be created/imported). Requires MySQL; skips live create tests when CREATE DATABASE is unavailable. CLI loads `config/config.php` under `ITM_CLI_SCRIPT` + `ITM_SETUP_WIZARD` so sample seed can call `itm_parse_database_sql_inserts()`.
 
 After finish: `login.php` with rotated admin credentials.
 

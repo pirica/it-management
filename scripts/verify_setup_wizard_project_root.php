@@ -36,6 +36,33 @@ function setup_root_pass(string $message): void
     echo colorText('[PASS] ' . $message, 'pass') . "\n";
 }
 
+/**
+ * Decode the last complete JSON object in subprocess stdout (warnings may precede it).
+ *
+ * @return array<string, mixed>|null
+ */
+function setup_root_decode_last_json_object(string $output): ?array
+{
+    $trimmed = trim($output);
+    $decoded = json_decode($trimmed, true);
+    if (is_array($decoded)) {
+        return $decoded;
+    }
+
+    for ($i = strlen($output) - 1; $i >= 0; $i--) {
+        if ($output[$i] !== '{') {
+            continue;
+        }
+        $candidate = substr($output, $i);
+        $decoded = json_decode($candidate, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+    }
+
+    return null;
+}
+
 $collapsed = 'C:UsersNelsonSalvadorDownloadslaragon-portablewwwit-management2';
 $repaired = itm_setup_wizard_repair_windows_path_input($collapsed);
 $expectedSuffix = 'it-management2';
@@ -320,7 +347,7 @@ $step8ZIndexPath = $step8ZSetupDir . DIRECTORY_SEPARATOR . 'index.php';
 file_put_contents($step8ZIndexPath, "<?php // destination setup entrypoint");
 itm_setup_wizard_copy_path(ROOT_PATH . 'db', $tmpStep8ZFolder . DIRECTORY_SEPARATOR . 'db');
 
-$host = 'localhost';
+$host = getenv('DB_HOST') ?: 'localhost';
 $port = (int)(getenv('DB_PORT') ?: '3307');
 $user = getenv('DB_USER') ?: 'root';
 $pass = getenv('DB_PASS') ?: 'secret';
@@ -374,15 +401,7 @@ if (is_resource($process)) {
     proc_close($process);
 }
 
-$step8Json = '';
-$start = strpos($step8ProcOutput, '{');
-$end = strrpos($step8ProcOutput, '}');
-if ($start !== false && $end !== false && $end > $start) {
-    $step8Json = substr($step8ProcOutput, $start, $end - $start + 1);
-} else {
-    $step8Json = trim($step8ProcOutput);
-}
-$step8Decoded = json_decode($step8Json, true);
+$step8Decoded = setup_root_decode_last_json_object($step8ProcOutput);
 if (!is_array($step8Decoded) || empty($step8Decoded['ok']) || !isset($step8Decoded['target_exists'])) {
     setup_root_fail('Step 8 finish button POST action verification script failed to execute: ' . $step8ProcOutput);
 } elseif ($step8Decoded['target_exists'] === true) {
@@ -416,7 +435,7 @@ $step8PostTestCode = "<?php\n"
     . '    "current_step" => 8,' . "\n"
     . '    "table_count" => 999,' . "\n"
     . '    "trigger_count" => 999,' . "\n"
-    . '    "db" => ["host" => "localhost", "port" => 3307, "user" => "root", "pass" => "secret", "name" => "itmanagement"],' . "\n"
+    . '    "db" => ["host" => ' . var_export($host, true) . ', "port" => ' . (int)$port . ', "user" => ' . var_export($user, true) . ', "pass" => ' . var_export($pass, true) . ', "name" => "itmanagement"],' . "\n"
     . '];' . "\n"
     . '$cleanup = itm_setup_wizard_remove_entrypoint();' . "\n"
     . 'echo json_encode(["ok" => $cleanup["ok"], "target_exists" => file_exists(' . var_export($step8ZIndexPath, true) . ')]);' . "\n";
@@ -437,15 +456,7 @@ if (is_resource($process)) {
     proc_close($process);
 }
 
-$step8Json = '';
-$start = strpos($step8ProcOutput, '{');
-$end = strrpos($step8ProcOutput, '}');
-if ($start !== false && $end !== false && $end > $start) {
-    $step8Json = substr($step8ProcOutput, $start, $end - $start + 1);
-} else {
-    $step8Json = trim($step8ProcOutput);
-}
-$step8Decoded = json_decode($step8Json, true);
+$step8Decoded = setup_root_decode_last_json_object($step8ProcOutput);
 if (!is_array($step8Decoded) || empty($step8Decoded['ok']) || !isset($step8Decoded['target_exists'])) {
     setup_root_fail('Step 8 finish button POST action verification script failed to execute: ' . $step8ProcOutput);
 } elseif ($step8Decoded['target_exists'] === true) {
