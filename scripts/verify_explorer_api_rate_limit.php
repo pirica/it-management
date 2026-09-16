@@ -35,7 +35,7 @@ $probeCompanyId = 1;
 $probeEmployeeId = 1;
 $probeLimit = 3;
 $probeConfig = ['explorer_api_rate_limit_per_hour' => $probeLimit];
-$probePath = itm_explorer_api_rate_limit_dir() . DIRECTORY_SEPARATOR . hash('sha256', $probeCompanyId . ':' . $probeEmployeeId) . '.json';
+$probePath = itm_explorer_api_rate_limit_dir($probeCompanyId) . DIRECTORY_SEPARATOR . hash('sha256', $probeCompanyId . ':' . $probeEmployeeId) . '.json';
 if (is_file($probePath)) {
     @unlink($probePath);
 }

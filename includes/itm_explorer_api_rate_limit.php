@@ -88,10 +88,29 @@ if (!function_exists('itm_explorer_api_rate_limit_window_seconds')) {
     }
 }
 
-if (!function_exists('itm_explorer_api_rate_limit_dir')) {
-    function itm_explorer_api_rate_limit_dir()
+if (!function_exists('itm_explorer_api_rate_limit_legacy_dir')) {
+    function itm_explorer_api_rate_limit_legacy_dir()
     {
         return rtrim((string) ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . 'files'
+            . DIRECTORY_SEPARATOR . 'rate_limits' . DIRECTORY_SEPARATOR . 'explorer_api';
+    }
+}
+
+if (!function_exists('itm_explorer_api_rate_limit_dir')) {
+    /**
+     * Why: Explorer storage is tenant-scoped under files/{company_id}/ like Common/Private trees.
+     */
+    function itm_explorer_api_rate_limit_dir($companyId)
+    {
+        $companyId = (int) $companyId;
+        if ($companyId <= 0) {
+            return '';
+        }
+        if (!function_exists('itm_files_storage_root')) {
+            require_once __DIR__ . '/bootstrap_helpers.php';
+        }
+
+        return rtrim(itm_files_storage_root(), '/\\') . DIRECTORY_SEPARATOR . $companyId
             . DIRECTORY_SEPARATOR . 'rate_limits' . DIRECTORY_SEPARATOR . 'explorer_api';
     }
 }
@@ -118,14 +137,25 @@ if (!function_exists('itm_explorer_api_rate_limit_check')) {
         }
 
         $windowSeconds = itm_explorer_api_rate_limit_window_seconds();
-        $dir = itm_explorer_api_rate_limit_dir();
-        if (function_exists('itm_ensure_upload_directory')) {
-            itm_ensure_upload_directory($dir, 'deny_all');
+        $dir = itm_explorer_api_rate_limit_dir($companyId);
+        if ($dir === '') {
+            return ['ok' => false, 'error' => 'Invalid session.', 'remaining' => 0, 'limit' => $limit];
+        }
+        if (function_exists('itm_ensure_files_storage_directory')) {
+            itm_ensure_files_storage_directory($dir);
+        } elseif (function_exists('itm_ensure_upload_directory')) {
+            itm_ensure_upload_directory($dir, 'deny_http');
         } elseif (!is_dir($dir)) {
             @mkdir($dir, 0755, true);
         }
 
-        $path = $dir . DIRECTORY_SEPARATOR . hash('sha256', $companyId . ':' . $employeeId) . '.json';
+        $counterFile = hash('sha256', $companyId . ':' . $employeeId) . '.json';
+        $path = $dir . DIRECTORY_SEPARATOR . $counterFile;
+        $legacyPath = itm_explorer_api_rate_limit_legacy_dir() . DIRECTORY_SEPARATOR . $counterFile;
+        if (!is_file($path) && is_file($legacyPath)) {
+            @rename($legacyPath, $path);
+        }
+
         $now = time();
         $events = [];
         if (is_file($path)) {

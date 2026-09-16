@@ -538,7 +538,7 @@ Previously `secure` was set only from inline HTTPS / `X-Forwarded-Proto` detecti
 **Affected Parameter:** `explorer_api_rate_limit_per_hour` (`ui_configuration`)
 
 **Description:**  
-Authenticated Explorer `api.php` requests (POST actions and `downloadZip` GET) now consume one slot per call against a per-employee rolling-hour counter (`files/rate_limits/explorer_api/`). Over-cap responses return HTTP **429** JSON. CSRF on POST and path ACL remain unchanged.
+Authenticated Explorer `api.php` requests (POST actions and `downloadZip` GET) now consume one slot per call against a per-employee rolling-hour counter (`files/{company_id}/rate_limits/explorer_api/`). Over-cap responses return HTTP **429** JSON. CSRF on POST and path ACL remain unchanged.
 
 **Evidence:** `modules/explorer/api.php` calls `itm_explorer_api_enforce_rate_limit_or_exit($company_id, $user_id)` after session auth (and after CSRF on POST). Settings → **API Access** exposes **Explorer API hourly limit** plus read-only usage counters.
 
