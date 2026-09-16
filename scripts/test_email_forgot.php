@@ -132,7 +132,7 @@ if ($result) {
     exit(0);
 }
 
-echo '❌ Failed to send email. Check error_log.txt and Email Management → SMTP Configurations.' . $nl;
+echo '❌ Failed to send email. Check docs/error_log.txt and Email Management → SMTP Configurations.' . $nl;
 exit(1);
 
 itm_script_output_end();

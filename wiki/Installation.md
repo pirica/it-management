@@ -108,6 +108,6 @@ Production: `APP_ENV=production` or omit both keys. Do not set `ITM_DEV=1` on pr
 
 - Verify DB credentials, `DB_PORT`, and MySQL server status (wrong port often shows “connection refused”).
 - Confirm `images/`, `tickets_photos/`, `backups/`, `floor_plans/`, and `files/` are writable by the web server.
-- Check PHP and Apache error logs (`error_log.txt` in the project root when enabled).
+- Check PHP and Apache error logs (`docs/error_log.txt` when **enable all error reporting** is on; HTTP access denied by `docs/.htaccess`).
 - Clear browser cache if UI assets appear stale.
 - Database analyze issues in phpMyAdmin: see [Database analyze troubleshooting](Security#database-analyze-troubleshooting-phpmyadmin) in Security.

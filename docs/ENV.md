@@ -80,12 +80,12 @@ Or omit both keys (defaults to production). See `.env.production.sample` at the 
 
 **`ITM_DEV` / `APP_ENV` do not enable `display_errors`.**
 
-Verbose PHP errors follow **Settings → UI Configuration → enable all error reporting** per employee (`ui_configuration.enable_all_error_reporting`, default **off**). When enabled, `config/config.php` sets `display_errors=1` and logs to `error_log.txt` under the project root for that user's requests only.
+Verbose PHP errors follow **Settings → UI Configuration → enable all error reporting** per employee (`ui_configuration.enable_all_error_reporting`, default **off**). When enabled, `config/config.php` sets `display_errors=1` and logs to `docs/error_log.txt` via `itm_error_log_file_path()` for that user's requests only. Direct HTTP access to the log is blocked by `docs/.htaccess`.
 
 For local troubleshooting:
 
 1. Set `ITM_DEV=1` / `APP_ENV=development` in `.env` (deployment label).
-2. Optionally enable **enable all error reporting** in Settings for your Admin user, or read `error_log.txt`.
+2. Optionally enable **enable all error reporting** in Settings for your Admin user, or read `docs/error_log.txt` on disk (not via HTTP).
 
 ---
 

@@ -11,7 +11,7 @@
  *   clear_table — after export_xlsx, before second clear (same row gate as bulk_delete).
  *   list (Tier A) — verifies bulk UI visibility matches rowCount >= perPage and pagination footer matches rowCount > perPage.
  *   pagination (after add) — when rows > perPage: page=1 must render Next→page=2; page=2 must render Previous→page=1 in HTML (sort=id).
- * Each module scopes error_log.txt (rename to error_log-N.txt when present, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
+ * Each module scopes docs/error_log.txt (rename to docs/error_log-N.txt when present, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
  *
  * Usage (repository root, CLI):
  *   php scripts/module_browser_qa_runner.php
@@ -2570,7 +2570,9 @@ function mbqa_ensure_sample_data(
 
 function mbqa_error_log_path(): string
 {
-    return (defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__) . DIRECTORY_SEPARATOR) . 'error_log.txt';
+    return function_exists('itm_error_log_file_path')
+        ? itm_error_log_file_path()
+        : dirname(__DIR__) . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'error_log.txt';
 }
 
 function mbqa_error_log_byte_offset(): int
@@ -2704,11 +2706,11 @@ function mbqa_read_error_log_since(int $byteOffset): array
 }
 
 /**
- * Next archive name under ROOT_PATH: error_log-1.txt, error_log-2.txt, …
+ * Next archive name under docs/: error_log-1.txt, error_log-2.txt, …
  */
 function mbqa_next_error_log_archive_path(): string
 {
-    $dir = defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__) . DIRECTORY_SEPARATOR;
+    $dir = dirname(mbqa_error_log_path()) . DIRECTORY_SEPARATOR;
     $n = 1;
     while (is_file($dir . 'error_log-' . $n . '.txt')) {
         $n++;

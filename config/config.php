@@ -682,7 +682,7 @@ if (($ui_config['enable_all_error_reporting'] ?? 0) === 1) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
     ini_set('log_errors', '1');
-    ini_set('error_log', ROOT_PATH . 'error_log.txt');
+    ini_set('error_log', itm_error_log_file_path());
 }
 
 // --- Global Helper Functions ---
@@ -963,7 +963,7 @@ if (!function_exists('itm_format_db_constraint_error')) {
 
                 if ($fallbackText !== '') {
                     if (defined('ROOT_PATH')) {
-                        @error_log('[ITM DB] ' . $fallbackText . PHP_EOL, 3, ROOT_PATH . 'error_log.txt');
+                        @error_log('[ITM DB] ' . $fallbackText . PHP_EOL, 3, itm_error_log_file_path());
                     }
                     return 'We could not save your changes. ' . $fallbackText . ' (Code: ' . (int)$errorCode . ')';
                 }

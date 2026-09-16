@@ -4,7 +4,7 @@
 >
 > **Tracked findings / regression:** [`docs/report.md`](report.md) and `php scripts/verify_pentest_report.php` ([verify_pentest_report.php?run=1](http://localhost/it-management/scripts/verify_pentest_report.php?run=1), Administrator session). ITM-PENTEST-001–023.
 >
-> **Last reviewed:** 2026-09-02 (checklist and **Live:** mitigation notes synced to repository).
+> **Last reviewed:** 2026-09-16 (section 4.1 error log path + `docs/.htaccess` deny rule).
 
 ## 1. Executive Summary
 
@@ -134,20 +134,15 @@ The primary attack surfaces identified across the application are:
 ## 4. Data Exposure Analysis
 
 ### 4.1 Debug & Error Logs
-The application maintains a centralized error logging system. When error reporting is enabled (`enable_all_error_reporting = 1`), PHP errors, database exceptions, and execution warnings are logged directly to `ROOT_PATH . 'error_log.txt'`.
+The application maintains a centralized error logging system. When error reporting is enabled (`enable_all_error_reporting = 1`), PHP errors, database exceptions, and execution warnings are logged to **`docs/error_log.txt`** via `itm_error_log_file_path()` in `includes/bootstrap_helpers.php` (configured from `config/config.php`).
 
 #### Exposure Risks
-1. **Unprotected Log Files**: If `error_log.txt` is located within the web root and is not protected by server-level configurations, anyone can read it directly via `http://example.com/error_log.txt`.
+1. **Unprotected Log Files**: If the log file is web-readable, anyone could fetch stack traces and paths. **Live:** `docs/.htaccess` denies HTTP access to `error_log.txt` and rotated `error_log-N.txt` archives (`<FilesMatch "^error_log(-[0-9]+)?\.txt$">`).
 2. **Secrets Leakage in Call Traces**: Database connection failures or code exceptions can dump call stacks that contain database passwords, API keys, or session tokens in plaintext.
 
 #### Mitigation
-1. Ensure the `error_log.txt` path is protected in the root `.htaccess` file:
-   ```apache
-   <Files "error_log.txt">
-       Require all denied
-   </Files>
-   ```
-2. Disable detailed error displays (`display_errors = Off`) in the production environment's `php.ini`. Keep error logging (`log_errors = On`) active, but place the destination file outside the public HTML document root.
+1. **Live:** Verbose logs write to `docs/error_log.txt` (not the repo root). `docs/.htaccess` blocks direct HTTP reads; remove any legacy `error_log.txt` at the application root if present (`php scripts/check_prod_hardening.php`).
+2. Disable detailed error displays (`display_errors = Off`) in the production environment's `php.ini`. Keep error logging (`log_errors = On`) active; default **`enable_all_error_reporting`** remains **`0`** in Settings.
 
 ### 4.2 Directory Listing
 If the web server does not have directory listing disabled, any directory without a default index file (like `index.php`) will expose its files.

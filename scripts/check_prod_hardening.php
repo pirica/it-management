@@ -17,7 +17,7 @@ if (!function_exists('itm_script_browser_how_to_use')) {
     function itm_script_browser_how_to_use(): string
     {
         return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/check_prod_hardening.php</code> — pre-deploy gate for production posture. Fails (exit <code>1</code>) when <code>APP_ENV=production</code> and seed passwords, web-root <code>error_log.txt</code>, browser error reporting, dev env flags, no-auth allowlists, or web-reachable <code>bypass_login.php</code> are unsafe. Optional: <code>ITM_PROD_HARDENING_BASE_URL</code> for HTTP probe; <code>--enforce</code> / <code>?enforce=1</code> to fail in development too.
+<code>php scripts/check_prod_hardening.php</code> — pre-deploy gate for production posture. Fails (exit <code>1</code>) when <code>APP_ENV=production</code> and seed passwords, legacy web-root <code>error_log.txt</code>, browser error reporting, dev env flags, no-auth allowlists, or web-reachable <code>bypass_login.php</code> are unsafe. Optional: <code>ITM_PROD_HARDENING_BASE_URL</code> for HTTP probe; <code>--enforce</code> / <code>?enforce=1</code> to fail in development too.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
     }
 }
@@ -108,7 +108,7 @@ foreach (itm_prod_hardening_check_error_log_web_root($rootPath) as $message) {
     $record('fail', $message);
 }
 if (itm_prod_hardening_check_error_log_web_root($rootPath) === []) {
-    $record('pass', 'No error_log.txt under application root');
+    $record('pass', 'No legacy error_log.txt under application root');
 }
 
 if ($conn instanceof mysqli) {

@@ -192,9 +192,9 @@ if (!function_exists('itm_prod_hardening_check_error_log_web_root')) {
     function itm_prod_hardening_check_error_log_web_root(string $rootPath): array
     {
         $failures = [];
-        $logPath = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . 'error_log.txt';
-        if (is_file($logPath)) {
-            $failures[] = 'error_log.txt exists under the application root (' . $logPath . ') — move logging outside the web docroot';
+        $legacyLogPath = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . 'error_log.txt';
+        if (is_file($legacyLogPath)) {
+            $failures[] = 'legacy error_log.txt exists under the application root (' . $legacyLogPath . ') — remove it; logging now uses docs/error_log.txt';
         }
 
         return $failures;
@@ -223,7 +223,7 @@ if (!function_exists('itm_prod_hardening_check_display_errors_setting')) {
         mysqli_free_result($res);
         $count = (int)($row['cnt'] ?? 0);
         if ($count > 0) {
-            $failures[] = $count . ' ui_configuration row(s) still have enable_all_error_reporting = 1 (browser error display + web-root error_log.txt)';
+            $failures[] = $count . ' ui_configuration row(s) still have enable_all_error_reporting = 1 (browser error display + docs/error_log.txt)';
         }
 
         if (ini_get('display_errors') === '1' || filter_var(ini_get('display_errors'), FILTER_VALIDATE_BOOLEAN)) {

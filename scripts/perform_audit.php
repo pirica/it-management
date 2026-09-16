@@ -31,7 +31,7 @@ $nl = itm_script_output_nl();
 $argvList = $GLOBALS['argv'] ?? [];
 $loopMode = in_array('--loop', $argvList, true);
 
-$errorLog = ROOT_PATH . 'error_log.txt';
+$errorLog = itm_error_log_file_path();
 $resultsFile = __DIR__ . '/php_error_audit_results.json';
 $allowlistFile = __DIR__ . '/data/perform_audit_allowlist.json';
 

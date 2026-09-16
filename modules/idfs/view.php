@@ -15,7 +15,7 @@ $idf_id = (int)($_GET['id'] ?? 0);
 $idfDebugEnabled = isset($_GET['debug_ports']) && $_GET['debug_ports'] === '1';
 if ($idfDebugEnabled && $idf_id === 4) {
     // Why: In some hosts error_log file is created lazily; ensure it exists before writing IDF debug traces.
-    $idfDebugLogFile = ROOT_PATH . 'error_log.txt';
+    $idfDebugLogFile = itm_error_log_file_path();
     if (!file_exists($idfDebugLogFile)) {
         @file_put_contents($idfDebugLogFile, '');
     }
@@ -36,7 +36,7 @@ function idf_csrf_token(): string {
 
 function idf_debug_log_line(string $message): void {
     // Why: Some hosts suppress error_log() writes for custom files; append directly so debug traces are always captured when enabled.
-    $idfDebugLogFile = ROOT_PATH . 'error_log.txt';
+    $idfDebugLogFile = itm_error_log_file_path();
     $line = '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL;
     @file_put_contents($idfDebugLogFile, $line, FILE_APPEND);
 }
