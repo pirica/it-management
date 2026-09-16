@@ -19,6 +19,7 @@ Does not own tables. Import and sample-data helpers write the full tenant schema
 - Paths resolve under `itm_setup_wizard_project_root()` (confirmed step 1 folder), not necessarily PHP `ROOT_PATH`.
 - `itm_setup_wizard_remove_entrypoint()` deletes only `{project_root}/setup/index.php`. Clears stat cache; `chmod` 0666 when not writable; `unlink` with one retry; failures include `error_get_last()`. Do not chmod 0777 and do not `@`-suppress unlink errors.
 - `itm_setup_wizard_install_sample_data_for_companies()` seeds only the given company ids (isolation required).
+- `itm_setup_wizard_install_sample_data()` success detail counts `inserted_tables` from `itm_seed_all_tables_from_database_sql()` (not a legacy `seeded` key).
 - Keep helpers procedural; do not convert this folder to OOP/MVC.
 
 ## 5. UI Behavior Requirements
