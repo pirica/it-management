@@ -1,0 +1,1326 @@
+<?php
+/**
+ * Reports Hub Helpers
+ * @file modules/reports/api/helpers.php
+ */
+
+/**
+ * Build canonical Y-m keys plus locale chart labels for trailing month series.
+ *
+ * @return array{keys:array<int,string>,labels:array<int,string>}
+ */
+function reports_build_year_month_series($monthsBack = 11)
+{
+    $keys = [];
+    for ($i = $monthsBack; $i >= 0; $i--) {
+        $keys[] = date('Y-m', strtotime('-' . (int) $i . ' month'));
+    }
+    $labels = [];
+    foreach ($keys as $ym) {
+        $labels[] = itm_ui_locale_format_year_month_chart_label($ym);
+    }
+    return ['keys' => $keys, 'labels' => $labels];
+}
+
+/**
+ * Equipment statistics by type
+ */
+function get_equipment_statistics() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT et.name, COUNT(*) as count
+            FROM equipment e
+            JOIN equipment_types et ON e.equipment_type_id = et.id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL
+            GROUP BY et.name
+            ORDER BY count DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['name'];
+            $data[] = (int)$row['count'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Ticket status statistics
+ */
+function get_ticket_statistics() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT ts.name, COUNT(*) as count
+            FROM tickets t
+            JOIN ticket_statuses ts ON t.status_id = ts.id
+            WHERE t.company_id = ?
+            GROUP BY ts.name
+            ORDER BY count DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['name'];
+            $data[] = (int)$row['count'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Employee department distribution
+ */
+function get_hr_statistics() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT COALESCE(d.name, 'Unassigned') as dept_name, COUNT(*) as count
+            FROM employees e
+            LEFT JOIN departments d ON e.department_id = d.id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL
+            GROUP BY dept_name
+            ORDER BY count DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['dept_name'];
+            $data[] = (int)$row['count'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Network device type counts
+ */
+function get_network_device_counts() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT et.name, COUNT(*) as count
+            FROM equipment e
+            JOIN equipment_types et ON e.equipment_type_id = et.id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL
+            GROUP BY et.name
+            ORDER BY count DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['name'];
+            $data[] = (int)$row['count'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Budget distribution by category
+ */
+function get_budget_statistics() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT bc.name, SUM(ab.amount) as total
+            FROM annual_budgets ab
+            JOIN gl_accounts gl ON ab.gl_account_id = gl.id
+            JOIN budget_categories bc ON gl.category_id = bc.id
+            WHERE ab.company_id = ?
+            GROUP BY bc.name
+            ORDER BY total DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['name'];
+            $data[] = (float)$row['total'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Equipment per location
+ */
+function get_floorplan_location_data() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT COALESCE(l.name, 'No Location') as loc_name, COUNT(*) as count
+            FROM equipment e
+            LEFT JOIN it_locations l ON e.location_id = l.id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL
+            GROUP BY loc_name
+            ORDER BY count DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['loc_name'];
+            $data[] = (int)$row['count'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Inventory stock distribution
+ */
+function get_inventory_stock_levels() {
+    global $conn, $company_id;
+
+    $low = 0;
+    $normal = 0;
+    $high = 0;
+
+    $sql = "SELECT quantity_on_hand, quantity_minimum
+            FROM inventory_items
+            WHERE company_id = ? AND active = 1";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $on_hand = (int)$row['quantity_on_hand'];
+            $min = (int)$row['quantity_minimum'];
+
+            if ($on_hand <= $min) {
+                $low++;
+            } elseif ($on_hand > $min * 3) {
+                $high++;
+            } else {
+                $normal++;
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return [
+        'labels' => ['Low Stock', 'Normal', 'High'],
+        'data' => [$low, $normal, $high]
+    ];
+}
+
+/**
+ * License statistics
+ */
+function get_license_statistics() {
+    global $conn, $company_id;
+
+    $active = 0;
+    $expiring = 0;
+    $expired = 0;
+
+    $sql = "SELECT expiry_date, active
+            FROM license_management
+            WHERE company_id = ?";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $today = new DateTime();
+        $soon = (new DateTime())->modify('+30 days');
+
+        while ($row = mysqli_fetch_assoc($result)) {
+            if (!$row['active']) {
+                continue;
+            }
+
+            if (empty($row['expiry_date'])) {
+                $active++;
+                continue;
+            }
+
+            $expiry = new DateTime($row['expiry_date']);
+            if ($expiry < $today) {
+                $expired++;
+            } elseif ($expiry < $soon) {
+                $expiring++;
+            } else {
+                $active++;
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return [
+        'labels' => ['Active', 'Expiring Soon', 'Expired'],
+        'data' => [$active, $expiring, $expired]
+    ];
+}
+
+/**
+ * Budget distribution by department for the current year
+ */
+function get_budget_by_department() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT d.name, SUM(ab.amount) as total
+            FROM annual_budgets ab
+            JOIN cost_centers cc ON ab.cost_center_id = cc.id
+            JOIN departments d ON cc.department_id = d.id
+            WHERE ab.company_id = ? AND ab.year = YEAR(CURDATE()) AND ab.active = 1
+            GROUP BY d.name
+            ORDER BY total DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['name'];
+            $data[] = (float)$row['total'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Budget vs Actual monthly trend for current year
+ */
+function get_budget_vs_actual_trend() {
+    global $conn, $company_id;
+
+    $months = itm_ui_locale_format_month_short_labels();
+    $budget_data = array_fill(1, 12, 0);
+    $actual_data = array_fill(1, 12, 0);
+
+    // Get Budget
+    $sql_budget = "SELECT mb.month, SUM(mb.amount) as total
+                   FROM monthly_budgets mb
+                   JOIN annual_budgets ab ON mb.annual_budget_id = ab.id
+                   WHERE mb.company_id = ? AND ab.year = YEAR(CURDATE()) AND mb.active = 1
+                   GROUP BY mb.month";
+    $stmt = mysqli_prepare($conn, $sql_budget);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $budget_data[(int)$row['month']] = (float)$row['total'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    // Get Actual
+    $sql_actual = "SELECT MONTH(e.date) as month, SUM(e.amount) as total
+                   FROM expenses e
+                   WHERE e.company_id = ? AND YEAR(e.date) = YEAR(CURDATE()) AND e.active = 1
+                   GROUP BY month";
+    $stmt = mysqli_prepare($conn, $sql_actual);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $actual_data[(int)$row['month']] = (float)$row['total'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => array_values($months),
+        'budget' => array_values($budget_data),
+        'actual' => array_values($actual_data)
+    ];
+}
+
+/**
+ * Budget Year-over-Year comparison
+ */
+function get_budget_yoy_comparison() {
+    global $conn, $company_id;
+
+    $current_year = (int)date('Y');
+    $last_year = $current_year - 1;
+
+    $data = [
+        $last_year => 0,
+        $current_year => 0
+    ];
+
+    $sql = "SELECT ab.year, SUM(ab.amount) as total
+            FROM annual_budgets ab
+            WHERE ab.company_id = ? AND ab.year IN (?, ?) AND ab.active = 1
+            GROUP BY ab.year";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "iii", $company_id, $last_year, $current_year);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[(int)$row['year']] = (float)$row['total'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => [(string)$last_year, (string)$current_year],
+        'data' => [$data[$last_year], $data[$current_year]]
+    ];
+}
+
+/**
+ * Budget chart year — latest annual_budgets.year for tenant (matches CAPEX/OPEX reports).
+ */
+function reports_resolve_budget_chart_year()
+{
+    global $conn, $company_id;
+
+    $calendarYear = (int) date('Y');
+    $companyId = (int) $company_id;
+    if ($companyId <= 0 || !($conn instanceof mysqli)) {
+        return $calendarYear;
+    }
+
+    $stmt = mysqli_prepare($conn, 'SELECT MAX(year) AS max_year FROM annual_budgets WHERE company_id = ?');
+    if (!$stmt) {
+        return $calendarYear;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    $maxYear = (int) ($row['max_year'] ?? 0);
+    if ($maxYear >= 2000 && $maxYear <= 2100) {
+        return $maxYear;
+    }
+
+    return $calendarYear;
+}
+
+/**
+ * SQL fragment: Posted/Paid expenses only (aligned with CAPEX/OPEX actual columns).
+ */
+function reports_expense_actual_filter_sql($conn, $companyId)
+{
+    if (!($conn instanceof mysqli)) {
+        return '';
+    }
+
+    require_once ROOT_PATH . 'includes/itm_expenses_ap.php';
+    $paidIds = itm_expenses_paid_status_ids_for_actuals($conn, (int) $companyId);
+    if ($paidIds === []) {
+        return '';
+    }
+
+    return ' AND e.paid_status_id IN (' . implode(',', array_map('intval', $paidIds)) . ')';
+}
+
+/**
+ * CAPEX vs OPEX annual budget split for chart year.
+ *
+ * @return array{labels:array<int,string>,data:array<int,float>,year:int}
+ */
+function get_capex_opex_annual_budget_split()
+{
+    global $conn, $company_id;
+
+    $year = reports_resolve_budget_chart_year();
+    $totals = ['capex' => 0.0, 'opex' => 0.0];
+    $sql = 'SELECT bc.category_kind, SUM(ab.amount) AS total
+            FROM annual_budgets ab
+            INNER JOIN gl_accounts ga ON ga.company_id = ab.company_id AND ga.id = ab.gl_account_id
+            INNER JOIN budget_categories bc ON bc.company_id = ga.company_id AND bc.id = ga.category_id
+            WHERE ab.company_id = ? AND ab.year = ? AND ab.active = 1 AND ab.deleted_at IS NULL
+              AND bc.category_kind IN (\'capex\', \'opex\')
+            GROUP BY bc.category_kind';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $year);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($result && ($row = mysqli_fetch_assoc($result))) {
+            $kind = strtolower((string) ($row['category_kind'] ?? ''));
+            if (isset($totals[$kind])) {
+                $totals[$kind] = (float) $row['total'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => ['CAPEX', 'OPEX'],
+        'data' => [$totals['capex'], $totals['opex']],
+        'year' => $year,
+    ];
+}
+
+/**
+ * CAPEX vs OPEX budget and Posted/Paid actual totals for chart year.
+ *
+ * @return array{labels:array<int,string>,budget:array<int,float>,actual:array<int,float>,year:int}
+ */
+function get_capex_opex_budget_vs_actual()
+{
+    global $conn, $company_id;
+
+    $year = reports_resolve_budget_chart_year();
+    $budget = ['capex' => 0.0, 'opex' => 0.0];
+    $actual = ['capex' => 0.0, 'opex' => 0.0];
+    $paidFilter = reports_expense_actual_filter_sql($conn, (int) $company_id);
+
+    $budgetSql = 'SELECT bc.category_kind, SUM(ab.amount) AS total
+            FROM annual_budgets ab
+            INNER JOIN gl_accounts ga ON ga.company_id = ab.company_id AND ga.id = ab.gl_account_id
+            INNER JOIN budget_categories bc ON bc.company_id = ga.company_id AND bc.id = ga.category_id
+            WHERE ab.company_id = ? AND ab.year = ? AND ab.active = 1 AND ab.deleted_at IS NULL
+              AND bc.category_kind IN (\'capex\', \'opex\')
+            GROUP BY bc.category_kind';
+    $budgetStmt = mysqli_prepare($conn, $budgetSql);
+    if ($budgetStmt) {
+        mysqli_stmt_bind_param($budgetStmt, 'ii', $company_id, $year);
+        mysqli_stmt_execute($budgetStmt);
+        $budgetResult = mysqli_stmt_get_result($budgetStmt);
+        while ($budgetResult && ($row = mysqli_fetch_assoc($budgetResult))) {
+            $kind = strtolower((string) ($row['category_kind'] ?? ''));
+            if (isset($budget[$kind])) {
+                $budget[$kind] = (float) $row['total'];
+            }
+        }
+        mysqli_stmt_close($budgetStmt);
+    }
+
+    $actualSql = 'SELECT bc.category_kind, SUM(e.amount) AS total
+            FROM expenses e
+            INNER JOIN gl_accounts ga ON ga.company_id = e.company_id AND ga.id = e.gl_account_id
+            INNER JOIN budget_categories bc ON bc.company_id = ga.company_id AND bc.id = ga.category_id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL AND e.active = 1
+              AND bc.category_kind IN (\'capex\', \'opex\')
+              AND YEAR(COALESCE(e.posting_date, e.date)) = ?'
+        . $paidFilter
+        . ' GROUP BY bc.category_kind';
+    $actualStmt = mysqli_prepare($conn, $actualSql);
+    if ($actualStmt) {
+        mysqli_stmt_bind_param($actualStmt, 'ii', $company_id, $year);
+        mysqli_stmt_execute($actualStmt);
+        $actualResult = mysqli_stmt_get_result($actualStmt);
+        while ($actualResult && ($row = mysqli_fetch_assoc($actualResult))) {
+            $kind = strtolower((string) ($row['category_kind'] ?? ''));
+            if (isset($actual[$kind])) {
+                $actual[$kind] = (float) $row['total'];
+            }
+        }
+        mysqli_stmt_close($actualStmt);
+    }
+
+    return [
+        'labels' => ['CAPEX', 'OPEX'],
+        'budget' => [$budget['capex'], $budget['opex']],
+        'actual' => [$actual['capex'], $actual['opex']],
+        'year' => $year,
+    ];
+}
+
+/**
+ * Monthly Posted/Paid actual spend by CAPEX vs OPEX for chart year.
+ *
+ * @return array{labels:array<int,string>,capex:array<int,float>,opex:array<int,float>,year:int}
+ */
+function get_capex_opex_monthly_actual_trend()
+{
+    global $conn, $company_id;
+
+    $year = reports_resolve_budget_chart_year();
+    $months = itm_ui_locale_format_month_short_labels();
+    $capexData = array_fill(1, 12, 0.0);
+    $opexData = array_fill(1, 12, 0.0);
+    $paidFilter = reports_expense_actual_filter_sql($conn, (int) $company_id);
+
+    $sql = 'SELECT bc.category_kind, MONTH(COALESCE(e.posting_date, e.date)) AS month_num, SUM(e.amount) AS total
+            FROM expenses e
+            INNER JOIN gl_accounts ga ON ga.company_id = e.company_id AND ga.id = e.gl_account_id
+            INNER JOIN budget_categories bc ON bc.company_id = ga.company_id AND bc.id = ga.category_id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL AND e.active = 1
+              AND bc.category_kind IN (\'capex\', \'opex\')
+              AND YEAR(COALESCE(e.posting_date, e.date)) = ?'
+        . $paidFilter
+        . ' GROUP BY bc.category_kind, month_num';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $year);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($result && ($row = mysqli_fetch_assoc($result))) {
+            $monthNum = (int) ($row['month_num'] ?? 0);
+            if ($monthNum < 1 || $monthNum > 12) {
+                continue;
+            }
+            $kind = strtolower((string) ($row['category_kind'] ?? ''));
+            if ($kind === 'capex') {
+                $capexData[$monthNum] = (float) $row['total'];
+            } elseif ($kind === 'opex') {
+                $opexData[$monthNum] = (float) $row['total'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => array_values($months),
+        'capex' => array_values($capexData),
+        'opex' => array_values($opexData),
+        'year' => $year,
+    ];
+}
+
+/**
+ * Asset financial value by equipment type
+ */
+function get_asset_financial_value() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT et.name, SUM(e.purchase_cost) as total_value
+            FROM equipment e
+            JOIN equipment_types et ON e.equipment_type_id = et.id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL
+            GROUP BY et.name
+            ORDER BY total_value DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['name'];
+            $data[] = (float)$row['total_value'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Maintenance forecast: warranty and license expiries next 6 months
+ */
+function get_upcoming_maintenance_forecast() {
+    global $conn, $company_id;
+
+    $months = [];
+    for ($i = 0; $i < 6; $i++) {
+        $m = (int)date('n', strtotime("+$i month"));
+        $ym = date('Y-m', strtotime("+$i month"));
+        $months[$m] = itm_ui_locale_format_year_month_chart_label($ym);
+    }
+
+    $warranty_counts = array_fill_keys(array_keys($months), 0);
+    $license_counts = array_fill_keys(array_keys($months), 0);
+    $eol_counts = array_fill_keys(array_keys($months), 0);
+
+    // Warranty
+    $sql_w = "SELECT MONTH(warranty_expiry) as m, COUNT(*) as count
+              FROM equipment
+              WHERE company_id = ?
+              AND warranty_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 6 MONTH)
+              AND deleted_at IS NULL
+              GROUP BY m";
+    $stmt = mysqli_prepare($conn, $sql_w);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            if (isset($warranty_counts[(int)$row['m']])) {
+                $warranty_counts[(int)$row['m']] = (int)$row['count'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    // Licenses
+    $sql_l = "SELECT MONTH(expiry_date) as m, COUNT(*) as count
+              FROM license_management
+              WHERE company_id = ?
+              AND expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 6 MONTH)
+              AND active = 1
+              GROUP BY m";
+    $stmt = mysqli_prepare($conn, $sql_l);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            if (isset($license_counts[(int)$row['m']])) {
+                $license_counts[(int)$row['m']] = (int)$row['count'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    if (function_exists('itm_software_eol_forecast_month_counts')) {
+        $eol_counts = itm_software_eol_forecast_month_counts($conn, $company_id, array_keys($months));
+    }
+
+    return [
+        'labels' => array_values($months),
+        'warranty' => array_values($warranty_counts),
+        'licenses' => array_values($license_counts),
+        'eol' => array_values($eol_counts)
+    ];
+}
+
+/**
+ * Employee growth trend last 12 months
+ */
+function get_employee_growth_trend() {
+    global $conn, $company_id;
+
+    $series = reports_build_year_month_series(11);
+    $counts = array_fill_keys($series['keys'], 0);
+
+    $sql = "SELECT DATE_FORMAT(start_date, '%Y-%m') as month_str, COUNT(*) as count
+            FROM employees
+            WHERE company_id = ? AND deleted_at IS NULL AND start_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01')
+            GROUP BY month_str";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            if (isset($counts[$row['month_str']])) {
+                $counts[$row['month_str']] = (int)$row['count'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => $series['labels'],
+        'data' => array_values($counts)
+    ];
+}
+
+/**
+ * Monthly performance comparison: This Month This Year vs This Month Last Year (Actual Expenses)
+ */
+function get_monthly_actual_comparison() {
+    global $conn, $company_id;
+
+    $this_month = (int)date('m');
+    $this_year = (int)date('Y');
+    $last_year = $this_year - 1;
+
+    $this_year_total = 0;
+    $last_year_total = 0;
+
+    // This year
+    $sql1 = "SELECT SUM(amount) as total FROM expenses
+             WHERE company_id = ? AND MONTH(date) = ? AND YEAR(date) = ? AND active = 1";
+    $stmt1 = mysqli_prepare($conn, $sql1);
+    if ($stmt1) {
+        mysqli_stmt_bind_param($stmt1, "iii", $company_id, $this_month, $this_year);
+        mysqli_stmt_execute($stmt1);
+        $res1 = mysqli_stmt_get_result($stmt1);
+        if ($row = mysqli_fetch_assoc($res1)) {
+            $this_year_total = (float)$row['total'];
+        }
+        mysqli_stmt_close($stmt1);
+    }
+
+    // Last year
+    $sql2 = "SELECT SUM(amount) as total FROM expenses
+             WHERE company_id = ? AND MONTH(date) = ? AND YEAR(date) = ? AND active = 1";
+    $stmt2 = mysqli_prepare($conn, $sql2);
+    if ($stmt2) {
+        mysqli_stmt_bind_param($stmt2, "iii", $company_id, $this_month, $last_year);
+        mysqli_stmt_execute($stmt2);
+        $res2 = mysqli_stmt_get_result($stmt2);
+        if ($row = mysqli_fetch_assoc($res2)) {
+            $last_year_total = (float)$row['total'];
+        }
+        mysqli_stmt_close($stmt2);
+    }
+
+    return [
+        'month_name' => itm_ui_locale_format_month_full_label($this_month, null, $this_year),
+        'this_year' => $this_year_total,
+        'last_year' => $last_year_total,
+        'labels' => [ (string)$last_year, (string)$this_year ],
+        'data' => [ $last_year_total, $this_year_total ]
+    ];
+}
+
+/**
+ * Equipment by status
+ */
+function get_equipment_status_statistics() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT es.name, COUNT(e.id) as count
+            FROM equipment_statuses es
+            LEFT JOIN equipment e ON e.status_id = es.id AND e.deleted_at IS NULL
+            WHERE es.company_id = ?
+            GROUP BY es.name
+            ORDER BY count DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['name'];
+            $data[] = (int)$row['count'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Monthly asset additions (last 12 months)
+ * Uses created_at as it is more reliable for system entry tracking than purchase_date.
+ */
+function get_monthly_asset_additions() {
+    global $conn, $company_id;
+
+    $series = reports_build_year_month_series(11);
+    $counts = array_fill_keys($series['keys'], 0);
+
+    $sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month_str, COUNT(*) as count
+            FROM equipment
+            WHERE company_id = ? AND created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01') AND deleted_at IS NULL
+            GROUP BY month_str";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            if (isset($counts[$row['month_str']])) {
+                $counts[$row['month_str']] = (int)$row['count'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => $series['labels'],
+        'data' => array_values($counts)
+    ];
+}
+
+/**
+ * Assets by department
+ */
+function get_assets_by_department() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT COALESCE(d.name, 'Unassigned') as dept_name, COUNT(*) as count
+            FROM equipment e
+            LEFT JOIN departments d ON e.department_id = d.id
+            WHERE e.company_id = ? AND e.deleted_at IS NULL
+            GROUP BY dept_name
+            ORDER BY count DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['dept_name'];
+            $data[] = (int)$row['count'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Operational Summary Metrics (MTD)
+ */
+function get_ops_summary_metrics() {
+    global $conn, $company_id;
+
+    $metrics = [
+        'avg_occupancy' => 0,
+        'avg_adr' => 0,
+        'avg_revpar' => 0,
+        'total_revenue' => 0
+    ];
+
+    $sql = "SELECT
+                AVG(CAST(occupancy_pct AS DECIMAL(10,2))) as avg_occ,
+                AVG(average_daily_rate) as avg_adr,
+                AVG(revpar) as avg_revpar,
+                SUM(total_revenue) as total_rev
+            FROM ops_report
+            WHERE company_id = ?
+            AND report_date BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND CURDATE()
+            AND active = 1";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($row = mysqli_fetch_assoc($result)) {
+            $metrics['avg_occupancy'] = (float)$row['avg_occ'];
+            $metrics['avg_adr'] = (float)$row['avg_adr'];
+            $metrics['avg_revpar'] = (float)$row['avg_revpar'];
+            $metrics['total_revenue'] = (float)$row['total_rev'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return $metrics;
+}
+
+/**
+ * Daily Occupancy Trend (Last 30 Days)
+ */
+function get_ops_occupancy_30day() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+
+    $sql = "SELECT report_date, CAST(occupancy_pct AS DECIMAL(10,2)) as occ
+            FROM ops_report
+            WHERE company_id = ?
+            AND report_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND active = 1
+            ORDER BY report_date ASC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = itm_ui_locale_format_chart_day_label($row['report_date']);
+            $data[] = (float)$row['occ'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Monthly Revenue Comparison (This Year vs Last Year)
+ */
+function get_ops_monthly_revenue_yoy() {
+    global $conn, $company_id;
+
+    $months = itm_ui_locale_format_month_short_labels();
+    $this_year_data = array_fill(1, 12, 0);
+    $last_year_data = array_fill(1, 12, 0);
+
+    $sql = "SELECT YEAR(report_date) as yr, MONTH(report_date) as m, SUM(total_revenue) as total
+            FROM ops_report
+            WHERE company_id = ?
+            AND YEAR(report_date) IN (YEAR(CURDATE()), YEAR(CURDATE()) - 1)
+            AND active = 1
+            GROUP BY yr, m";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $current_yr = (int)date('Y');
+        while ($row = mysqli_fetch_assoc($result)) {
+            if ((int)$row['yr'] === $current_yr) {
+                $this_year_data[(int)$row['m']] = (float)$row['total'];
+            } else {
+                $last_year_data[(int)$row['m']] = (float)$row['total'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => array_values($months),
+        'this_year' => array_values($this_year_data),
+        'last_year' => array_values($last_year_data)
+    ];
+}
+
+/**
+ * Revenue Mix (MTD)
+ */
+function get_ops_revenue_mix_mtd() {
+    global $conn, $company_id;
+
+    $data = [
+        'Room' => 0,
+        'F&B' => 0,
+        'Spa' => 0,
+        'Kids Club' => 0,
+        'Housekeeping' => 0,
+        'FO Upgrades' => 0
+    ];
+
+    $sql = "SELECT
+                SUM(room_revenue) as room,
+                SUM(fb_revenue) as fb,
+                SUM(spa_revenue) as spa,
+                SUM(kids_club_revenue) as kids,
+                SUM(hsk_revenue) as hsk,
+                SUM(fo_upgrade_rooms) as fo
+            FROM ops_report
+            WHERE company_id = ?
+            AND report_date BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND CURDATE()
+            AND active = 1";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($row = mysqli_fetch_assoc($result)) {
+            $data['Room'] = (float)$row['room'];
+            $data['F&B'] = (float)$row['fb'];
+            $data['Spa'] = (float)$row['spa'];
+            $data['Kids Club'] = (float)$row['kids'];
+            $data['Housekeeping'] = (float)$row['hsk'];
+            $data['FO Upgrades'] = (float)$row['fo'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => array_keys($data),
+        'data' => array_values($data)
+    ];
+}
+
+/**
+ * Ticket CSAT average score trend (last 12 months).
+ */
+function get_ticket_csat_trend() {
+    global $conn, $company_id;
+
+    $series = reports_build_year_month_series(11);
+    $scores = array_fill_keys($series['keys'], null);
+    $counts = array_fill_keys($series['keys'], 0);
+
+    $sql = "SELECT DATE_FORMAT(csat_submitted_at, '%Y-%m') AS month_str,
+                   ROUND(AVG(csat_score), 2) AS avg_score,
+                   COUNT(*) AS response_count
+            FROM tickets
+            WHERE company_id = ?
+              AND csat_submitted_at IS NOT NULL
+              AND csat_score IS NOT NULL
+              AND csat_submitted_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01')
+            GROUP BY month_str
+            ORDER BY month_str ASC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $month = (string)($row['month_str'] ?? '');
+            if (isset($scores[$month])) {
+                $scores[$month] = (float)$row['avg_score'];
+                $counts[$month] = (int)$row['response_count'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    $data = [];
+    foreach ($series['keys'] as $ym) {
+        $data[] = $scores[$ym];
+    }
+
+    return [
+        'labels' => $series['labels'],
+        'data' => $data,
+        'counts' => array_values($counts),
+    ];
+}
+
+/**
+ * Ticket survey response rate trend (issued vs completed per month, last 12 months).
+ */
+function get_ticket_survey_response_rate_trend() {
+    global $conn, $company_id;
+
+    $series = reports_build_year_month_series(11);
+    $issued = array_fill_keys($series['keys'], 0);
+    $completed = array_fill_keys($series['keys'], 0);
+
+    $sql = "SELECT DATE_FORMAT(ts.created_at, '%Y-%m') AS month_str,
+                   COUNT(*) AS issued_count,
+                   SUM(CASE WHEN ts.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed_count
+            FROM ticket_surveys ts
+            WHERE ts.company_id = ?
+              AND ts.created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01')
+            GROUP BY month_str
+            ORDER BY month_str ASC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $month = (string)($row['month_str'] ?? '');
+            if (isset($issued[$month])) {
+                $issued[$month] = (int)($row['issued_count'] ?? 0);
+                $completed[$month] = (int)($row['completed_count'] ?? 0);
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    $issuedData = [];
+    $completedData = [];
+    $rates = [];
+    foreach ($series['keys'] as $ym) {
+        $issuedCount = $issued[$ym];
+        $completedCount = $completed[$ym];
+        $issuedData[] = $issuedCount;
+        $completedData[] = $completedCount;
+        $rates[] = $issuedCount > 0 ? round(($completedCount / $issuedCount) * 100, 1) : null;
+    }
+
+    return [
+        'labels' => $series['labels'],
+        'issued' => $issuedData,
+        'completed' => $completedData,
+        'rates' => $rates,
+    ];
+}
+
+/**
+ * Per-question rating averages for the company default questionnaire (last 90 days).
+ */
+function get_ticket_survey_question_averages() {
+    global $conn, $company_id;
+
+    $empty = [
+        'questionnaire_name' => '',
+        'questions' => [],
+    ];
+
+    $qStmt = mysqli_prepare(
+        $conn,
+        'SELECT id, name FROM ticket_questionnaires WHERE company_id = ? AND is_default = 1 AND deleted_at IS NULL LIMIT 1'
+    );
+    if (!$qStmt) {
+        return $empty;
+    }
+    mysqli_stmt_bind_param($qStmt, 'i', $company_id);
+    mysqli_stmt_execute($qStmt);
+    $qRes = mysqli_stmt_get_result($qStmt);
+    $qRow = $qRes ? mysqli_fetch_assoc($qRes) : null;
+    mysqli_stmt_close($qStmt);
+    if (!$qRow) {
+        return $empty;
+    }
+
+    $questionnaireId = (int)($qRow['id'] ?? 0);
+    $questionnaireName = (string)($qRow['name'] ?? '');
+
+    $sql = "SELECT tqq.id, tqq.question_text, tqq.sort_order,
+                   ROUND(AVG(tsa.answer_rating), 2) AS avg_rating,
+                   COUNT(tsa.answer_rating) AS response_count
+            FROM ticket_questionnaire_questions tqq
+            LEFT JOIN ticket_survey_answers tsa ON tsa.question_id = tqq.id
+            LEFT JOIN ticket_surveys ts ON ts.id = tsa.survey_id
+                AND ts.company_id = ?
+                AND ts.questionnaire_id = ?
+                AND ts.completed_at IS NOT NULL
+                AND ts.completed_at >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+            WHERE tqq.company_id = ? AND tqq.questionnaire_id = ?
+              AND tqq.question_type = 'rating_1_5' AND tqq.deleted_at IS NULL
+            GROUP BY tqq.id, tqq.question_text, tqq.sort_order
+            ORDER BY tqq.sort_order ASC, tqq.id ASC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [
+            'questionnaire_name' => $questionnaireName,
+            'questions' => [],
+        ];
+    }
+    mysqli_stmt_bind_param($stmt, 'iiii', $company_id, $questionnaireId, $company_id, $questionnaireId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $questions = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $questions[] = [
+            'id' => (int)($row['id'] ?? 0),
+            'text' => (string)($row['question_text'] ?? ''),
+            'avg' => $row['avg_rating'] !== null ? (float)$row['avg_rating'] : null,
+            'count' => (int)($row['response_count'] ?? 0),
+        ];
+    }
+    mysqli_stmt_close($stmt);
+
+    return [
+        'questionnaire_name' => $questionnaireName,
+        'questions' => $questions,
+    ];
+}
+
+/**
+ * Equipment lifecycle stage distribution.
+ */
+function get_asset_lifecycle_stage_summary() {
+    global $conn, $company_id;
+
+    if (!function_exists('itm_asset_lifecycle_stages')) {
+        require_once dirname(__DIR__, 3) . '/includes/itm_asset_depreciation.php';
+    }
+    $stages = itm_asset_lifecycle_stages();
+    $labels = array_values($stages);
+    $keys = array_keys($stages);
+    $counts = array_fill_keys($keys, 0);
+
+    $sql = "SELECT COALESCE(NULLIF(lifecycle_stage, ''), 'in_service') AS stage_key, COUNT(*) AS c
+            FROM equipment
+            WHERE company_id = ? AND deleted_at IS NULL
+            GROUP BY stage_key";
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $key = (string)($row['stage_key'] ?? 'in_service');
+            if (!isset($counts[$key])) {
+                $counts[$key] = 0;
+            }
+            $counts[$key] = (int)$row['c'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    $data = [];
+    foreach ($keys as $key) {
+        $data[] = (int)($counts[$key] ?? 0);
+    }
+
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Problem Management summary counts for Reports Hub.
+ */
+function get_problem_management_summary() {
+    global $conn, $company_id;
+
+    if (!function_exists('itm_problem_management_summary')) {
+        require_once dirname(__DIR__, 3) . '/includes/itm_problem_management.php';
+    }
+    $summary = itm_problem_management_summary($conn, (int)$company_id);
+    $labels = ['Investigating', 'Known Error', 'Resolved', 'Closed'];
+    $data = [
+        (int)($summary['investigating'] ?? 0),
+        (int)($summary['known_error'] ?? 0),
+        (int)($summary['resolved'] ?? 0),
+        (int)($summary['closed'] ?? 0),
+    ];
+    return [
+        'labels' => $labels,
+        'data' => $data,
+        'linked_incidents' => (int)($summary['linked_incidents'] ?? 0),
+        'closed_this_month' => (int)($summary['closed_this_month'] ?? 0),
+    ];
+}
+
+/**
+ * F&B Outlet Covers Analysis (MTD)
+ */
+function get_ops_fb_outlet_covers() {
+    global $conn, $company_id;
+
+    $outlets = [];
+    $breakfast = [];
+    $lunch = [];
+    $dinner = [];
+
+    $sql = "SELECT
+                outlet_name,
+                SUM(CAST(NULLIF(covers_breakfast, '') AS UNSIGNED)) as b,
+                SUM(CAST(NULLIF(covers_lunch, '') AS UNSIGNED)) as l,
+                SUM(CAST(NULLIF(covers_dinner, '') AS UNSIGNED)) as d
+            FROM ops_report_fb_outlet o
+            JOIN ops_report r ON o.ops_report_id = r.id
+            WHERE o.company_id = ?
+            AND r.report_date BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND CURDATE()
+            AND o.active = 1
+            AND r.active = 1
+            GROUP BY outlet_name";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $outlets[] = $row['outlet_name'];
+            $breakfast[] = (int)$row['b'];
+            $lunch[] = (int)$row['l'];
+            $dinner[] = (int)$row['d'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => $outlets,
+        'breakfast' => $breakfast,
+        'lunch' => $lunch,
+        'dinner' => $dinner
+    ];
+}

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 520" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#57606a"/>
+    </marker>
+    <style>
+      .title { font-size: 18px; font-weight: 700; fill: #1f2328; }
+      .section { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1.5; rx: 8; }
+      .section-label { font-size: 12px; font-weight: 600; fill: #57606a; }
+      .node { fill: #ffffff; stroke: #0969da; stroke-width: 1.5; rx: 6; }
+      .node-db { fill: #fff8c5; stroke: #bf8700; stroke-width: 1.5; rx: 6; }
+      .node-fn { fill: #ddf4ff; stroke: #0969da; stroke-width: 1.5; rx: 6; }
+      .text { fill: #1f2328; }
+      .line { stroke: #57606a; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <text x="460" y="28" text-anchor="middle" class="title">Company Module Access Management</text>
+  <text x="460" y="48" text-anchor="middle" class="section-label">Architectural map</text>
+
+  <!-- UI surfaces -->
+  <rect x="20" y="70" width="880" height="110" class="section"/>
+  <text x="36" y="92" class="section-label">UI surfaces</text>
+
+  <rect x="40" y="105" width="250" height="52" class="node"/>
+  <text x="55" y="128" class="text">modules/company_module_access/</text>
+  <text x="55" y="146" class="text">index.php</text>
+
+  <rect x="330" y="105" width="200" height="52" class="node"/>
+  <text x="345" y="136" class="text">includes/sidebar.php</text>
+
+  <rect x="570" y="105" width="200" height="52" class="node"/>
+  <text x="585" y="136" class="text">dashboard.php</text>
+
+  <!-- Request bootstrap -->
+  <rect x="20" y="200" width="880" height="150" class="section"/>
+  <text x="36" y="222" class="section-label">Request bootstrap</text>
+
+  <rect x="40" y="235" width="200" height="52" class="node"/>
+  <text x="55" y="266" class="text">config/config.php</text>
+
+  <rect x="280" y="235" width="280" height="52" class="node-fn"/>
+  <text x="295" y="258" class="text">itm_enforce_module_access</text>
+  <text x="295" y="276" class="text">_or_exit()</text>
+
+  <rect x="600" y="235" width="280" height="52" class="node"/>
+  <text x="615" y="258" class="text">includes/itm_company_</text>
+  <text x="615" y="276" class="text">module_access.php</text>
+
+  <!-- Database -->
+  <rect x="20" y="370" width="880" height="130" class="section"/>
+  <text x="36" y="392" class="section-label">Database</text>
+
+  <rect x="80" y="405" width="160" height="52" class="node-db"/>
+  <text x="120" y="436" class="text">companies</text>
+
+  <rect x="320" y="405" width="200" height="52" class="node-db"/>
+  <text x="350" y="436" class="text">modules_registry</text>
+
+  <rect x="600" y="405" width="240" height="52" class="node-db"/>
+  <text x="640" y="436" class="text">company_module_access</text>
+
+  <!-- Arrows UI -> bootstrap -->
+  <path d="M 430 157 L 420 235" class="line"/>
+  <path d="M 670 157 L 440 235" class="line"/>
+
+  <!-- config -> enforce -->
+  <path d="M 240 261 L 280 261" class="line"/>
+  <!-- enforce -> helper -->
+  <path d="M 560 261 L 600 261" class="line"/>
+  <!-- dashboard -> helper -->
+  <path d="M 670 157 L 740 235" class="line"/>
+
+  <!-- index -> company_module_access table -->
+  <path d="M 165 157 L 720 405" class="line"/>
+  <!-- helper -> modules_registry -->
+  <path d="M 740 287 L 420 405" class="line"/>
+
+  <!-- DB relations -->
+  <path d="M 240 431 L 320 431" class="line"/>
+  <path d="M 520 431 L 600 431" class="line"/>
+</svg>

@@ -1,0 +1,587 @@
+<?php
+/**
+ * Setup wizard step 3 database probe / create / replace regression.
+ *
+ * CLI: php scripts/verify_setup_wizard_database.php
+ */
+
+declare(strict_types=1);
+
+define('ITM_CLI_SCRIPT', true);
+define('ITM_SETUP_WIZARD', true);
+define('ROOT_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
+
+// Why: Sample seed needs itm_parse_database_sql_inserts() from config.php; ITM_CLI_SCRIPT + ITM_SETUP_WIZARD skip web auth and soften DB connect.
+require_once ROOT_PATH . 'config/config.php';
+require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+require_once ROOT_PATH . 'includes/itm_database_sql_source.php';
+require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
+require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
+require_once ROOT_PATH . 'setup/includes/itm_setup_wizard.php';
+
+itm_script_output_begin('Setup Wizard Database Verification');
+
+$fail = 0;
+
+function setup_db_fail(string $message): void
+{
+    global $fail;
+    $fail++;
+    echo colorText('[FAIL] ' . $message, 'fail') . "\n";
+}
+
+function setup_db_pass(string $message): void
+{
+    echo colorText('[PASS] ' . $message, 'pass') . "\n";
+}
+
+if (!itm_setup_wizard_is_safe_database_name('itmanagement2')) {
+    setup_db_fail('itmanagement2 must be a safe database name');
+} else {
+    setup_db_pass('Safe database name accepts alphanumeric + underscore');
+}
+
+if (itm_setup_wizard_is_safe_database_name('bad-name')) {
+    setup_db_fail('Hyphenated database names must be rejected');
+} else {
+    setup_db_pass('Unsafe database names are rejected');
+}
+
+$detectedOpenMysql = itm_setup_wizard_detect_open_mysql_loopback_port();
+if ($detectedOpenMysql !== null) {
+    $conflictingEnvPort = $detectedOpenMysql === 3306 ? '3307' : '3306';
+    $defaultFromProbe = itm_setup_wizard_default_db_port(null, ['DB_PORT' => $conflictingEnvPort]);
+    if ($defaultFromProbe !== $detectedOpenMysql) {
+        setup_db_fail('default_db_port must prefer open loopback probe over conflicting .env DB_PORT');
+    } else {
+        setup_db_pass('default_db_port prefers open loopback probe over .env');
+    }
+} else {
+    $defaultFromEnv = itm_setup_wizard_default_db_port(null, ['DB_PORT' => '3307']);
+    if ($defaultFromEnv !== 3307) {
+        setup_db_fail('default_db_port must use .env DB_PORT when no loopback listener is open');
+    } else {
+        setup_db_pass('default_db_port honours .env DB_PORT when probe finds no open listener');
+    }
+}
+
+if (itm_setup_wizard_default_db_port(3308) !== 3308) {
+    setup_db_fail('default_db_port must prefer explicit session port');
+} else {
+    setup_db_pass('default_db_port prefers session port');
+}
+
+$host = getenv('DB_HOST') ?: '127.0.0.1';
+$port = (int)(getenv('DB_PORT') ?: '3306');
+$user = getenv('DB_USER') ?: 'root';
+$pass = getenv('DB_PASS') ?: 'itmanagement';
+$dbName = getenv('DB_NAME') ?: 'itmanagement';
+$listConn = @mysqli_connect($host, $user, $pass, $dbName, $port);
+if (!$listConn) {
+    echo colorText('[WARN] Sample company list test skipped — MySQL unavailable.', 'warn') . "\n";
+} else {
+$emptyBatch = itm_setup_wizard_install_sample_data_for_companies($listConn, []);
+if ($emptyBatch['ok']) {
+    setup_db_fail('install_sample_data_for_companies must reject empty company selection');
+} else {
+    setup_db_pass('install_sample_data_for_companies rejects empty selection');
+}
+
+$catalog = itm_setup_wizard_seed_company_catalog();
+if (count($catalog) !== 5 || (int)($catalog[0]['id'] ?? 0) !== 1) {
+    setup_db_fail('seed_company_catalog must list five canonical seed companies');
+} else {
+    setup_db_pass('seed_company_catalog lists five seed companies');
+}
+
+$resolvedWithoutDb = itm_setup_wizard_resolve_sample_company_options(null);
+if (count($resolvedWithoutDb) !== 5) {
+    setup_db_fail('resolve_sample_company_options must fall back to seed catalog without DB');
+} else {
+    setup_db_pass('resolve_sample_company_options falls back to seed catalog');
+}
+
+$companyTableCheck = @mysqli_query($listConn, "SHOW TABLES LIKE 'companies'");
+    $hasCompanyTable = $companyTableCheck && mysqli_num_rows($companyTableCheck) > 0;
+    if ($companyTableCheck) {
+        mysqli_free_result($companyTableCheck);
+    }
+
+    if (!$hasCompanyTable) {
+        echo colorText('[WARN] Sample company list test skipped — companies table not present in ' . $dbName . '.', 'warn') . "\n";
+    } else {
+        $companyRows = itm_setup_wizard_list_seed_companies($listConn);
+        if ($companyRows === []) {
+            setup_db_fail('list_seed_companies must return active companies after schema import');
+        } else {
+            $firstId = (int)($companyRows[0]['id'] ?? 0);
+            if ($firstId < 1 || trim((string)($companyRows[0]['name'] ?? '')) === '') {
+                setup_db_fail('list_seed_companies rows must include id and company name');
+            } else {
+                setup_db_pass('list_seed_companies returns active company rows');
+            }
+        }
+    }
+    mysqli_close($listConn);
+}
+
+$rewritten = itm_setup_wizard_rewrite_sql_for_database("USE `itmanagement`;\n", 'itmanagement3');
+if (strpos($rewritten, 'USE `itmanagement3`;') === false) {
+    setup_db_fail('SQL bundle rewrite must map canonical database name to target schema');
+} else {
+    setup_db_pass('SQL bundle rewrite maps itmanagement to custom DB name');
+}
+
+if (strpos(itm_setup_wizard_rewrite_sql_for_database('USE `itmanagement`;', 'itmanagement'), 'itmanagement3') !== false) {
+    setup_db_fail('SQL rewrite must be a no-op when target matches canonical name');
+} else {
+    setup_db_pass('SQL rewrite is a no-op for canonical database name');
+}
+
+$semicolonDropSample = '';
+$triggersPath = ROOT_PATH . 'db/03_triggers.sql';
+$triggerLines = file($triggersPath, FILE_IGNORE_NEW_LINES);
+if ($triggerLines === false) {
+    setup_db_fail('Could not read 03_triggers.sql for parser regression');
+} else {
+    // expense_recurrence cluster: semicolon-terminated DROP lines inside an active DELIMITER $$ block.
+    $semicolonDropSample = implode("\n", array_slice($triggerLines, 2059, 54)) . "\n";
+}
+if (!function_exists('itm_database_migrations_execute_sql_text')) {
+    require_once ROOT_PATH . 'includes/itm_database_migrations.php';
+}
+$parserDb = 'itm_setup_wizard_parser_' . substr(sha1((string)getmypid() . 'parser'), 0, 8);
+$parserCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $parserDb);
+if ($semicolonDropSample === '') {
+    echo colorText('[WARN] Parser semicolon-DROP live test skipped — no SQL excerpt.', 'warn') . "\n";
+} elseif (!$parserCreate['ok']) {
+    echo colorText('[WARN] Parser semicolon-DROP live test skipped — could not create schema.', 'warn') . "\n";
+} else {
+    $schemaConn = itm_mysqli_connect($host, $user, $pass, $parserDb, $port);
+    if (!$schemaConn) {
+        setup_db_fail('Parser test could not connect to disposable schema');
+    } else {
+        $schemaSql = file_get_contents(ROOT_PATH . 'db/01_schema.sql');
+        if ($schemaSql === false) {
+            setup_db_fail('Could not read 01_schema.sql for parser test');
+        } else {
+            $schemaSql = itm_setup_wizard_rewrite_sql_for_database($schemaSql, $parserDb);
+            [$schemaOk, $schemaErr] = itm_database_migrations_execute_sql_text($schemaConn, $schemaSql);
+            if (!$schemaOk) {
+                setup_db_fail('Parser test schema load failed: ' . $schemaErr);
+            } else {
+                [$parserOk, $parserErr] = itm_database_migrations_execute_sql_text($schemaConn, $semicolonDropSample);
+                if (!$parserOk) {
+                    setup_db_fail('Parser must split semicolon DROP lines inside DELIMITER $$ block: ' . $parserErr);
+                } else {
+                    setup_db_pass('Parser splits semicolon-terminated DROP lines inside DELIMITER $$ blocks');
+                }
+            }
+        }
+        mysqli_close($schemaConn);
+    }
+    $parserCleanup = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+    if ($parserCleanup) {
+        mysqli_query($parserCleanup, 'DROP DATABASE IF EXISTS `' . $parserDb . '`');
+        mysqli_close($parserCleanup);
+    }
+}
+
+$testDb = 'itm_setup_wizard_probe_' . substr(sha1((string)getmypid()), 0, 8);
+
+$serverConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+if (!$serverConn) {
+    echo colorText('[WARN] MySQL server not reachable at ' . $host . ':' . $port . ' — live probe tests skipped.', 'warn') . "\n";
+    exit($fail > 0 ? 1 : 0);
+}
+mysqli_close($serverConn);
+
+$probeMissing = itm_setup_wizard_probe_database($host, $port, $user, $pass, $testDb);
+if (empty($probeMissing['server_ok'])) {
+    setup_db_fail('Probe must report server_ok when credentials work');
+} elseif (empty($probeMissing['needs_create']) || !empty($probeMissing['database_exists'])) {
+    setup_db_fail('Missing database must set needs_create and not database_exists');
+} elseif (stripos($probeMissing['message'], 'Unknown database') !== false) {
+    setup_db_fail('Missing database message must not be raw mysqli Unknown database error');
+} else {
+    setup_db_pass('Probe missing database returns needs_create with friendly message');
+}
+
+$create = itm_setup_wizard_create_database($host, $port, $user, $pass, $testDb);
+if (!$create['ok']) {
+    if (stripos($create['message'], 'schema directory') !== false) {
+        echo colorText('[WARN] CREATE DATABASE unavailable in this MySQL environment — create/reset live tests skipped.', 'warn') . "\n";
+        exit($fail > 0 ? 1 : 0);
+    }
+    setup_db_fail('Create database failed: ' . $create['message']);
+} else {
+    setup_db_pass('Create database succeeds for new schema name');
+}
+
+$duplicate = itm_setup_wizard_create_database($host, $port, $user, $pass, $testDb);
+if ($duplicate['ok']) {
+    setup_db_fail('Create database must fail when schema already exists');
+} else {
+    setup_db_pass('Create database rejects duplicate schema');
+}
+
+$probeEmpty = itm_setup_wizard_probe_database($host, $port, $user, $pass, $testDb);
+if (!$probeEmpty['ok'] || !empty($probeEmpty['needs_create']) || !empty($probeEmpty['needs_replace_confirm'])) {
+    setup_db_fail('Empty created database must connect without create/replace flags');
+} else {
+    setup_db_pass('Probe empty database connects successfully');
+}
+
+$dbConn = itm_mysqli_connect($host, $user, $pass, $testDb, $port);
+if (!$dbConn) {
+    setup_db_fail('Could not connect to test database for table seed');
+} else {
+    mysqli_query($dbConn, 'CREATE TABLE setup_wizard_probe_dummy (id INT PRIMARY KEY)');
+    mysqli_close($dbConn);
+
+    $probeTables = itm_setup_wizard_probe_database($host, $port, $user, $pass, $testDb);
+    if (!$probeTables['ok'] || empty($probeTables['needs_replace_confirm']) || (int)$probeTables['table_count'] < 1) {
+        setup_db_fail('Database with tables must set needs_replace_confirm');
+    } else {
+        setup_db_pass('Probe existing tables sets needs_replace_confirm');
+    }
+}
+
+$reset = itm_setup_wizard_reset_database($host, $port, $user, $pass, $testDb);
+if (!$reset['ok']) {
+    setup_db_fail('Reset database failed: ' . $reset['message']);
+} else {
+    setup_db_pass('Reset database drops and recreates schema');
+}
+
+$probeAfterReset = itm_setup_wizard_probe_database($host, $port, $user, $pass, $testDb);
+if (!$probeAfterReset['ok'] || !empty($probeAfterReset['needs_replace_confirm'])) {
+    setup_db_fail('After reset, database must be empty and not need replace confirm');
+} else {
+    setup_db_pass('After reset, probe reports empty database');
+}
+
+$cleanupConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+if ($cleanupConn) {
+    mysqli_query($cleanupConn, 'DROP DATABASE IF EXISTS `' . $testDb . '`');
+    mysqli_close($cleanupConn);
+}
+
+$importDb = 'itm_setup_wizard_import_' . substr(sha1((string)getmypid() . 'import'), 0, 8);
+$importCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $importDb);
+if (!$importCreate['ok']) {
+    if (stripos($importCreate['message'], 'schema directory') !== false) {
+        echo colorText('[WARN] Import live test skipped — CREATE DATABASE unavailable.', 'warn') . "\n";
+    } else {
+        setup_db_fail('Import test create database failed: ' . $importCreate['message']);
+    }
+} else {
+    $importResult = itm_setup_wizard_import_database($host, $port, $user, $pass, $importDb);
+    if (!$importResult['ok']) {
+        setup_db_fail('mysqli import failed: ' . $importResult['message']);
+    } else {
+        setup_db_pass('Full db/ bundle import succeeds via mysqli (including triggers)');
+    }
+
+    $importConn = itm_mysqli_connect($host, $user, $pass, $importDb, $port);
+    if (!$importConn) {
+        setup_db_fail('Could not connect after import for trigger verification');
+    } else {
+        $tables = itm_setup_wizard_count_tables($importConn, $importDb);
+        $triggers = itm_setup_wizard_count_triggers($importConn, $importDb);
+        $expectedTables = itm_setup_wizard_expected_table_count();
+        $expectedTriggers = itm_setup_wizard_expected_trigger_count();
+
+        if ($tables < $expectedTables) {
+            setup_db_fail('Import table count ' . $tables . ' < expected ' . $expectedTables);
+        } else {
+            setup_db_pass('Import table count matches schema (' . $tables . ')');
+        }
+
+        if ($expectedTriggers > 0 && $triggers < $expectedTriggers) {
+            setup_db_fail('Import trigger count ' . $triggers . ' < expected ' . $expectedTriggers);
+        } else {
+            setup_db_pass('Import trigger count matches 03_triggers.sql (' . $triggers . ')');
+        }
+
+        // Test sample data seeding for single company (Company 1)
+        $singleSeed = itm_setup_wizard_install_sample_data_for_companies($importConn, [1]);
+        if (!$singleSeed['ok'] || strpos($singleSeed['message'], 'installed for company 1') === false) {
+            setup_db_fail('install_sample_data_for_companies failed for single company selection (company 1): ' . ($singleSeed['message'] ?? ''));
+        } else {
+            $co1NotesRes = mysqli_query($importConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 1');
+            $co1NotesRow = $co1NotesRes ? mysqli_fetch_assoc($co1NotesRes) : null;
+            $co1NotesCount = (int)($co1NotesRow['c'] ?? 0);
+
+            $co3NotesRes = mysqli_query($importConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 3');
+            $co3NotesRow = $co3NotesRes ? mysqli_fetch_assoc($co3NotesRes) : null;
+            $co3NotesCount = (int)($co3NotesRow['c'] ?? 0);
+
+            if ($co1NotesCount < 1) {
+                setup_db_fail('install_sample_data_for_companies must seed sample rows for selected company 1');
+            } elseif ($co3NotesCount > 0) {
+                setup_db_fail('install_sample_data_for_companies must NOT seed unselected company 3 when only company 1 is chosen');
+            } elseif (!preg_match('/^[1-9]\d*\s+table\(s\)\s+seeded$/i', (string)($singleSeed['detail'] ?? ''))) {
+                setup_db_fail('install_sample_data_for_companies detail must report a non-zero seeded table count (got: ' . ($singleSeed['detail'] ?? '') . ')');
+            } else {
+                setup_db_pass('install_sample_data_for_companies seeds requested single company 1 only');
+            }
+        }
+
+        // Test mandatory seeding for company 3
+        $co3Seed = itm_setup_wizard_install_sample_data_for_companies($importConn, [3]);
+        if (!$co3Seed['ok'] || strpos($co3Seed['message'], 'installed for company 3') === false) {
+            setup_db_fail('install_sample_data_for_companies failed for company 3: ' . ($co3Seed['message'] ?? ''));
+        } else {
+            $co3NotesRes = mysqli_query($importConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 3');
+            $co3NotesRow = $co3NotesRes ? mysqli_fetch_assoc($co3NotesRes) : null;
+            $co3NotesCount = (int)($co3NotesRow['c'] ?? 0);
+
+            if ($co3NotesCount < 1) {
+                setup_db_fail('install_sample_data_for_companies must seed sample rows for company 3');
+            } else {
+                setup_db_pass('install_sample_data_for_companies seeds sample rows for company 3');
+            }
+        }
+
+        mysqli_close($importConn);
+    }
+
+    $importCleanup = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+    if ($importCleanup) {
+        mysqli_query($importCleanup, 'DROP DATABASE IF EXISTS `' . $importDb . '`');
+        mysqli_close($importCleanup);
+    }
+}
+
+$sampleMultiDb = 'itm_setup_wizard_sample_multi_' . substr(sha1((string)getmypid() . 'multi'), 0, 8);
+$sampleMultiCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $sampleMultiDb);
+if (!$sampleMultiCreate['ok']) {
+    if (stripos($sampleMultiCreate['message'], 'schema directory') !== false) {
+        echo colorText('[WARN] Multi-company sample seed test skipped — CREATE DATABASE unavailable.', 'warn') . "\n";
+    } else {
+        setup_db_fail('Multi-company sample seed test create database failed: ' . $sampleMultiCreate['message']);
+    }
+} else {
+    $sampleMultiImport = itm_setup_wizard_import_database($host, $port, $user, $pass, $sampleMultiDb);
+    if (!$sampleMultiImport['ok']) {
+        setup_db_fail('Multi-company sample seed import failed: ' . $sampleMultiImport['message']);
+    } else {
+        $sampleMultiConn = itm_mysqli_connect($host, $user, $pass, $sampleMultiDb, $port);
+        if (!$sampleMultiConn) {
+            setup_db_fail('Multi-company sample seed test could not connect after import');
+        } else {
+            $multiSeed = itm_setup_wizard_install_sample_data_for_companies($sampleMultiConn, [1, 3]);
+            if (!$multiSeed['ok'] || strpos($multiSeed['message'], 'installed for companies 1, 3') === false) {
+                setup_db_fail('install_sample_data_for_companies failed for multi-company selection (companies 1 and 3): ' . ($multiSeed['message'] ?? ''));
+            } else {
+                $m1NotesRes = mysqli_query($sampleMultiConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 1');
+                $m1NotesRow = $m1NotesRes ? mysqli_fetch_assoc($m1NotesRes) : null;
+                $m1NotesCount = (int)($m1NotesRow['c'] ?? 0);
+
+                $m3NotesRes = mysqli_query($sampleMultiConn, 'SELECT COUNT(*) AS c FROM notes WHERE company_id = 3');
+                $m3NotesRow = $m3NotesRes ? mysqli_fetch_assoc($m3NotesRes) : null;
+                $m3NotesCount = (int)($m3NotesRow['c'] ?? 0);
+
+                if ($m1NotesCount < 1 || $m3NotesCount < 1) {
+                    setup_db_fail('install_sample_data_for_companies (companies 1 and 3) must seed sample rows for both company 1 and company 3');
+                } else {
+                    setup_db_pass('install_sample_data_for_companies seeds multiple selected companies (1 and 3) in single batch');
+                }
+            }
+            mysqli_close($sampleMultiConn);
+        }
+    }
+    $sampleCleanup = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+    if ($sampleCleanup) {
+        mysqli_query($sampleCleanup, 'DROP DATABASE IF EXISTS `' . $sampleMultiDb . '`');
+        mysqli_close($sampleCleanup);
+    }
+}
+
+$minimalDb = 'itm_setup_wizard_minimal_' . substr(sha1((string)getmypid() . 'minimal'), 0, 8);
+$minimalCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $minimalDb);
+if (!$minimalCreate['ok']) {
+    if (stripos($minimalCreate['message'], 'schema directory') !== false) {
+        echo colorText('[WARN] Minimal single-user test skipped — CREATE DATABASE unavailable.', 'warn') . "\n";
+    } else {
+        setup_db_fail('Minimal single-user test create database failed: ' . $minimalCreate['message']);
+    }
+} else {
+    $minimalImport = itm_setup_wizard_import_database($host, $port, $user, $pass, $minimalDb);
+    if (!$minimalImport['ok']) {
+        setup_db_fail('Minimal single-user import failed: ' . $minimalImport['message']);
+    } else {
+        $minimalConn = itm_mysqli_connect($host, $user, $pass, $minimalDb, $port);
+        if (!$minimalConn) {
+            setup_db_fail('Minimal single-user test could not connect after import');
+        } else {
+            $beforeCount = 0;
+            $beforeResult = mysqli_query($minimalConn, 'SELECT COUNT(*) AS c FROM employees WHERE deleted_at IS NULL');
+            if ($beforeResult && ($beforeRow = mysqli_fetch_assoc($beforeResult))) {
+                $beforeCount = (int)($beforeRow['c'] ?? 0);
+                mysqli_free_result($beforeResult);
+            }
+            if ($beforeCount < 2) {
+                setup_db_fail('Minimal single-user test expects multiple seed employees after import, found ' . $beforeCount);
+            } else {
+                setup_db_pass('Seed import includes multiple employees before skip cleanup (' . $beforeCount . ')');
+            }
+
+            $minimalResult = itm_setup_wizard_apply_minimal_single_user_install($minimalConn, 'Admin');
+            if (!$minimalResult['ok']) {
+                setup_db_fail('apply_minimal_single_user_install failed: ' . $minimalResult['message']);
+            } elseif ((int)($minimalResult['employee_count'] ?? 0) !== 1) {
+                setup_db_fail('apply_minimal_single_user_install must leave exactly one employee');
+            } else {
+                $keeperUsername = '';
+                $keeperResult = mysqli_query($minimalConn, "SELECT username FROM employees WHERE deleted_at IS NULL LIMIT 2");
+                if ($keeperResult) {
+                    $keeperRows = [];
+                    while ($keeperRow = mysqli_fetch_assoc($keeperResult)) {
+                        $keeperRows[] = (string)($keeperRow['username'] ?? '');
+                    }
+                    mysqli_free_result($keeperResult);
+                    if (count($keeperRows) !== 1 || $keeperRows[0] !== 'Admin') {
+                        setup_db_fail('Minimal install must keep only the Admin employee row');
+                    } else {
+                        setup_db_pass('apply_minimal_single_user_install keeps only step 6 administrator (Admin)');
+                    }
+                } else {
+                    setup_db_fail('Could not verify keeper employee after minimal install');
+                }
+            }
+
+            $repeatMinimal = itm_setup_wizard_apply_minimal_single_user_install($minimalConn, 'Admin');
+            if (!$repeatMinimal['ok'] || (int)($repeatMinimal['employee_count'] ?? 0) !== 1) {
+                setup_db_fail('apply_minimal_single_user_install must be idempotent on a single-user database');
+            } else {
+                setup_db_pass('apply_minimal_single_user_install is idempotent when one employee remains');
+            }
+
+            mysqli_close($minimalConn);
+        }
+    }
+
+    $minimalCleanup = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+    if ($minimalCleanup) {
+        mysqli_query($minimalCleanup, 'DROP DATABASE IF EXISTS `' . $minimalDb . '`');
+        mysqli_close($minimalCleanup);
+    }
+}
+
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+$wizardSessionBackup = $_SESSION['itm_setup_wizard'] ?? null;
+$_SESSION['itm_setup_wizard'] = [
+    'db' => [
+        'host' => '127.0.0.1',
+        'port' => 3307,
+        'user' => 'root',
+        'pass' => 'secret',
+        'name' => 'itmanagement_test',
+    ],
+];
+$credentials = itm_setup_wizard_session_db_credentials();
+if ($credentials === null || $credentials['port'] !== 3307 || $credentials['name'] !== 'itmanagement_test') {
+    setup_db_fail('Wizard session DB credentials must round-trip from session state');
+} else {
+    setup_db_pass('Wizard session DB credentials round-trip from session state');
+}
+
+$_SESSION['itm_setup_wizard'] = [];
+$persistMissing = itm_setup_wizard_persist_env_from_state();
+if ($persistMissing['ok']) {
+    setup_db_fail('persist_env_from_state must fail when session db is missing');
+} else {
+    setup_db_pass('persist_env_from_state rejects missing session db');
+}
+
+$_SESSION['itm_setup_wizard'] = [
+    'completed_steps' => [1 => true],
+    'current_step' => 7,
+];
+if (itm_setup_wizard_clamp_step(7) !== 2) {
+    setup_db_fail('clamp_step must block step 7 when step 2 is incomplete');
+} else {
+    setup_db_pass('clamp_step blocks later steps until prerequisites complete');
+}
+
+$_SESSION['itm_setup_wizard'] = [
+    'completed_steps' => [1 => true, 2 => true, 3 => true],
+    'table_count' => 0,
+    'trigger_count' => 0,
+    'db' => [
+        'host' => '127.0.0.1',
+        'port' => 3306,
+        'user' => 'root',
+        'pass' => '',
+        'name' => 'itmanagement',
+    ],
+];
+$staleImport = itm_setup_wizard_import_bundle_satisfied();
+if ($staleImport['ok']) {
+    setup_db_fail('import_bundle_satisfied must fail when step 3 session counts are zero');
+} else {
+    setup_db_pass('import_bundle_satisfied rejects stale step 3 completion without import counts');
+}
+
+// Verify destination DB target isolation (save_admin & apply_ui_error_reporting target only destination DB)
+$destServerConn = itm_setup_wizard_connect_mysql_server($host, $port, $user, $pass);
+if ($destServerConn) {
+    $targetDb = 'itm_setup_wizard_dest_' . substr(sha1((string)getmypid() . 'dest'), 0, 8);
+    $destCreate = itm_setup_wizard_create_database($host, $port, $user, $pass, $targetDb);
+    if ($destCreate['ok']) {
+        $destImport = itm_setup_wizard_import_database($host, $port, $user, $pass, $targetDb);
+        if ($destImport['ok']) {
+            $destConn = itm_mysqli_connect($host, $user, $pass, $targetDb, $port);
+            if ($destConn) {
+                // Test step 6 save_admin updates destination DB
+                $saveAdmin = itm_setup_wizard_save_admin($destConn, 'Admin', 'NewSecurePass123!', 'NewAdmin', 'User', 'admin@dest.example.com');
+                if (!$saveAdmin['ok']) {
+                    setup_db_fail('save_admin on destination DB failed: ' . $saveAdmin['message']);
+                } else {
+                    $adminCheck = mysqli_query($destConn, "SELECT work_email FROM employees WHERE username = 'Admin' AND deleted_at IS NULL LIMIT 1");
+                    $adminRow = $adminCheck ? mysqli_fetch_assoc($adminCheck) : null;
+                    if ($adminCheck) {
+                        mysqli_free_result($adminCheck);
+                    }
+                    if (($adminRow['work_email'] ?? '') !== 'admin@dest.example.com') {
+                        setup_db_fail('save_admin must write updated admin profile to destination DB');
+                    } else {
+                        setup_db_pass('save_admin updates administrator profile directly in destination DB');
+                    }
+                }
+
+                // Test step 5 apply_ui_error_reporting updates destination DB
+                $uiReport = itm_setup_wizard_apply_ui_error_reporting($destConn, 0);
+                if (!$uiReport['ok']) {
+                    setup_db_fail('apply_ui_error_reporting on destination DB failed');
+                } else {
+                    setup_db_pass('apply_ui_error_reporting updates ui_configuration on destination DB');
+                }
+
+                // Verify destination DB has no setup/installer state tables created
+                $installerTableCheck = mysqli_query($destConn, "SHOW TABLES LIKE '%installed%'");
+                $hasInstallerTable = $installerTableCheck && mysqli_num_rows($installerTableCheck) > 0;
+                if ($installerTableCheck) {
+                    mysqli_free_result($installerTableCheck);
+                }
+                if ($hasInstallerTable) {
+                    setup_db_fail('Destination DB must not contain installer/installed state tables');
+                } else {
+                    setup_db_pass('Destination DB contains no installer/installed tracking tables');
+                }
+
+                mysqli_close($destConn);
+            }
+        }
+        mysqli_query($destServerConn, 'DROP DATABASE IF EXISTS `' . $targetDb . '`');
+    }
+    mysqli_close($destServerConn);
+}
+
+$_SESSION['itm_setup_wizard'] = $wizardSessionBackup;
+
+exit($fail > 0 ? 1 : 0);

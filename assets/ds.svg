@@ -1,0 +1,291 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="50" viewBox="0 0 520 50">
+  <g id="PATCHBOX_inkl._Bind_Panel_-_1HE" data-name="PATCHBOX inkl. Bind Panel - 1HE" transform="translate(-1034 -4713)">
+    <g id="Rechteck_344" data-name="Rechteck 344" transform="translate(1044 4713)" fill="#232a2e" stroke="#ccc" stroke-width="1">
+      <rect width="500" height="50" stroke="none"/>
+      <rect x="0.5" y="0.5" width="499" height="49" fill="none"/>
+    </g>
+    <g id="_1HE" data-name="1HE" transform="translate(3222 -5406)">
+      <rect id="Rechteck_356" data-name="Rechteck 356" width="10" height="50" transform="translate(-2188 10119)" fill="#efefef"/>
+      <path id="Rechteck_357" data-name="Rechteck 357" d="M0,0H6A0,0,0,0,1,6,0V9a2,2,0,0,1-2,2H0a0,0,0,0,1,0,0V0A0,0,0,0,1,0,0Z" transform="translate(-2188 10119)" fill="#ccc"/>
+      <circle id="Ellipse_76" data-name="Ellipse 76" cx="2.5" cy="2.5" r="2.5" transform="translate(-2186 10149)" fill="#ccc"/>
+      <circle id="Ellipse_77" data-name="Ellipse 77" cx="2.5" cy="2.5" r="2.5" transform="translate(-2186 10159)" fill="#ccc"/>
+    </g>
+    <g id="_1HE-2" data-name="1HE" transform="translate(3732 -5406)">
+      <rect id="Rechteck_356-2" data-name="Rechteck 356" width="10" height="50" transform="translate(-2188 10119)" fill="#efefef"/>
+      <path id="Rechteck_357-2" data-name="Rechteck 357" d="M0,0H6A0,0,0,0,1,6,0V11a0,0,0,0,1,0,0H2A2,2,0,0,1,0,9V0A0,0,0,0,1,0,0Z" transform="translate(-2184 10119)" fill="#ccc"/>
+      <circle id="Ellipse_76-2" data-name="Ellipse 76" cx="2.5" cy="2.5" r="2.5" transform="translate(-2186 10149)" fill="#ccc"/>
+      <circle id="Ellipse_77-2" data-name="Ellipse 77" cx="2.5" cy="2.5" r="2.5" transform="translate(-2186 10159)" fill="#ccc"/>
+    </g>
+    <g id="HD" transform="translate(-70)">
+      <rect id="Rechteck_379" data-name="Rechteck 379" width="63" height="14" transform="translate(1153 4738)" fill="#707070"/>
+      <rect id="Rechteck_380" data-name="Rechteck 380" width="14" height="14" transform="translate(1139 4738)" fill="#3e3e3e"/>
+      <g id="Ellipse_85" data-name="Ellipse 85" transform="translate(1142 4741)" fill="#3e3e3e" stroke="#dd3031" stroke-width="2">
+        <circle cx="4" cy="4" r="4" stroke="none"/>
+        <circle cx="4" cy="4" r="3" fill="none"/>
+      </g>
+      <rect id="Rechteck_381" data-name="Rechteck 381" width="5" height="5" transform="translate(1129 4747)" fill="#0ec31e"/>
+      <rect id="Rechteck_382" data-name="Rechteck 382" width="5" height="5" transform="translate(1129 4738)" fill="#0ec31e"/>
+      <g id="Mash" transform="translate(69)">
+        <circle id="Ellipse_86" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+      <g id="Mash-2" data-name="Mash" transform="translate(90)">
+        <circle id="Ellipse_86-2" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-2" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-2" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-2" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-2" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-2" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-2" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-2" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-2" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-2" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-2" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-2" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-2" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-2" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-2" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-2" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+      <g id="Mash-3" data-name="Mash" transform="translate(111)">
+        <circle id="Ellipse_86-3" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-3" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-3" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-3" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-3" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-3" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-3" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-3" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-3" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-3" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-3" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-3" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-3" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-3" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-3" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-3" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+    </g>
+    <g id="HD-2" data-name="HD" transform="translate(58)">
+      <rect id="Rechteck_379-2" data-name="Rechteck 379" width="63" height="14" transform="translate(1153 4738)" fill="#707070"/>
+      <rect id="Rechteck_380-2" data-name="Rechteck 380" width="14" height="14" transform="translate(1139 4738)" fill="#3e3e3e"/>
+      <g id="Ellipse_85-2" data-name="Ellipse 85" transform="translate(1142 4741)" fill="#3e3e3e" stroke="#dd3031" stroke-width="2">
+        <circle cx="4" cy="4" r="4" stroke="none"/>
+        <circle cx="4" cy="4" r="3" fill="none"/>
+      </g>
+      <rect id="Rechteck_381-2" data-name="Rechteck 381" width="5" height="5" transform="translate(1129 4747)" fill="#2ec61e"/>
+      <rect id="Rechteck_382-2" data-name="Rechteck 382" width="5" height="5" transform="translate(1129 4738)" fill="#2ec61e"/>
+      <g id="Mash-4" data-name="Mash" transform="translate(69)">
+        <circle id="Ellipse_86-4" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-4" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-4" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-4" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-4" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-4" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-4" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-4" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-4" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-4" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-4" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-4" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-4" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-4" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-4" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-4" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+      <g id="Mash-5" data-name="Mash" transform="translate(90)">
+        <circle id="Ellipse_86-5" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-5" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-5" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-5" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-5" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-5" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-5" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-5" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-5" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-5" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-5" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-5" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-5" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-5" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-5" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-5" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+      <g id="Mash-6" data-name="Mash" transform="translate(111)">
+        <circle id="Ellipse_86-6" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-6" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-6" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-6" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-6" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-6" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-6" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-6" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-6" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-6" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-6" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-6" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-6" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-6" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-6" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-6" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+    </g>
+    <g id="HD-3" data-name="HD" transform="translate(185)">
+      <rect id="Rechteck_379-3" data-name="Rechteck 379" width="63" height="14" transform="translate(1153 4738)" fill="#707070"/>
+      <rect id="Rechteck_380-3" data-name="Rechteck 380" width="14" height="14" transform="translate(1139 4738)" fill="#3e3e3e"/>
+      <g id="Ellipse_85-3" data-name="Ellipse 85" transform="translate(1142 4741)" fill="#3e3e3e" stroke="#dd3031" stroke-width="2">
+        <circle cx="4" cy="4" r="4" stroke="none"/>
+        <circle cx="4" cy="4" r="3" fill="none"/>
+      </g>
+      <rect id="Rechteck_381-3" data-name="Rechteck 381" width="5" height="5" transform="translate(1129 4747)" fill="#0ec31e"/>
+      <rect id="Rechteck_382-3" data-name="Rechteck 382" width="5" height="5" transform="translate(1129 4738)" fill="#0ec31e"/>
+      <g id="Mash-7" data-name="Mash" transform="translate(69)">
+        <circle id="Ellipse_86-7" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-7" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-7" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-7" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-7" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-7" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-7" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-7" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-7" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-7" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-7" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-7" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-7" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-7" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-7" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-7" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+      <g id="Mash-8" data-name="Mash" transform="translate(90)">
+        <circle id="Ellipse_86-8" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-8" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-8" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-8" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-8" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-8" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-8" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-8" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-8" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-8" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-8" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-8" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-8" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-8" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-8" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-8" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+      <g id="Mash-9" data-name="Mash" transform="translate(111)">
+        <circle id="Ellipse_86-9" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-9" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-9" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-9" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-9" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-9" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-9" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-9" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-9" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-9" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-9" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-9" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-9" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-9" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-9" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-9" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+    </g>
+    <g id="HD-4" data-name="HD" transform="translate(313)">
+      <rect id="Rechteck_379-4" data-name="Rechteck 379" width="63" height="14" transform="translate(1153 4738)" fill="#707070"/>
+      <rect id="Rechteck_380-4" data-name="Rechteck 380" width="14" height="14" transform="translate(1139 4738)" fill="#3e3e3e"/>
+      <g id="Ellipse_85-4" data-name="Ellipse 85" transform="translate(1142 4741)" fill="#3e3e3e" stroke="#dd3031" stroke-width="2">
+        <circle cx="4" cy="4" r="4" stroke="none"/>
+        <circle cx="4" cy="4" r="3" fill="none"/>
+      </g>
+      <rect id="Rechteck_381-4" data-name="Rechteck 381" width="5" height="5" transform="translate(1129 4747)" fill="#0ec31e"/>
+      <rect id="Rechteck_382-4" data-name="Rechteck 382" width="5" height="5" transform="translate(1129 4738)" fill="#0ec31e"/>
+      <g id="Mash-10" data-name="Mash" transform="translate(69)">
+        <circle id="Ellipse_86-10" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-10" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-10" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-10" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-10" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-10" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-10" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-10" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-10" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-10" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-10" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-10" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-10" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-10" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-10" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-10" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+      <g id="Mash-11" data-name="Mash" transform="translate(90)">
+        <circle id="Ellipse_86-11" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-11" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-11" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-11" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-11" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-11" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-11" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-11" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-11" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-11" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-11" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-11" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-11" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-11" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-11" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-11" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+      <g id="Mash-12" data-name="Mash" transform="translate(111)">
+        <circle id="Ellipse_86-12" data-name="Ellipse 86" cx="1" cy="1" r="1" transform="translate(1086 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_87-12" data-name="Ellipse 87" cx="1" cy="1" r="1" transform="translate(1090 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_88-12" data-name="Ellipse 88" cx="1" cy="1" r="1" transform="translate(1094 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_89-12" data-name="Ellipse 89" cx="1" cy="1" r="1" transform="translate(1098 4740)" fill="#232a2e"/>
+        <circle id="Ellipse_90-12" data-name="Ellipse 90" cx="1" cy="1" r="1" transform="translate(1088 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_91-12" data-name="Ellipse 91" cx="1" cy="1" r="1" transform="translate(1092 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_92-12" data-name="Ellipse 92" cx="1" cy="1" r="1" transform="translate(1096 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_93-12" data-name="Ellipse 93" cx="1" cy="1" r="1" transform="translate(1100 4743)" fill="#232a2e"/>
+        <circle id="Ellipse_94-12" data-name="Ellipse 94" cx="1" cy="1" r="1" transform="translate(1086 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_95-12" data-name="Ellipse 95" cx="1" cy="1" r="1" transform="translate(1090 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_96-12" data-name="Ellipse 96" cx="1" cy="1" r="1" transform="translate(1094 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_97-12" data-name="Ellipse 97" cx="1" cy="1" r="1" transform="translate(1098 4746)" fill="#232a2e"/>
+        <circle id="Ellipse_98-12" data-name="Ellipse 98" cx="1" cy="1" r="1" transform="translate(1087 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_99-12" data-name="Ellipse 99" cx="1" cy="1" r="1" transform="translate(1091 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_100-12" data-name="Ellipse 100" cx="1" cy="1" r="1" transform="translate(1095 4749)" fill="#232a2e"/>
+        <circle id="Ellipse_101-12" data-name="Ellipse 101" cx="1" cy="1" r="1" transform="translate(1099 4749)" fill="#232a2e"/>
+      </g>
+    </g>
+    <g id="Drive" transform="translate(634 3099)">
+      <rect id="Rechteck_383" data-name="Rechteck 383" width="87" height="8" rx="1" transform="translate(808 1620)" fill="#ccc"/>
+      <rect id="Rechteck_384" data-name="Rechteck 384" width="11" height="3" rx="1" transform="translate(869 1624)" fill="#232a2e"/>
+      <rect id="Rechteck_385" data-name="Rechteck 385" width="3" height="3" rx="1.5" transform="translate(881 1624)" fill="#0ec31e"/>
+    </g>
+    <g id="USB" transform="translate(1058.715 4718.283)">
+      <rect id="Rechteck_383-2" data-name="Rechteck 383" width="9" height="6" rx="1" transform="translate(0.285 -0.283)" fill="#ccc"/>
+      <rect id="Rechteck_386" data-name="Rechteck 386" width="7" height="4" transform="translate(1.285 0.717)" fill="#232a2e"/>
+      <rect id="Rechteck_387" data-name="Rechteck 387" width="5" height="1" transform="translate(2.285 1.717)" fill="#ccc"/>
+    </g>
+    <g id="USB-2" data-name="USB" transform="translate(1072.715 4718.141)">
+      <rect id="Rechteck_383-3" data-name="Rechteck 383" width="9" height="6" rx="1" transform="translate(0.285 -0.141)" fill="#ccc"/>
+      <rect id="Rechteck_386-2" data-name="Rechteck 386" width="7" height="4" transform="translate(1.285 0.859)" fill="#232a2e"/>
+      <rect id="Rechteck_387-2" data-name="Rechteck 387" width="5" height="1" transform="translate(2.285 1.859)" fill="#ccc"/>
+    </g>
+  </g>
+</svg>

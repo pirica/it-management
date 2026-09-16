@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="50" viewBox="0 0 520 50">
+  <g id="PATCHBOX_-_Cat.6_-_1HE" data-name="PATCHBOX - Cat.6 - 1HE" transform="translate(-1034 -4713)">
+    <g id="Rechteck_344" data-name="Rechteck 344" transform="translate(1044 4713)" fill="#232a2e" stroke="#ccc" stroke-width="1">
+      <rect width="500" height="50" stroke="none"/>
+      <rect x="0.5" y="0.5" width="499" height="49" fill="none"/>
+    </g>
+    <g id="_1HE" data-name="1HE" transform="translate(-1144 14882) rotate(180)">
+      <path id="Rechteck_495" data-name="Rechteck 495" d="M0,0H7a3,3,0,0,1,3,3V47a3,3,0,0,1-3,3H0a0,0,0,0,1,0,0V0A0,0,0,0,1,0,0Z" transform="translate(-2188 10119)" fill="#232a2e"/>
+      <path id="Polygon_1" data-name="Polygon 1" d="M3.75,0,5,2.5,3.75,5H1.25L0,2.5,1.25,0Z" transform="translate(-2180.5 10123.5) rotate(90)" fill="#fff"/>
+      <path id="Polygon_2" data-name="Polygon 2" d="M3.75,0,5,2.5,3.75,5H1.25L0,2.5,1.25,0Z" transform="translate(-2180.5 10159.5) rotate(90)" fill="#fff"/>
+    </g>
+    <g id="_1HE-2" data-name="1HE" transform="translate(3732 -5406)">
+      <path id="Rechteck_495-2" data-name="Rechteck 495" d="M0,0H7a3,3,0,0,1,3,3V47a3,3,0,0,1-3,3H0a0,0,0,0,1,0,0V0A0,0,0,0,1,0,0Z" transform="translate(-2188 10119)" fill="#232a2e"/>
+      <path id="Polygon_1-2" data-name="Polygon 1" d="M3.75,0,5,2.5,3.75,5H1.25L0,2.5,1.25,0Z" transform="translate(-2180.5 10123.5) rotate(90)" fill="#fff"/>
+      <path id="Polygon_2-2" data-name="Polygon 2" d="M3.75,0,5,2.5,3.75,5H1.25L0,2.5,1.25,0Z" transform="translate(-2180.5 10159.5) rotate(90)" fill="#fff"/>
+    </g>
+  </g>
+</svg>

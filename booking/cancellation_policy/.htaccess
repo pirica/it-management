@@ -1,0 +1,6 @@
+# ITM cancellation policy hardening — allow static HTML/txt; block PHP/CGI execution
+<FilesMatch "(?i)\.(php[0-9]?|phtml|phar|cgi|pl|asp|aspx)$">
+  Require all denied
+</FilesMatch>
+Options -ExecCGI
+RemoveHandler .php .phtml .phar

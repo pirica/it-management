@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="100" viewBox="0 0 520 100">
+  <g id="_2HE_Ablage" data-name="2HE Ablage" transform="translate(-1034 -4718)">
+    <path id="Pfad_610" data-name="Pfad 610" d="M0,0H500V8.495H0Z" transform="translate(1044 4809.505)" fill="#232a2e"/>
+    <g id="Router" transform="translate(-527.325 2950)">
+      <g id="Rechteck_388" data-name="Rechteck 388" transform="translate(1605.325 1827)" fill="#fff" stroke="#ccc" stroke-width="1">
+        <rect width="90" height="29" rx="5" stroke="none"/>
+        <rect x="0.5" y="0.5" width="89" height="28" rx="4.5" fill="none"/>
+      </g>
+      <g id="Rechteck_389" data-name="Rechteck 389" transform="translate(1682.325 1856)" fill="#ccc" stroke="#ccc" stroke-width="1">
+        <path d="M0,0H6A0,0,0,0,1,6,0V2A1,1,0,0,1,5,3H1A1,1,0,0,1,0,2V0A0,0,0,0,1,0,0Z" stroke="none"/>
+        <rect x="0.5" y="0.5" width="5" height="2" rx="0.5" fill="none"/>
+      </g>
+      <g id="Rechteck_395" data-name="Rechteck 395" transform="translate(1610.325 1856)" fill="#ccc" stroke="#ccc" stroke-width="1">
+        <path d="M0,0H6A0,0,0,0,1,6,0V2A1,1,0,0,1,5,3H1A1,1,0,0,1,0,2V0A0,0,0,0,1,0,0Z" stroke="none"/>
+        <rect x="0.5" y="0.5" width="5" height="2" rx="0.5" fill="none"/>
+      </g>
+      <g id="Rechteck_391" data-name="Rechteck 391" transform="translate(1609.325 1838)" fill="#f7f7f7" stroke="#ccc" stroke-width="1">
+        <rect width="83" height="8" rx="4" stroke="none"/>
+        <rect x="0.5" y="0.5" width="82" height="7" rx="3.5" fill="none"/>
+      </g>
+      <circle id="Ellipse_102" data-name="Ellipse 102" cx="1" cy="1" r="1" transform="translate(1671.325 1841)" fill="#2ec600"/>
+      <circle id="Ellipse_106" data-name="Ellipse 106" cx="1" cy="1" r="1" transform="translate(1613.325 1841)" fill="#2ec600"/>
+      <circle id="Ellipse_103" data-name="Ellipse 103" cx="1" cy="1" r="1" transform="translate(1676.325 1841)" fill="#2ec600"/>
+      <circle id="Ellipse_104" data-name="Ellipse 104" cx="1" cy="1" r="1" transform="translate(1681.325 1841)" fill="#2ec600"/>
+      <circle id="Ellipse_105" data-name="Ellipse 105" cx="1" cy="1" r="1" transform="translate(1686.325 1841)" fill="#2ec600"/>
+      <circle id="Ellipse_107" data-name="Ellipse 107" cx="1" cy="1" r="1" transform="translate(1618.325 1841)" fill="#2ec600"/>
+      <line id="Linie_67" data-name="Linie 67" x2="89" transform="translate(1605.825 1832.341)" fill="none" stroke="#ccc" stroke-width="1"/>
+      <line id="Linie_68" data-name="Linie 68" x2="89" transform="translate(1605.825 1850.754)" fill="none" stroke="#ccc" stroke-width="1"/>
+      <g id="Rechteck_392" data-name="Rechteck 392" transform="translate(1610.325 1816)" fill="#ccc" stroke="#ccc" stroke-width="1">
+        <path d="M4,0H4A4,4,0,0,1,8,4v8a0,0,0,0,1,0,0H0a0,0,0,0,1,0,0V4A4,4,0,0,1,4,0Z" stroke="none"/>
+        <path d="M4,.5H4A3.5,3.5,0,0,1,7.5,4v7.111a.389.389,0,0,1-.389.389H.889A.389.389,0,0,1,.5,11.111V4A3.5,3.5,0,0,1,4,.5Z" fill="none"/>
+      </g>
+      <g id="Rechteck_393" data-name="Rechteck 393" transform="translate(1612.325 1813)" fill="#ccc" stroke="#ccc" stroke-width="1">
+        <rect width="4" height="4" stroke="none"/>
+        <rect x="0.5" y="0.5" width="3" height="3" fill="none"/>
+      </g>
+      <g id="Pfad_611" data-name="Pfad 611" transform="translate(1610.645 1798.188)" fill="#ccc">
+        <path d="M 5.687125205993652 15.08601951599121 L 1.672685384750366 15.08601951599121 C 1.042107939720154 15.08601951599121 0.5085892081260681 14.36212062835693 0.500097930431366 13.50060272216797 L 1.501675367355347 2.150169849395752 L 1.503615379333496 2.128239870071411 L 1.503615379333496 2.10621976852417 C 1.503615379333496 1.235559701919556 2.040635347366333 0.4999997615814209 2.676295518875122 0.4999997615814209 L 4.683515548706055 0.4999997615814209 C 5.319175243377686 0.4999997615814209 5.856195449829102 1.235559701919556 5.856195449829102 2.10621976852417 L 5.856195449829102 2.128239870071411 L 5.858135223388672 2.150169849395752 L 6.859713077545166 13.50060272216797 C 6.851221561431885 14.36212062835693 6.317702770233154 15.08601951599121 5.687125205993652 15.08601951599121 Z" stroke="none"/>
+        <path d="M 2.676295280456543 1 C 2.358755588531494 1 2.003615379333496 1.473079681396484 2.003615379333496 2.106219291687012 L 2.003615379333496 2.150259971618652 L 1.000444889068604 13.51874828338623 C 1.014632225036621 14.13222885131836 1.361696243286133 14.58601951599121 1.672685623168945 14.58601951599121 L 5.687125205993652 14.58601951599121 C 5.998114585876465 14.58601951599121 6.345178604125977 14.13222885131836 6.359365940093994 13.51874828338623 L 5.356195449829102 2.150259971618652 L 5.356195449829102 2.106219291687012 C 5.356195449829102 1.473079681396484 5.001055717468262 1 4.683515548706055 1 L 2.676295280456543 1 M 2.676295280456543 0 L 4.683515548706055 0 C 5.607315540313721 0 6.356195449829102 0.9429893493652344 6.356195449829102 2.106219291687012 L 7.35981559753418 13.47979927062988 C 7.35981559753418 14.64303016662598 6.610925674438477 15.58601951599121 5.687125205993652 15.58601951599121 L 1.672685623168945 15.58601951599121 C 0.7488856315612793 15.58601951599121 -4.76837158203125e-06 14.64303016662598 -4.76837158203125e-06 13.47979927062988 L 1.003615379333496 2.106219291687012 C 1.003615379333496 0.9429893493652344 1.752495288848877 0 2.676295280456543 0 Z" stroke="none" fill="#ccc"/>
+      </g>
+      <g id="Rechteck_394" data-name="Rechteck 394" transform="translate(1613.325 1785)" fill="#ccc" stroke="#ccc" stroke-width="1">
+        <rect width="2" height="14" rx="1" stroke="none"/>
+        <rect x="0.5" y="0.5" width="1" height="13" rx="0.5" fill="none"/>
+      </g>
+    </g>
+    <g id="NAS" transform="translate(650 3037.419)">
+      <g id="Rechteck_396" data-name="Rechteck 396" transform="translate(589 1688.581)" fill="#fff" stroke="#ccc" stroke-width="1">
+        <rect width="111" height="80" rx="3" stroke="none"/>
+        <rect x="0.5" y="0.5" width="110" height="79" rx="2.5" fill="none"/>
+      </g>
+      <rect id="Rechteck_397" data-name="Rechteck 397" width="88" height="14" transform="translate(608 1691.581)" fill="#efefef"/>
+      <rect id="Rechteck_399" data-name="Rechteck 399" width="58" height="16" transform="translate(624 1707.581) rotate(90)" fill="#efefef"/>
+      <rect id="Rechteck_400" data-name="Rechteck 400" width="58" height="15" transform="translate(642 1707.581) rotate(90)" fill="#efefef"/>
+      <rect id="Rechteck_401" data-name="Rechteck 401" width="58" height="15" transform="translate(660 1707.581) rotate(90)" fill="#efefef"/>
+      <rect id="Rechteck_409" data-name="Rechteck 409" width="58" height="15" transform="translate(678 1707.581) rotate(90)" fill="#efefef"/>
+      <rect id="Rechteck_411" data-name="Rechteck 411" width="58" height="14" transform="translate(696 1707.581) rotate(90)" fill="#efefef"/>
+      <rect id="Rechteck_398" data-name="Rechteck 398" width="74" height="14" transform="translate(606 1691.581) rotate(90)" fill="#efefef"/>
+      <rect id="Rechteck_402" data-name="Rechteck 402" width="15" height="16" transform="translate(624 1750.581) rotate(90)" fill="#ccc"/>
+      <rect id="Rechteck_403" data-name="Rechteck 403" width="15" height="15" transform="translate(642 1750.581) rotate(90)" fill="#ccc"/>
+      <rect id="Rechteck_404" data-name="Rechteck 404" width="15" height="15" transform="translate(660 1750.581) rotate(90)" fill="#ccc"/>
+      <rect id="Rechteck_408" data-name="Rechteck 408" width="15" height="15" transform="translate(678 1750.581) rotate(90)" fill="#ccc"/>
+      <rect id="Rechteck_410" data-name="Rechteck 410" width="15" height="14" transform="translate(696 1750.581) rotate(90)" fill="#ccc"/>
+      <rect id="Rechteck_405" data-name="Rechteck 405" width="29" height="2" rx="1" transform="translate(662 1697.581)" fill="#ccc"/>
+      <circle id="Ellipse_108" data-name="Ellipse 108" cx="1.5" cy="1.5" r="1.5" transform="translate(597 1695.581)" fill="#00c31e"/>
+      <circle id="Ellipse_109" data-name="Ellipse 109" cx="1.5" cy="1.5" r="1.5" transform="translate(597 1702.581)" fill="#ef3d3e"/>
+      <circle id="Ellipse_110" data-name="Ellipse 110" cx="1.5" cy="1.5" r="1.5" transform="translate(597 1709.581)" fill="#ffb102"/>
+      <g id="USB" transform="translate(594.715 1750.864)">
+        <rect id="Rechteck_383" data-name="Rechteck 383" width="9" height="6" rx="1" transform="translate(0.285 -0.283)" fill="#ccc"/>
+        <rect id="Rechteck_386" data-name="Rechteck 386" width="7" height="4" transform="translate(1.285 0.717)" fill="#fff"/>
+        <rect id="Rechteck_387" data-name="Rechteck 387" width="5" height="1" transform="translate(2.285 1.717)" fill="#ccc"/>
+      </g>
+      <g id="USB-2" data-name="USB" transform="translate(594.715 1757.722)">
+        <rect id="Rechteck_383-2" data-name="Rechteck 383" width="9" height="6" rx="1" transform="translate(0.285 -0.141)" fill="#ccc"/>
+        <rect id="Rechteck_386-2" data-name="Rechteck 386" width="7" height="4" transform="translate(1.285 0.859)" fill="#fff"/>
+        <rect id="Rechteck_387-2" data-name="Rechteck 387" width="5" height="1" transform="translate(2.285 1.859)" fill="#ccc"/>
+      </g>
+      <path id="Rechteck_406" data-name="Rechteck 406" d="M0,0H7A0,0,0,0,1,7,0V2A1,1,0,0,1,6,3H1A1,1,0,0,1,0,2V0A0,0,0,0,1,0,0Z" transform="translate(596 1768.581)" fill="#ccc"/>
+      <path id="Rechteck_407" data-name="Rechteck 407" d="M0,0H7A0,0,0,0,1,7,0V2A1,1,0,0,1,6,3H1A1,1,0,0,1,0,2V0A0,0,0,0,1,0,0Z" transform="translate(687 1768.581)" fill="#ccc"/>
+    </g>
+    <g id="Mini_PC" data-name="Mini PC" transform="translate(635 3050)">
+      <g id="Rechteck_412" data-name="Rechteck 412" transform="translate(775 1720)" fill="#fff" stroke="#ccc" stroke-width="1">
+        <rect width="95" height="36" rx="3" stroke="none"/>
+        <rect x="0.5" y="0.5" width="94" height="35" rx="2.5" fill="none"/>
+      </g>
+      <rect id="Rechteck_418" data-name="Rechteck 418" width="89" height="30" rx="2" transform="translate(778 1723)" fill="#f7f7f7"/>
+      <rect id="Rechteck_413" data-name="Rechteck 413" width="80" height="5" rx="1" transform="translate(783 1729)" fill="#ccc"/>
+      <g id="Gruppe_178" data-name="Gruppe 178" transform="translate(0 3)">
+        <circle id="Ellipse_111" data-name="Ellipse 111" cx="2.5" cy="2.5" r="2.5" transform="translate(783 1742)" fill="#efefef"/>
+        <circle id="Ellipse_112" data-name="Ellipse 112" cx="1.5" cy="1.5" r="1.5" transform="translate(784 1743)" fill="#ccc"/>
+      </g>
+      <g id="Gruppe_179" data-name="Gruppe 179" transform="translate(7 3)">
+        <circle id="Ellipse_111-2" data-name="Ellipse 111" cx="2.5" cy="2.5" r="2.5" transform="translate(783 1742)" fill="#efefef"/>
+        <circle id="Ellipse_112-2" data-name="Ellipse 112" cx="1.5" cy="1.5" r="1.5" transform="translate(784 1743)" fill="#ccc"/>
+      </g>
+      <g id="USB-3" data-name="USB" transform="translate(796.715 1744.283)">
+        <rect id="Rechteck_383-3" data-name="Rechteck 383" width="9" height="6" rx="1" transform="translate(0.285 -0.283)" fill="#ccc"/>
+        <rect id="Rechteck_386-3" data-name="Rechteck 386" width="7" height="4" transform="translate(1.285 0.717)" fill="#f7f7f7"/>
+        <rect id="Rechteck_387-3" data-name="Rechteck 387" width="5" height="1" transform="translate(2.285 1.717)" fill="#ccc"/>
+      </g>
+      <g id="USB-4" data-name="USB" transform="translate(807.715 1744.283)">
+        <rect id="Rechteck_383-4" data-name="Rechteck 383" width="9" height="6" rx="1" transform="translate(0.285 -0.283)" fill="#ccc"/>
+        <rect id="Rechteck_386-4" data-name="Rechteck 386" width="7" height="4" transform="translate(1.285 0.717)" fill="#f7f7f7"/>
+        <rect id="Rechteck_387-4" data-name="Rechteck 387" width="5" height="1" transform="translate(2.285 1.717)" fill="#ccc"/>
+      </g>
+      <rect id="Rechteck_414" data-name="Rechteck 414" width="7" height="3" rx="1" transform="translate(851 1730)" fill="#999"/>
+      <rect id="Rechteck_415" data-name="Rechteck 415" width="3" height="3" rx="1.5" transform="translate(847 1730)" fill="#0ec31e"/>
+      <path id="power-outline" d="M67.688,64.517a2.25,2.25,0,1,1-2.878,0M66.255,64v2.256" transform="translate(793.745 1680.744)" fill="none" stroke="#ccc" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      <path id="Rechteck_419" data-name="Rechteck 419" d="M0,0H7A0,0,0,0,1,7,0V2A1,1,0,0,1,6,3H1A1,1,0,0,1,0,2V0A0,0,0,0,1,0,0Z" transform="translate(780 1756)" fill="#ccc"/>
+      <path id="Rechteck_420" data-name="Rechteck 420" d="M0,0H7A0,0,0,0,1,7,0V2A1,1,0,0,1,6,3H1A1,1,0,0,1,0,2V0A0,0,0,0,1,0,0Z" transform="translate(858 1756)" fill="#ccc"/>
+    </g>
+    <g id="Montage_Links" data-name="Montage Links" transform="translate(1034 4718)">
+      <rect id="Rechteck_354" data-name="Rechteck 354" width="10" height="100" fill="#efefef"/>
+      <path id="Rechteck_355" data-name="Rechteck 355" d="M0,0H5A2,2,0,0,1,7,2V28a2,2,0,0,1-2,2H0a0,0,0,0,1,0,0V0A0,0,0,0,1,0,0Z" transform="translate(0 35)" fill="#ccc"/>
+      <circle id="Ellipse_72" data-name="Ellipse 72" cx="2.5" cy="2.5" r="2.5" transform="translate(2 5)" fill="#ccc"/>
+      <circle id="Ellipse_73" data-name="Ellipse 73" cx="2.5" cy="2.5" r="2.5" transform="translate(2 15)" fill="#ccc"/>
+      <circle id="Ellipse_74" data-name="Ellipse 74" cx="2.5" cy="2.5" r="2.5" transform="translate(2 79.33)" fill="#ccc"/>
+      <circle id="Ellipse_75" data-name="Ellipse 75" cx="2.5" cy="2.5" r="2.5" transform="translate(2 89)" fill="#ccc"/>
+    </g>
+    <g id="Montage_Links-2" data-name="Montage Links" transform="translate(1554 4818) rotate(180)">
+      <rect id="Rechteck_354-2" data-name="Rechteck 354" width="10" height="100" fill="#efefef"/>
+      <path id="Rechteck_355-2" data-name="Rechteck 355" d="M0,0H5A2,2,0,0,1,7,2V28a2,2,0,0,1-2,2H0a0,0,0,0,1,0,0V0A0,0,0,0,1,0,0Z" transform="translate(0 35)" fill="#ccc"/>
+      <circle id="Ellipse_72-2" data-name="Ellipse 72" cx="2.5" cy="2.5" r="2.5" transform="translate(2 5)" fill="#ccc"/>
+      <circle id="Ellipse_73-2" data-name="Ellipse 73" cx="2.5" cy="2.5" r="2.5" transform="translate(2 15)" fill="#ccc"/>
+      <circle id="Ellipse_74-2" data-name="Ellipse 74" cx="2.5" cy="2.5" r="2.5" transform="translate(2 79.33)" fill="#ccc"/>
+      <circle id="Ellipse_75-2" data-name="Ellipse 75" cx="2.5" cy="2.5" r="2.5" transform="translate(2 89)" fill="#ccc"/>
+    </g>
+  </g>
+</svg>

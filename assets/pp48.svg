@@ -1,0 +1,868 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="520" height="50" viewBox="0 0 520 50">
+  <defs>
+    <clipPath id="clip-path">
+      <rect width="136" height="9" fill="none"/>
+    </clipPath>
+    <clipPath id="clip-path-4">
+      <rect width="136" height="3" fill="none"/>
+    </clipPath>
+  </defs>
+  <g id="_48_Port_Patchpanel_-_Cat.6" data-name="48 Port Patchpanel - Cat.6" transform="translate(-1034 -4713)">
+    <g id="Rechteck_424" data-name="Rechteck 424" transform="translate(1044 4713)" fill="#3e3e3e" stroke="#ccc" stroke-width="1">
+      <rect width="500" height="50" stroke="none"/>
+      <rect x="0.5" y="0.5" width="499" height="49" fill="none"/>
+    </g>
+    <g id="_1HE" data-name="1HE" transform="translate(3222 -5406)">
+      <rect id="Rechteck_356" data-name="Rechteck 356" width="10" height="50" transform="translate(-2188 10119)" fill="#efefef"/>
+      <path id="Rechteck_357" data-name="Rechteck 357" d="M0,0H6A0,0,0,0,1,6,0V9a2,2,0,0,1-2,2H0a0,0,0,0,1,0,0V0A0,0,0,0,1,0,0Z" transform="translate(-2188 10119)" fill="#ccc"/>
+      <circle id="Ellipse_76" data-name="Ellipse 76" cx="2.5" cy="2.5" r="2.5" transform="translate(-2186 10149)" fill="#ccc"/>
+      <circle id="Ellipse_77" data-name="Ellipse 77" cx="2.5" cy="2.5" r="2.5" transform="translate(-2186 10159)" fill="#ccc"/>
+    </g>
+    <g id="_1HE-2" data-name="1HE" transform="translate(3732 -5406)">
+      <rect id="Rechteck_356-2" data-name="Rechteck 356" width="10" height="50" transform="translate(-2188 10119)" fill="#efefef"/>
+      <path id="Rechteck_357-2" data-name="Rechteck 357" d="M0,0H6A0,0,0,0,1,6,0V11a0,0,0,0,1,0,0H2A2,2,0,0,1,0,9V0A0,0,0,0,1,0,0Z" transform="translate(-2184 10119)" fill="#ccc"/>
+      <circle id="Ellipse_76-2" data-name="Ellipse 76" cx="2.5" cy="2.5" r="2.5" transform="translate(-2186 10149)" fill="#ccc"/>
+      <circle id="Ellipse_77-2" data-name="Ellipse 77" cx="2.5" cy="2.5" r="2.5" transform="translate(-2186 10159)" fill="#ccc"/>
+    </g>
+    <g id="Wiederholungsraster_53" data-name="Wiederholungsraster 53" transform="translate(1393 4726)" clip-path="url(#clip-path)">
+      <g transform="translate(-1354 -4741)">
+        <g id="Gruppe_273" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1336 -4741)">
+        <g id="Gruppe_273-2" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-2" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-2" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-2" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-2" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-2" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-2" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-2" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-2" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1318 -4741)">
+        <g id="Gruppe_273-3" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-3" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-3" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-3" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-3" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-3" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-3" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-3" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-3" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1300 -4741)">
+        <g id="Gruppe_273-4" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-4" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-4" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-4" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-4" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-4" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-4" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-4" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-4" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1282 -4741)">
+        <g id="Gruppe_273-5" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-5" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-5" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-5" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-5" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-5" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-5" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-5" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-5" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1264 -4741)">
+        <g id="Gruppe_273-6" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-6" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-6" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-6" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-6" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-6" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-6" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-6" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-6" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1246 -4741)">
+        <g id="Gruppe_273-7" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-7" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-7" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-7" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-7" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-7" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-7" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-7" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-7" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1228 -4741)">
+        <g id="Gruppe_273-8" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-8" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-8" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-8" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-8" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-8" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-8" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-8" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-8" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_59" data-name="Wiederholungsraster 59" transform="translate(1226 4727)" clip-path="url(#clip-path)">
+      <g transform="translate(-1354 -4741)">
+        <g id="Gruppe_273-9" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-9" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-9" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-9" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-9" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-9" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-9" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-9" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-9" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1336 -4741)">
+        <g id="Gruppe_273-10" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-10" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-10" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-10" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-10" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-10" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-10" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-10" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-10" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1318 -4741)">
+        <g id="Gruppe_273-11" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-11" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-11" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-11" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-11" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-11" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-11" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-11" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-11" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1300 -4741)">
+        <g id="Gruppe_273-12" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-12" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-12" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-12" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-12" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-12" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-12" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-12" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-12" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1282 -4741)">
+        <g id="Gruppe_273-13" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-13" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-13" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-13" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-13" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-13" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-13" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-13" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-13" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1264 -4741)">
+        <g id="Gruppe_273-14" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-14" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-14" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-14" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-14" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-14" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-14" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-14" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-14" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1246 -4741)">
+        <g id="Gruppe_273-15" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-15" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-15" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-15" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-15" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-15" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-15" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-15" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-15" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1228 -4741)">
+        <g id="Gruppe_273-16" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-16" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-16" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-16" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-16" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-16" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-16" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-16" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-16" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_63" data-name="Wiederholungsraster 63" transform="translate(1059 4726)" clip-path="url(#clip-path)">
+      <g transform="translate(-1354 -4741)">
+        <g id="Gruppe_273-17" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-17" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-17" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-17" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-17" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-17" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-17" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-17" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-17" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1336 -4741)">
+        <g id="Gruppe_273-18" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-18" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-18" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-18" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-18" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-18" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-18" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-18" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-18" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1318 -4741)">
+        <g id="Gruppe_273-19" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-19" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-19" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-19" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-19" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-19" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-19" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-19" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-19" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1300 -4741)">
+        <g id="Gruppe_273-20" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-20" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-20" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-20" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-20" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-20" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-20" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-20" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-20" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1282 -4741)">
+        <g id="Gruppe_273-21" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-21" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-21" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-21" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-21" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-21" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-21" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-21" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-21" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1264 -4741)">
+        <g id="Gruppe_273-22" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-22" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-22" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-22" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-22" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-22" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-22" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-22" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-22" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1246 -4741)">
+        <g id="Gruppe_273-23" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-23" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-23" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-23" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-23" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-23" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-23" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-23" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-23" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1228 -4741)">
+        <g id="Gruppe_273-24" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-24" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-24" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-24" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-24" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-24" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-24" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-24" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-24" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_54" data-name="Wiederholungsraster 54" transform="translate(1393 4720)" clip-path="url(#clip-path-4)">
+      <g transform="translate(-1144 -4725)">
+        <rect id="Rechteck_425" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1126 -4725)">
+        <rect id="Rechteck_425-2" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1108 -4725)">
+        <rect id="Rechteck_425-3" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1090 -4725)">
+        <rect id="Rechteck_425-4" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1072 -4725)">
+        <rect id="Rechteck_425-5" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1054 -4725)">
+        <rect id="Rechteck_425-6" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1036 -4725)">
+        <rect id="Rechteck_425-7" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1018 -4725)">
+        <rect id="Rechteck_425-8" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_60" data-name="Wiederholungsraster 60" transform="translate(1226 4720)" clip-path="url(#clip-path-4)">
+      <g transform="translate(-1144 -4725)">
+        <rect id="Rechteck_425-9" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1126 -4725)">
+        <rect id="Rechteck_425-10" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1108 -4725)">
+        <rect id="Rechteck_425-11" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1090 -4725)">
+        <rect id="Rechteck_425-12" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1072 -4725)">
+        <rect id="Rechteck_425-13" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1054 -4725)">
+        <rect id="Rechteck_425-14" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1036 -4725)">
+        <rect id="Rechteck_425-15" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1018 -4725)">
+        <rect id="Rechteck_425-16" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_64" data-name="Wiederholungsraster 64" transform="translate(1059 4720)" clip-path="url(#clip-path-4)">
+      <g transform="translate(-1144 -4725)">
+        <rect id="Rechteck_425-17" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1126 -4725)">
+        <rect id="Rechteck_425-18" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1108 -4725)">
+        <rect id="Rechteck_425-19" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1090 -4725)">
+        <rect id="Rechteck_425-20" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1072 -4725)">
+        <rect id="Rechteck_425-21" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1054 -4725)">
+        <rect id="Rechteck_425-22" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1036 -4725)">
+        <rect id="Rechteck_425-23" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1018 -4725)">
+        <rect id="Rechteck_425-24" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_55" data-name="Wiederholungsraster 55" transform="translate(1393 4746)" clip-path="url(#clip-path)">
+      <g transform="translate(-1354 -4741)">
+        <g id="Gruppe_273-25" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-25" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-25" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-25" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-25" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-25" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-25" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-25" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-25" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1336 -4741)">
+        <g id="Gruppe_273-26" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-26" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-26" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-26" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-26" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-26" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-26" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-26" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-26" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1318 -4741)">
+        <g id="Gruppe_273-27" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-27" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-27" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-27" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-27" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-27" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-27" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-27" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-27" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1300 -4741)">
+        <g id="Gruppe_273-28" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-28" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-28" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-28" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-28" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-28" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-28" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-28" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-28" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1282 -4741)">
+        <g id="Gruppe_273-29" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-29" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-29" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-29" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-29" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-29" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-29" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-29" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-29" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1264 -4741)">
+        <g id="Gruppe_273-30" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-30" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-30" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-30" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-30" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-30" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-30" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-30" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-30" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1246 -4741)">
+        <g id="Gruppe_273-31" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-31" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-31" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-31" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-31" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-31" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-31" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-31" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-31" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1228 -4741)">
+        <g id="Gruppe_273-32" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-32" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-32" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-32" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-32" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-32" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-32" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-32" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-32" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_57" data-name="Wiederholungsraster 57" transform="translate(1226 4747)" clip-path="url(#clip-path)">
+      <g transform="translate(-1354 -4741)">
+        <g id="Gruppe_273-33" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-33" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-33" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-33" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-33" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-33" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-33" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-33" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-33" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1336 -4741)">
+        <g id="Gruppe_273-34" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-34" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-34" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-34" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-34" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-34" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-34" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-34" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-34" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1318 -4741)">
+        <g id="Gruppe_273-35" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-35" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-35" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-35" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-35" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-35" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-35" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-35" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-35" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1300 -4741)">
+        <g id="Gruppe_273-36" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-36" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-36" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-36" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-36" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-36" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-36" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-36" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-36" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1282 -4741)">
+        <g id="Gruppe_273-37" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-37" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-37" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-37" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-37" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-37" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-37" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-37" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-37" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1264 -4741)">
+        <g id="Gruppe_273-38" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-38" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-38" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-38" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-38" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-38" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-38" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-38" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-38" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1246 -4741)">
+        <g id="Gruppe_273-39" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-39" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-39" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-39" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-39" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-39" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-39" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-39" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-39" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1228 -4741)">
+        <g id="Gruppe_273-40" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-40" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-40" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-40" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-40" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-40" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-40" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-40" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-40" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_61" data-name="Wiederholungsraster 61" transform="translate(1059 4746)" clip-path="url(#clip-path)">
+      <g transform="translate(-1354 -4741)">
+        <g id="Gruppe_273-41" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-41" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-41" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-41" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-41" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-41" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-41" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-41" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-41" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1336 -4741)">
+        <g id="Gruppe_273-42" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-42" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-42" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-42" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-42" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-42" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-42" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-42" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-42" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1318 -4741)">
+        <g id="Gruppe_273-43" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-43" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-43" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-43" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-43" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-43" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-43" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-43" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-43" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1300 -4741)">
+        <g id="Gruppe_273-44" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-44" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-44" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-44" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-44" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-44" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-44" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-44" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-44" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1282 -4741)">
+        <g id="Gruppe_273-45" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-45" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-45" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-45" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-45" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-45" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-45" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-45" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-45" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1264 -4741)">
+        <g id="Gruppe_273-46" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-46" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-46" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-46" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-46" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-46" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-46" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-46" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-46" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1246 -4741)">
+        <g id="Gruppe_273-47" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-47" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-47" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-47" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-47" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-47" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-47" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-47" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-47" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+      <g transform="translate(-1228 -4741)">
+        <g id="Gruppe_273-48" data-name="Gruppe 273" transform="translate(2718 9491) rotate(180)">
+          <g id="Gruppe_253-48" data-name="Gruppe 253" transform="translate(2788 9475) rotate(180)">
+            <rect id="Rechteck_358-48" data-name="Rechteck 358" width="10" height="7" transform="translate(1424 4727)" fill="#999"/>
+            <rect id="Rechteck_366-48" data-name="Rechteck 366" width="4" height="2" transform="translate(1427 4725)" fill="#999"/>
+          </g>
+          <g id="Gruppe_272-48" data-name="Gruppe 272" transform="translate(2788 9475) rotate(-180)">
+            <line id="Linie_73-48" data-name="Linie 73" y1="2" transform="translate(1432 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_74-48" data-name="Linie 74" y1="2" transform="translate(1430 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_75-48" data-name="Linie 75" y1="2" transform="translate(1428 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+            <line id="Linie_76-48" data-name="Linie 76" y1="2" transform="translate(1426 4731)" fill="none" stroke="#fff" stroke-width="1"/>
+          </g>
+        </g>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_56" data-name="Wiederholungsraster 56" transform="translate(1393 4741)" clip-path="url(#clip-path-4)">
+      <g transform="translate(-1144 -4725)">
+        <rect id="Rechteck_425-25" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1126 -4725)">
+        <rect id="Rechteck_425-26" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1108 -4725)">
+        <rect id="Rechteck_425-27" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1090 -4725)">
+        <rect id="Rechteck_425-28" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1072 -4725)">
+        <rect id="Rechteck_425-29" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1054 -4725)">
+        <rect id="Rechteck_425-30" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1036 -4725)">
+        <rect id="Rechteck_425-31" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1018 -4725)">
+        <rect id="Rechteck_425-32" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_58" data-name="Wiederholungsraster 58" transform="translate(1226 4741)" clip-path="url(#clip-path-4)">
+      <g transform="translate(-1144 -4725)">
+        <rect id="Rechteck_425-33" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1126 -4725)">
+        <rect id="Rechteck_425-34" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1108 -4725)">
+        <rect id="Rechteck_425-35" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1090 -4725)">
+        <rect id="Rechteck_425-36" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1072 -4725)">
+        <rect id="Rechteck_425-37" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1054 -4725)">
+        <rect id="Rechteck_425-38" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1036 -4725)">
+        <rect id="Rechteck_425-39" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1018 -4725)">
+        <rect id="Rechteck_425-40" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+    </g>
+    <g id="Wiederholungsraster_62" data-name="Wiederholungsraster 62" transform="translate(1059 4741)" clip-path="url(#clip-path-4)">
+      <g transform="translate(-1144 -4725)">
+        <rect id="Rechteck_425-41" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1126 -4725)">
+        <rect id="Rechteck_425-42" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1108 -4725)">
+        <rect id="Rechteck_425-43" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1090 -4725)">
+        <rect id="Rechteck_425-44" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1072 -4725)">
+        <rect id="Rechteck_425-45" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1054 -4725)">
+        <rect id="Rechteck_425-46" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1036 -4725)">
+        <rect id="Rechteck_425-47" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+      <g transform="translate(-1018 -4725)">
+        <rect id="Rechteck_425-48" data-name="Rechteck 425" width="10" height="3" rx="1" transform="translate(1144 4725)" fill="#fff"/>
+      </g>
+    </g>
+  </g>
+</svg>

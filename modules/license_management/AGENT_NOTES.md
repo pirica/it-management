@@ -1,0 +1,87 @@
+# AGENT_NOTES.md - License Management
+
+## 1. Module Purpose
+Tracks software licenses per company: name, key, type, quantity, supplier, purchase/expiry dates, price, active flag, and notes.
+
+## 2. Key Tables
+- **license_management** — main license records (CRUD module table).
+- **license_types** — seed-only lookup for the **Type** dropdown (`Per User`, `Per Device`, `Enterprise`, `Subscription`, `Other`).
+- **software_license_links** — many-to-many links to `software` (sync from license create/edit via `software_ids[]`; view lists linked catalog rows).
+- **equipment** / **equipment_software** — Equipment tab (installed catalog software per asset).
+
+## 3. Required Relationships
+- **license_management** → **companies** (`company_id`, CASCADE).
+- **license_management** → **license_types** (`license_type_id`, RESTRICT).
+- **license_management** → **suppliers** (`supplier_id`, SET NULL on delete).
+- **license_types** → **companies** (`company_id`, CASCADE).
+- **software_license_links** → **software** (`software_id`, RESTRICT) and **license_management** (`license_management_id`, RESTRICT).
+
+## 4. Business Rules (Critical for Agents)
+- **Name required** on create/edit (`name` NOT NULL).
+- **Quantity** defaults to **1** when omitted on create/save.
+- **Type** defaults to tenant `license_types.name = Other` on create (form + save) and Excel import when Type is empty.
+- **Price** accepts `.` as decimal separator; **comma is converted to dot** on POST (`cr_normalize_price_input()`).
+- **Dates** stored as MySQL `DATE`; list/view/import use **dd/mmm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
+- **Type** values come from tenant-scoped `license_types` rows (seeded in `db/03_triggers.sql` + cross-company `INSERT IGNORE` replication). Quick-add on the Type select inserts via `select_options_api.php` (`license_types` whitelist); full CRUD is under **`modules/license_types/`** with **company_id** hidden.
+- **Active** uses the standard checkbox double-label pattern on forms and badges on list/view.
+- **Equipment tab** (`index.php?tab=equipment`) lists assets from `equipment_software` with a **Software** select filter (`software_id`). Actions: 🔎 view and ✏️ edit on `modules/equipment/`. Helper: `itm_software_license_list_equipment()`.
+
+## 5. UI Behavior Requirements
+- Standard flattened CRUD duplicated from **departments** scaffold: bulk delete, search, pagination, Excel import/export, empty-state sample data.
+- **List tabs:** Licenses (default CRUD) and Equipment (`?tab=equipment`) with Software select + search. Pane: `includes/tab_equipment.php`.
+- **company_id** hidden in list/create/edit/view.
+- **FK labels:** list/view must show Type and Supplier names (not raw IDs) via `cr_fk_label_by_id()` / `itm_fk_label_by_id()`.
+- Form field order: Name, License Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
+- Create/edit: multi-select **Linked software catalog** (`software_ids[]`) syncs `software_license_links` via `itm_software_license_sync_for_license()`.
+- View: read-only **Linked software catalog** table with links to `modules/software/view.php`.
+
+## 6. API Actions (If Applicable)
+- **import_excel_rows** — JSON import on `index.php` (`data-itm-db-import-endpoint="index.php"`).
+
+## 7. File Structure
+- Flat CRUD: `index.php` (primary handler), thin wrappers `create.php`, `edit.php`, `view.php`, `list_all.php`, standalone `delete.php`.
+- **`includes/tab_equipment.php`** — Equipment tab (included when `tab=equipment`).
+
+## 8. Multi-Tenant Rules
+- All queries scoped by `company_id`.
+- FK dropdown options filtered by active company.
+
+## 9. Audit Logging Requirements
+- Database triggers: `trg_license_management_audit_*`, `trg_license_types_audit_*` (when lookup rows are quick-added).
+
+## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
+- **`modules/license_types/`** — lookup CRUD; keep **`company_id`** in `$hideCompanyIdTables` on every duplicated entry file (`index.php`, `edit.php`, `view.php`, `list_all.php`). [Cursor-Valid]
+- **`license_management` seeds in `db/03_triggers.sql`** are declared **after** `suppliers` so FK parents exist before sample INSERTs (one sample row per company, companies 1–5). [Cursor-Valid]
+- **`license_types` seeds** — five lookup rows per company (companies 1–5) plus cross-company `INSERT IGNORE` replication in `db/03_triggers.sql`. [Cursor-Valid]
+- **Do not use `employees.active`**-style filters elsewhere; unrelated but same class of bug as equipment assignee dropdown. [Cursor-Invalid]
+- **Deleting a `license_types` row** referenced by `license_management` fails (RESTRICT FK). [Cursor-Valid]
+- **Deleting a `license_management` row** still linked in `software_license_links` fails (RESTRICT FK). Unlink from software or license forms first. [Cursor-Valid]
+- **Price import:** normalise comma decimals before `cr_validate_numeric_value()`. [Cursor-Fixed]
+
+## 11. Examples of Safe Code Patterns
+
+### Safe SELECT
+```php
+$stmt = mysqli_prepare($conn, 'SELECT * FROM license_management WHERE company_id = ? ORDER BY name');
+mysqli_stmt_bind_param($stmt, 'i', $companyId);
+mysqli_stmt_execute($stmt);
+```
+
+### Safe INSERT
+```php
+$stmt = mysqli_prepare($conn, 'INSERT INTO license_management (company_id, name, license_type_id, quantity, active) VALUES (?, ?, ?, ?, ?)');
+mysqli_stmt_bind_param($stmt, 'isiii', $companyId, $name, $typeId, $quantity, $active);
+mysqli_stmt_execute($stmt);
+```
+
+## 12. Module Owner Notes (Optional)
+Sample seed row per company: Microsoft 365 E3 (`license_types.name = Per User`, supplier from tenant `suppliers` seed).
+Authoritative cross-module rules: **`AGENTS.md` → License Management (mandatory)**. Software catalog links: `includes/itm_software_license_link.php`; regression `php scripts/verify_software_license_links.php` ([verify_software_license_links.php?run=1](http://localhost/it-management/scripts/verify_software_license_links.php?run=1), Admin session). README screenshots: `docs/readme/license_management.png`, `docs/readme/demo_license_management.png`. MBQA: `php scripts/module_browser_qa_runner.php --module=license_management --company=1` (see **`scripts/SCRIPTS.md`**).
+## Share (temporary QR / code)
+- **Capable:** `itm_qr_share_capable_module_slugs()`.
+- **UI:** Share buttons on index.php inline view block.
+- **Wiring:** `includes/itm_crud_record_share.php`; public `join.php`; AJAX `index.php?ajax_action=create_share_session`. Company gate: `modules/share_modules/`.
+- **Doc:** `docs/CRUD_RECORD_SHARE.md`.

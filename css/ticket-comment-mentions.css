@@ -1,0 +1,34 @@
+.itm-ticket-mention-picker {
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #d0d7de);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 4px;
+}
+
+.itm-ticket-mention-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    padding: 8px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+}
+
+.itm-ticket-mention-option:hover,
+.itm-ticket-mention-option:focus {
+    background: var(--hover-bg, rgba(111, 66, 193, 0.12));
+    outline: none;
+}
+
+.itm-ticket-mention-empty {
+    padding: 8px 10px;
+    opacity: 0.75;
+    font-size: 0.9rem;
+}

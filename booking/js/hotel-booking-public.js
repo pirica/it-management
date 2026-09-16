@@ -1,0 +1,344 @@
+(function () {
+  function hbUiCopy(key, fallback) {
+    var copy = (window.HB_SETTINGS && window.HB_SETTINGS.ui_copy) ? window.HB_SETTINGS.ui_copy : {};
+    var val = copy[key];
+    return (val !== undefined && val !== null && String(val).trim() !== '') ? String(val) : String(fallback || '');
+  }
+  var modal = document.getElementById('hb-detail-modal');
+  if (!modal) return;
+  var body = document.getElementById('hb-modal-body');
+  var hotels = window.HB_HOTELS || [];
+  var settings = window.HB_SETTINGS || {};
+  var map = {};
+  hotels.forEach(function (h) { map[h.id] = h; });
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  }
+
+  function mapsUrlForHotel(h) {
+    var location = String((h && h.location) || '').trim();
+    if (!location) {
+      return '';
+    }
+    var base = String(settings.maps_base_url || 'https://maps.google.com/?q=').trim();
+    if (base.indexOf('{location}') !== -1) {
+      return base.replace('{location}', encodeURIComponent(location));
+    }
+    if (/[?&]q=$/.test(base) || base.charAt(base.length - 1) === '=') {
+      return base + encodeURIComponent(location);
+    }
+    if (base.indexOf('?') !== -1) {
+      return base.replace(/&$/, '') + '&q=' + encodeURIComponent(location);
+    }
+    return base.replace(/\/$/, '') + '/' + encodeURIComponent(location);
+  }
+
+  function formatPrice(h) {
+    if (typeof window.hbPortalFormatMoney === 'function') {
+      return window.hbPortalFormatMoney(h.min_price || 0, settings, 'short');
+    }
+    var n = parseFloat(h.min_price || 0);
+    var code = (h.currency_code || 'EUR').toUpperCase();
+    var sym = code === 'EUR' ? '€' : code + ' ';
+    var amount = Number.isFinite(n) ? (Math.round(n * 100) / 100).toFixed(2).replace(/\.00$/, '') : '0';
+    return sym + amount;
+  }
+
+  function currencyLabel(code) {
+    var c = (code || 'EUR').toUpperCase();
+    if (c === 'EUR') return hbUiCopy('home_currency_euro_label', 'Euro');
+    return c;
+  }
+
+  function resolveReviewsUrl(h) {
+    var fromHotel = String((h && h.reviews_url) || '').trim();
+    if (fromHotel) {
+      return fromHotel;
+    }
+    return String(settings.reviews_url || '').trim();
+  }
+
+  function reviewsLinkHtml(h) {
+    var reviewsUrl = resolveReviewsUrl(h);
+    if (!reviewsUrl) {
+      return '';
+    }
+    return '<a href="' + escapeHtml(reviewsUrl) + '" class="hb-reviews-link" target="_blank" rel="noopener noreferrer" title="' + escapeHtml(hbUiCopy('home_read_reviews_title', 'Read reviews (opens in new tab)')) + '">' + escapeHtml(hbUiCopy('home_read_reviews_link', 'Read reviews')) + ' <span class="hb-external-icon" aria-hidden="true">↗</span></a>';
+  }
+
+  function photoUrls(h) {
+    var photos = h.photos || [];
+    if (!photos.length) {
+      return [window.HB_APPURL + '/images/image_2.jpg'];
+    }
+    return photos.map(function (p) {
+      return p.public_url || (window.HB_APPURL + '/images/image_2.jpg');
+    });
+  }
+
+  function amenityIcon(name, iconSlug) {
+    if (typeof window.HB_amenityIconMarkup === 'function') {
+      return window.HB_amenityIconMarkup(name, iconSlug || '');
+    }
+    return '';
+  }
+
+  function splitParkingLines(text) {
+    var t = String(text || '').trim();
+    if (!t) return [];
+    if (t.indexOf('\n') >= 0) {
+      return t.split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+    if (/self.*valet|valet.*self/i.test(t)) {
+      return [hbUiCopy('home_parking_self_fallback', 'Self parking: Complimentary'), hbUiCopy('home_parking_valet_fallback', 'Valet parking: Complimentary')];
+    }
+    return [t];
+  }
+
+  function nearbyLists(h) {
+    var all = h.nearby || [];
+    var nearby = [];
+    var airport = [];
+    all.forEach(function (row) {
+      var name = String(row.place_name || '');
+      if (/airport/i.test(name)) {
+        airport.push(row);
+      } else {
+        nearby.push(row);
+      }
+    });
+    return { nearby: nearby, airport: airport };
+  }
+
+  function bindGallery(root, urls) {
+    if (typeof window.HB_bindGallery === 'function') {
+      window.HB_bindGallery(root, urls);
+    }
+  }
+
+  function bindReadMore(root) {
+    var desc = root.querySelector('.hb-desc-text');
+    var btn = root.querySelector('.hb-read-more');
+    if (!desc || !btn) return;
+    var full = desc.textContent || '';
+    var shortLen = 220;
+    if (full.length <= shortLen) {
+      btn.hidden = true;
+      return;
+    }
+    desc.textContent = full.substring(0, shortLen).trim() + '…';
+    var open = false;
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      open = !open;
+      desc.textContent = open ? full : full.substring(0, shortLen).trim() + '…';
+      btn.textContent = open ? hbUiCopy('home_read_less', 'Read less') : hbUiCopy('home_read_more', 'Read more');
+    });
+  }
+
+  function bindTabs(root) {
+    var tabs = root.querySelectorAll('.hb-loc-tab');
+    var panels = root.querySelectorAll('.hb-loc-panel');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var id = tab.getAttribute('data-tab');
+        tabs.forEach(function (t) { t.classList.toggle('is-active', t === tab); });
+        panels.forEach(function (p) {
+          p.hidden = p.getAttribute('data-panel') !== id;
+        });
+      });
+    });
+  }
+
+  function bindAccordion(root) {
+    var head = root.querySelector('.hb-accordion-head');
+    var panel = root.querySelector('.hb-accordion-panel');
+    if (!head || !panel) return;
+    head.addEventListener('click', function () {
+      var open = head.getAttribute('aria-expanded') === 'true';
+      head.setAttribute('aria-expanded', open ? 'false' : 'true');
+      panel.hidden = open;
+    });
+  }
+
+  function bindFavorite(btn, hotelId) {
+    var key = 'hb_fav_' + hotelId;
+    function sync() {
+      var on = localStorage.getItem(key) === '1';
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    sync();
+    btn.addEventListener('click', function () {
+      var on = localStorage.getItem(key) === '1';
+      localStorage.setItem(key, on ? '0' : '1');
+      sync();
+    });
+  }
+
+  function openModal(hotelId) {
+    var h = map[hotelId];
+    if (!h || !body) return;
+    var urls = photoUrls(h);
+    var lists = nearbyLists(h);
+    var parkingRows = splitParkingLines(h.parking_info);
+    var amenities = h.amenities || [];
+    if (!amenities.length) {
+      amenities = [
+        { name: hbUiCopy('home_amenity_wifi_fallback', 'Free WiFi'), icon_class: '' },
+        { name: hbUiCopy('home_amenity_pool_fallback', 'Indoor pool'), icon_class: '' },
+        { name: hbUiCopy('home_amenity_fitness_fallback', 'Fitness center'), icon_class: '' }
+      ];
+    }
+    var amenityHtml = amenities.map(function (a) {
+      var slug = a.icon_slug || '';
+      return '<div class="hb-amenity-item"><span class="hb-amenity-icon" aria-hidden="true">' + amenityIcon(a.name, slug) + '</span><span>' + escapeHtml(a.name) + '</span></div>';
+    }).join('');
+
+    var parkingHtml = '';
+    var parkingLabel = hbUiCopy('home_parking_label', 'Parking');
+    if (!parkingRows.length) {
+      parkingHtml = '<tr><th>' + escapeHtml(parkingLabel) + '</th><td>—</td></tr>';
+    } else {
+      parkingRows.forEach(function (line, i) {
+        parkingHtml += '<tr><th>' + (i === 0 ? escapeHtml(parkingLabel) : '') + '</th><td>' + escapeHtml(line) + '</td></tr>';
+      });
+    }
+
+    var nearbyEmpty = hbUiCopy('home_nearby_empty', 'No places listed.');
+    var nearbyHtml = lists.nearby.length
+      ? lists.nearby.map(function (r) {
+        return '<li><span>' + escapeHtml(r.place_name) + '</span><span>' + escapeHtml(parseFloat(r.distance_km).toFixed(2)) + ' km</span></li>';
+      }).join('')
+      : '<li class="hb-muted">' + escapeHtml(nearbyEmpty) + '</li>';
+
+    var airportHtml = '';
+    if (lists.airport.length) {
+      airportHtml = lists.airport.map(function (r) {
+        return '<li><span>' + escapeHtml(r.place_name) + '</span><span>' + escapeHtml(parseFloat(r.distance_km).toFixed(2)) + ' km</span></li>';
+      }).join('');
+    }
+    if (settings.airport_info) {
+      airportHtml += '<li class="hb-airport-note">' + escapeHtml(settings.airport_info) + '</li>';
+    }
+    if (!airportHtml) {
+      airportHtml = '<li class="hb-muted">' + escapeHtml(hbUiCopy('home_airport_empty', 'No airport information.')) + '</li>';
+    }
+
+    var accessible = (settings.accessible_features_default || '').trim();
+    var footnote = (settings.price_footnote || hbUiCopy('home_price_footnote_fallback', '*Prices are based on current availability and may change.')).trim();
+    var descFull = String(h.description || '');
+
+    body.innerHTML =
+      '<div class="hb-detail">' +
+      '<div class="hb-detail-left">' +
+      (typeof window.HB_galleryMarkup === 'function' ? window.HB_galleryMarkup(urls) :
+        '<div class="hb-gallery-wrap"><div class="hb-gallery"></div></div>') +
+      '<div class="hb-title-row">' +
+      '<h2 class="hb-detail-title">' + escapeHtml(h.name) + '</h2>' +
+      '<button type="button" class="hb-fav" title="' + escapeHtml(hbUiCopy('home_favorite_title', 'Save to favorites')) + '" aria-label="' + escapeHtml(hbUiCopy('home_favorite_aria_label', 'Favorite')) + '">♡</button>' +
+      '</div>' +
+      '<div class="hb-action-links">' +
+      (h.location ? '<a href="' + escapeHtml(mapsUrlForHotel(h)) + '" target="_blank" rel="noopener"><span aria-hidden="true">📍</span> ' + escapeHtml(hbUiCopy('home_directions_link', 'Directions')) + '</a>' : '') +
+      (h.website_url ? '<a href="' + escapeHtml(h.website_url) + '" target="_blank" rel="noopener"><span aria-hidden="true">🌐</span> ' + escapeHtml(hbUiCopy('home_visit_website_link', 'Visit website')) + '</a>' : '') +
+      (h.contact_email ? '<a href="mailto:' + escapeHtml(h.contact_email) + '" title="' + escapeHtml(hbUiCopy('home_general_info_email_title', 'General information email')) + '"><span aria-hidden="true">ℹ️</span> ' + escapeHtml(hbUiCopy('home_info_link', 'Info')) + '</a>' : '') +
+      (h.reservations_email ? '<a href="mailto:' + escapeHtml(h.reservations_email) + '" title="' + escapeHtml(hbUiCopy('home_reservations_email_title', 'Reservations email')) + '"><span aria-hidden="true">📧</span> ' + escapeHtml(hbUiCopy('home_email_link', 'Email')) + '</a>' : '') +
+      (h.phone ? '<a href="tel:' + escapeHtml(h.phone) + '"><span aria-hidden="true">📞</span> ' + escapeHtml(h.phone) + '</a>' : '') +
+      '</div>' +
+      '<section class="hb-block"><h3>' + escapeHtml(hbUiCopy('home_description_heading', 'Description')) + '</h3>' +
+      '<p class="hb-desc-text">' + escapeHtml(descFull) + '</p>' +
+      (descFull ? '<a href="#" class="hb-read-more">' + escapeHtml(hbUiCopy('home_read_more', 'Read more')) + '</a>' : '') +
+      '</section>' +
+      '<div class="hb-price-cta hb-block">' +
+      '<p class="hb-from-price">' + escapeHtml(hbUiCopy('home_from_label', 'From')) + '<sup>*</sup> <strong>' + escapeHtml(formatPrice(h)) + '</strong> <span class="hb-from-tax-note">' + escapeHtml(settings.price_includes_tax_label || hbUiCopy('home_price_includes_tax_label', 'incl. tax')) + '</span></p>' +
+      '<p class="hb-price-label">' + escapeHtml(h.cheapest_rate_label || settings.default_rate_label || hbUiCopy('home_default_rate_label', 'Best available rate')) + '</p>' +
+      '<button type="button" class="hb-btn hb-btn-primary hb-btn-block hb-select-dates" data-hotel-id="' + h.id + '" title="' + escapeHtml(hbUiCopy('home_select_dates_title', 'Select dates')) + '">' + escapeHtml(hbUiCopy('home_select_dates_button', 'Select Dates')) + '</button>' +
+      '</div>' +
+      '<section class="hb-block hb-rating-block">' +
+      '<div class="hb-rating-bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="partial"></span></div>' +
+      '<div class="hb-rating-meta">' +
+      '<p class="hb-rating-copy"><strong>' + escapeHtml(settings.rating_title || hbUiCopy('home_guest_rating_title', 'Guest rating')) + '</strong><span class="hb-rating-sub">' + escapeHtml(settings.rating_subtitle || hbUiCopy('home_guest_rating_subtitle', ' — based on recent stays')) + '</span></p>' +
+      reviewsLinkHtml(h) +
+      '</div>' +
+      '</section>' +
+      '</div>' +
+      '<div class="hb-detail-right">' +
+      '<section class="hb-block"><h3>' + escapeHtml(hbUiCopy('home_amenities_heading', 'Amenities')) + '</h3>' +
+      '<div class="hb-amenities-scroll">' + amenityHtml + '</div></section>' +
+      '<section class="hb-block"><h3>' + escapeHtml(hbUiCopy('home_overview_heading', 'Overview')) + '</h3>' +
+      '<table class="hb-overview-table">' +
+      '<tr><th>' + escapeHtml(hbUiCopy('home_check_in_label', 'Check-in')) + '</th><td>' + escapeHtml(h.check_in_display || '—') + '</td></tr>' +
+      '<tr><th>' + escapeHtml(hbUiCopy('home_check_out_label', 'Check-out')) + '</th><td>' + escapeHtml(h.check_out_display || '—') + '</td></tr>' +
+      '<tr><th>' + escapeHtml(hbUiCopy('home_currency_label', 'Currency')) + '</th><td>' + escapeHtml(currencyLabel(h.currency_code)) + '</td></tr>' +
+      parkingHtml +
+      '<tr><th>' + escapeHtml(hbUiCopy('home_pets_label', 'Pets')) + '</th><td>' + escapeHtml(h.pets_policy || '—') + '</td></tr>' +
+      '</table></section>' +
+      '<section class="hb-block hb-location-block">' +
+      '<h3>' + escapeHtml(hbUiCopy('home_location_heading', 'Location and transportation')) + '</h3>' +
+      '<div class="hb-loc-tabs">' +
+      '<button type="button" class="hb-loc-tab is-active" data-tab="nearby">' + escapeHtml(hbUiCopy('home_nearby_tab', 'What\'s nearby')) + '</button>' +
+      '<button type="button" class="hb-loc-tab" data-tab="airport">' + escapeHtml(hbUiCopy('home_airport_tab', 'Airport info')) + '</button>' +
+      '</div>' +
+      '<ul class="hb-loc-list hb-loc-panel" data-panel="nearby">' + nearbyHtml + '</ul>' +
+      '<ul class="hb-loc-list hb-loc-panel" data-panel="airport" hidden>' + airportHtml + '</ul>' +
+      '</section>' +
+      (accessible ? '<section class="hb-block hb-accordion">' +
+        '<button type="button" class="hb-accordion-head" aria-expanded="false">' + escapeHtml(hbUiCopy('home_accessible_features_heading', 'Accessible features')) + ' <span class="hb-chevron">▼</span></button>' +
+        '<div class="hb-accordion-panel" hidden><p>' + escapeHtml(accessible) + '</p></div></section>' : '') +
+      '<p class="hb-modal-footnote">' + escapeHtml(footnote) + '</p>' +
+      '</div></div>';
+
+    modal.hidden = false;
+    document.body.classList.add('hb-modal-open');
+
+    bindGallery(body, urls);
+    bindReadMore(body);
+    bindTabs(body);
+    bindAccordion(body);
+    bindFavorite(body.querySelector('.hb-fav'), h.id);
+
+    body.querySelector('.hb-select-dates').addEventListener('click', function () {
+      if (typeof window.HB_openDatesModal === 'function') {
+        window.HB_openDatesModal(h);
+      } else {
+        window.location.href = window.HB_APPURL + '/rooms.php?id=' + h.id;
+      }
+    });
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    document.body.classList.remove('hb-modal-open');
+  }
+
+  document.querySelectorAll('.hb-hotel-card').forEach(function (card) {
+    var hotelId = parseInt(card.getAttribute('data-hotel-id'), 10);
+    var h = map[hotelId];
+    if (!h) {
+      return;
+    }
+    bindGallery(card, photoUrls(h));
+  });
+
+  document.querySelectorAll('.hb-open-hotel').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openModal(parseInt(btn.getAttribute('data-hotel-id'), 10));
+    });
+  });
+  modal.querySelector('.hb-modal-close').addEventListener('click', closeModal);
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+
+  var deep = parseInt(new URLSearchParams(window.location.search).get('hotel') || '0', 10);
+  var openDates = new URLSearchParams(window.location.search).get('dates') === '1';
+  if (deep > 0 && openDates && typeof window.HB_openDatesModal === 'function' && map[deep]) {
+    window.HB_openDatesModal(map[deep]);
+  } else if (deep > 0) {
+    openModal(deep);
+  }
+})();
