@@ -252,7 +252,7 @@ Similar pattern in `itm_totp_encryption_key()` (`includes/itm_totp_helpers.php` 
 **Affected Parameter:** `enable_all_error_reporting` (default **`0`**)
 
 **Description:**  
-When `enable_all_error_reporting` is enabled, the application sets `display_errors=1` and logs to `error_log.txt` under the project root. This can expose stack traces, SQL fragments, and filesystem paths to end users. **At assessment time** the default was `1` for new `ui_configuration` rows; the codebase now defaults to **`0`** (schema, seeds, PHP fallbacks, and Settings checkbox).
+When `enable_all_error_reporting` is enabled, the application sets `display_errors=1` and logs to `docs/error_log.txt` (`itm_error_log_file_path()`). This can expose stack traces, SQL fragments, and filesystem paths to end users when the toggle is on. **At assessment time** the default was `1` for new `ui_configuration` rows; the codebase now defaults to **`0`** (schema, seeds, PHP fallbacks, and Settings checkbox). Direct HTTP access to the log file is blocked by `docs/.htaccess`.
 
 **Evidence (current — remediated):**
 
@@ -261,7 +261,7 @@ if (($ui_config['enable_all_error_reporting'] ?? 0) === 1) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
     ini_set('log_errors', '1');
-    ini_set('error_log', ROOT_PATH . 'error_log.txt');
+    ini_set('error_log', itm_error_log_file_path());
 }
 ```
 
@@ -273,7 +273,7 @@ if (($ui_config['enable_all_error_reporting'] ?? 0) === 1) {
 
 **Attack Scenario:** Attacker probes malformed parameters to surface warnings on production only when verbose reporting was explicitly enabled.
 
-**Recommendation:** Keep default `0` in production; log errors server-side only; block web access to `error_log.txt`. *(Remediated for default; log-file hardening remains optional.)*
+**Recommendation:** Keep default `0` in production; log errors server-side only; block web access to the log file. *(Remediated: default off; log path `docs/error_log.txt` with `docs/.htaccess` deny rule.)*
 
 ---
 

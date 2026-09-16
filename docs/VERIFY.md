@@ -140,7 +140,7 @@ Static re-read of sources on `origin/master` after the **Status** column and `.e
 |--------|--------|---------------|---------|
 | **Stored / DOM XSS in webmail preview** | OPEN | `js/webmail-compose.js` line 142: `bodyEl.innerHTML = data.body_html` (from/to use `textContent`; body is raw HTML). | **Confirmed OPEN** |
 | **DOM XSS in CMDB impact graph** | OPEN | `js/itm-cmdb-impact-graph.js` lines 119–122: `icon`, `name`, `typeName` concatenated into `innerHTML` without escaping. | **Confirmed OPEN** |
-| **Tenant error display toggle** | INFO | `config/config.php` lines 649–653: when `enable_all_error_reporting === 1`, sets `display_errors` to `1` and logs to `error_log.txt`. Default `0` in `itm_ui_config_defaults()`. | **Confirmed INFO** (intentional per-employee debug toggle; default off) |
+| **Tenant error display toggle** | INFO | `config/config.php`: when `enable_all_error_reporting === 1`, sets `display_errors` to `1` and logs to `docs/error_log.txt` (`itm_error_log_file_path()`). Default `0` in `itm_ui_config_defaults()`. `docs/.htaccess` denies HTTP reads. | **Confirmed INFO** (intentional per-employee debug toggle; default off) |
 | **`.env` not blocked in root `.htaccess`** | FIXED | Root `.htaccess`: `<Files ".env">` + `Require all denied` / `Deny from all`; [verify_pentest_report.php](http://localhost/it-management/scripts/verify_pentest_report.php?run=1) `ITM-PENTEST-023`. | **Confirmed FIXED** |
 
 ### Medium — verification

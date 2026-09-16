@@ -1212,7 +1212,7 @@ On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/
 * **Online AI Test Environment:**
   * `https://myhome.dynip.sapo.pt/it-management/login.php` | Login: `Admin` | Password: `Admin`.
   * `https://myhome.dynip.sapo.pt/phpmyadmin/` | Database: `itmanagement` | Login: `root` | Password: `secret`.
-* **Logs:** System errors are piped to `ROOT_PATH . 'error_log.txt'`.
+* **Logs:** Verbose PHP errors (when **enable all error reporting** is on) log to `docs/error_log.txt` via `itm_error_log_file_path()`; `docs/.htaccess` denies HTTP access. Remove legacy `error_log.txt` at the repo root if present.
 * **Testing:** Browser screenshots are not supported; rely on verbose error logging. Script suites and full-module QA: **`scripts/SCRIPTS.md`**.
 * **CLI scripts:** Run from the repository root with **PHP 7.4.33** and **MySQLi** enabled — conventions and catalog in **`scripts/SCRIPTS.md`**; Dunebox binary path in **PHP CLI tests** above.
 * **Inbound email → tickets (IMAP):** `scripts/run_inbound_email_tickets.php` requires the PHP **`imap`** extension on the **CLI** binary (not Apache mod_php unless you run the script via web admin). **Dunebox:** uncomment or add `extension=imap` in `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.ini` (or re-run `scripts/setup_dunebox_php_from_laragon.ps1` after updating `scripts/data/php.ini.dunebox-7.4.template`). **Laragon:** enable `extension=imap` in the matching `php.ini` for the CLI `php.exe` you use in cron. Verify: `php -m | findstr imap` (Windows) or `php -r "echo function_exists('imap_open') ? 'ok' : 'missing';"`.

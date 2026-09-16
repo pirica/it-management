@@ -16,6 +16,19 @@ if (!function_exists('itm_is_safe_identifier')) {
 }
 
 /**
+ * Absolute path to the application debug error log (docs/error_log.txt).
+ * Why: Keep verbose PHP logs out of the web-facing repo root; docs/.htaccess denies HTTP access.
+ */
+if (!function_exists('itm_error_log_file_path')) {
+    function itm_error_log_file_path(): string
+    {
+        $root = defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__) . DIRECTORY_SEPARATOR;
+
+        return rtrim((string)$root, '/\\') . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'error_log.txt';
+    }
+}
+
+/**
  * Release the PHP session write lock so long-lived requests (SSE) do not block other tabs.
  */
 if (!function_exists('itm_release_session_lock')) {

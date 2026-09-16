@@ -32,7 +32,7 @@ itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator pri
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
-ini_set('error_log', dirname(__DIR__) . '/error_log.txt');
+ini_set('error_log', dirname(__DIR__) . '/docs/error_log.txt');
 
 itm_script_output_begin('System Debug Utility');
 

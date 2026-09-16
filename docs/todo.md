@@ -113,7 +113,7 @@ Default run is **informational** (exit `0`). `php scripts/check_env_vars_in_use.
 
 **Touch points:**
 
-- [check_prod_hardening.php?run=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1) — fail when `APP_ENV=production` and `bypass_login.php` is web-reachable, seed admin/demo still uses default password, `display_errors` / `enable_all_error_reporting` on, `error_log.txt` under web root, or dev bypass env flags are set
+- [check_prod_hardening.php?run=1](http://localhost/it-management/scripts/check_prod_hardening.php?run=1) — fail when `APP_ENV=production` and `bypass_login.php` is web-reachable, seed admin/demo still uses default password, `display_errors` / `enable_all_error_reporting` on, legacy `error_log.txt` under application root, or dev bypass env flags are set
 - Pre-deploy gate documented in `handoff.md` (optional CI smoke wiring deferred)
 
 **Acceptance:** Script exit `1` on unsafe prod posture with `--enforce` or production profile; catalog in `scripts/scripts.php` + `scripts/SCRIPTS.md`.
@@ -124,9 +124,9 @@ Default run is **informational** (exit `0`). `php scripts/check_env_vars_in_use.
 
 **Status:** **Partial** — `ITM_DEV` / `APP_ENV` in `.env` label dev vs production (`docs/ENV.md`); **`display_errors` is not auto-gated** by those keys yet.
 
-**Problem:** `config/config.php` sets `ini_set('display_errors', '1')` and `error_log` to `ROOT_PATH . 'error_log.txt'` when UI setting `enable_all_error_reporting` is on (~lines 651–653). In production, errors can leak to browsers and a world-readable path under the docroot.
+**Problem:** `config/config.php` sets `ini_set('display_errors', '1')` and `error_log` to `docs/error_log.txt` when UI setting `enable_all_error_reporting` is on. In production, errors can still leak to browsers when the toggle is on; the log file is HTTP-denied via `docs/.htaccess` but remains on disk under the docroot.
 
-**Acceptance:** Production profile logs outside document root; `display_errors` off unless explicit dev env gates it (e.g. wire `APP_ENV=development` or `ITM_DEV=1` to block browser display even when Settings toggle is on) **or** operator discipline on Settings toggle only.
+**Acceptance:** `display_errors` off unless explicit dev env gates it (e.g. wire `APP_ENV=development` or `ITM_DEV=1` to block browser display even when Settings toggle is on) **or** operator discipline on Settings toggle only. Log path hardening: **done** (`docs/error_log.txt` + `.htaccess` deny).
 
 ---
 
