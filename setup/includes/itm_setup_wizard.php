@@ -2748,7 +2748,10 @@ if (!function_exists('itm_setup_wizard_install_sample_data')) {
             return ['ok' => false, 'message' => $error !== '' ? $error : 'Sample data seed failed', 'detail' => ''];
         }
 
-        $seeded = isset($report['seeded']) && is_array($report['seeded']) ? count($report['seeded']) : 0;
+        // Why: itm_seed_all_tables_from_database_sql() reports inserted_tables, not seeded.
+        $seeded = isset($report['inserted_tables']) && is_array($report['inserted_tables'])
+            ? count($report['inserted_tables'])
+            : 0;
 
         return [
             'ok' => true,

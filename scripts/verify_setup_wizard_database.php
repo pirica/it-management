@@ -321,6 +321,8 @@ if (!$importCreate['ok']) {
                 setup_db_fail('install_sample_data_for_companies must seed sample rows for selected company 1');
             } elseif ($co3NotesCount > 0) {
                 setup_db_fail('install_sample_data_for_companies must NOT seed unselected company 3 when only company 1 is chosen');
+            } elseif (!preg_match('/^[1-9]\d*\s+table\(s\)\s+seeded$/i', (string)($singleSeed['detail'] ?? ''))) {
+                setup_db_fail('install_sample_data_for_companies detail must report a non-zero seeded table count (got: ' . ($singleSeed['detail'] ?? '') . ')');
             } else {
                 setup_db_pass('install_sample_data_for_companies seeds requested single company 1 only');
             }
