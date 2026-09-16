@@ -3056,7 +3056,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_explorer_api_rate_limit.php" target="_blank" rel="nofollow noreferrer">verify_explorer_api_rate_limit.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>ITM-PENTEST-015 regression: Explorer <code>api.php</code> per-employee hourly cap via <code>itm_explorer_api_enforce_rate_limit_or_exit()</code>; rolling-hour block after limit.</td>
+                    <td>ITM-PENTEST-015 regression: Explorer <code>api.php</code> per-employee hourly cap via <code>itm_explorer_api_enforce_rate_limit_or_exit()</code>; rolling-hour block after limit (probe clears <code>ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR</code> env override).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">

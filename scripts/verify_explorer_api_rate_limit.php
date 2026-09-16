@@ -40,6 +40,10 @@ if (is_file($probePath)) {
     @unlink($probePath);
 }
 
+// Why: ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR in .env overrides ui_configuration; clear it so the probe cap applies.
+$savedExplorerRateLimitEnv = verify_explorer_api_rate_limit_saved_env_override();
+verify_explorer_api_rate_limit_clear_env_override();
+
 for ($i = 0; $i < $probeLimit; $i++) {
     $ok = itm_explorer_api_rate_limit_check($probeCompanyId, $probeEmployeeId, true, $probeConfig);
     if (empty($ok['ok'])) {
@@ -57,6 +61,8 @@ if ($failures === 0) {
         echo colorText('[PASS] Rolling-hour cap blocks request ' . ($probeLimit + 1), 'pass') . $nl;
     }
 }
+
+verify_explorer_api_rate_limit_restore_env_override($savedExplorerRateLimitEnv);
 
 if (is_file($probePath)) {
     @unlink($probePath);
@@ -81,4 +87,30 @@ function verify_explorer_api_source_contains(string $relativePath, string $needl
     $source = file_get_contents($path);
 
     return $source !== false && strpos($source, $needle) !== false;
+}
+
+/**
+ * @return string|null Saved env value, or null when unset before the probe.
+ */
+function verify_explorer_api_rate_limit_saved_env_override()
+{
+    $saved = getenv('ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR');
+
+    return ($saved === false || $saved === '') ? null : (string) $saved;
+}
+
+function verify_explorer_api_rate_limit_clear_env_override(): void
+{
+    putenv('ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR');
+    unset($_ENV['ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR'], $_SERVER['ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR']);
+}
+
+function verify_explorer_api_rate_limit_restore_env_override($saved): void
+{
+    if ($saved === null) {
+        return;
+    }
+
+    putenv('ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR=' . $saved);
+    $_ENV['ITM_EXPLORER_API_RATE_LIMIT_PER_HOUR'] = $saved;
 }
